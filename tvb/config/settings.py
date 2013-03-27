@@ -175,6 +175,7 @@ class BaseProfile():
     SYSTEM_USER_NAME = 'TVB system'
     DEFAULT_ADMIN_EMAIL = 'jira.tvb@gmail.com'
     CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    EXTERNALS_FOLDER_PARENT = os.path.dirname(os.path.dirname(CURRENT_DIR))
     
     # Specify if the current process is executing an operation (via clusterLauncher)
     OPERATION_EXECUTION_PROCESS = False
@@ -712,6 +713,9 @@ class DeploymentProfile(BaseProfile):
     """
     Profile for packages deployed already.
     """
+    
+    EXTERNALS_FOLDER_PARENT = os.path.dirname(BaseProfile.CURRENT_DIR)
+    
     
     @classmethod
     def initialize_profile(cls):

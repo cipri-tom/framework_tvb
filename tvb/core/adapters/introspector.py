@@ -364,7 +364,7 @@ class Introspector:
                     root_folder = adapter.get_matlab_file_root()
                     file_name = adapter.get_matlab_file(algo_ident)
                     if file_name:
-                        algo_description = self.extract_matlab_doc_string(os.path.join(cfg.CURRENT_DIR, root_folder, file_name))
+                        algo_description = self.extract_matlab_doc_string(os.path.join(root_folder, file_name))
                 algorithm = dao.get_algorithm_by_group(group.id, algo_ident)
                 if algorithm is None:
                     #Create new

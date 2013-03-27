@@ -23,13 +23,16 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import os
+import xml.dom.minidom
 from genxmlif import GenXmlIfError
 from minixsv import pyxsval
-import xml.dom.minidom
 from xml.dom.minidom import Node
 from tvb.core.adapters.exceptions import XmlParserException
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.config.settings import TVBSettings
+
 
 ATT_NAME = "name"
 ATT_UI_NAME = "uiName"
@@ -287,10 +290,15 @@ class XMLGroupReader():
 
 
     def get_additional_path(self):
-        """Init parameter for the Adapter."""
+        """
+        Extra file to be added to Matlab Path when executing algorithm.
+        
+        :return: Absolute path for additional Matlab path.
+        """
         additional_path = None
         if ATT_ADDITIONAL_PATH in self._algorithm_group.keys():
             additional_path = self._algorithm_group[ATT_ADDITIONAL_PATH]
+            additional_path = os.path.join(TVBSettings.EXTERNALS_FOLDER_PARENT, additional_path)
         return additional_path
 
 

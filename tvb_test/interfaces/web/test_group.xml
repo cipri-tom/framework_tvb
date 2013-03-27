@@ -5,7 +5,7 @@
      xsi:noNamespaceSchemaLocation="http://www.thevirtualbrain.org/schema/tvb.xsd">
 
     <algorithm_group name="bct" type="tvb_test.adapters.testgroupadapter.TestGroupAdapter"
-                     additionalPath="../externals/BCT"
+                     additionalPath="externals/BCT"
                      uiName="Brain Connectivity Toolbox algorithms"
                      label="Choose Brain Connectivity Toolbox Algorithm:">
 

@@ -21,8 +21,7 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-import os
-from tvb.basic.config.settings import TVBSettings as cfg
+
 from tvb.adapters.analyzers.group_matlab_helper import MatlabAnalyzer
 from tvb.core.adapters.abcadapter import ABCGroupAdapter
 
@@ -64,7 +63,6 @@ class MatlabAdapter(ABCGroupAdapter, MatlabAnalyzer):
         # Read selected Algorithm identifier, from input arguments
         bct_storage = self.xml_reader.get_additional_path()
         if bct_storage is not None:
-            bct_storage = os.path.join(cfg.CURRENT_DIR, bct_storage)
             self.add_to_path(bct_storage)
         algorithm, kwargs = self.get_algorithm_and_attributes(**kwargs)
         
