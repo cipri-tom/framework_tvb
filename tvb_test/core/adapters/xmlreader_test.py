@@ -77,7 +77,7 @@ class xml_readerTest(TransactionalTestCase):
                          "Simple Python Analyzers",
                          "ui_name of the algorithm_group is incorrect.")
         self.assertEqual(self.xml_group_adapter.xml_reader.get_additional_path(), 
-                         "external/BCT",
+                         "../external/BCT",
                          "additional_path of  algorithm_group is incorrect.")
 
 

@@ -5,7 +5,7 @@
      xsi:noNamespaceSchemaLocation="http://www.thevirtualbrain.org/schema/tvb.xsd">
 
     <algorithm_group name="simple" type="tvb_test.adapters.testgroupadapter.TestGroupAdapter"
-                     uiName="Simple Python Analyzers" label="Analysis Algorithm:" additionalPath="external/BCT">
+                     uiName="Simple Python Analyzers" label="Analysis Algorithm:" additionalPath="../external/BCT">
         <algorithm name="Cross Correlation" identifier="CC">
             <code value="cross_correlation(data1, data2, chan1, chan2, mode)"
                   import="tvb.analyzers.simple_analyzers"/>
