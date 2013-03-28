@@ -149,14 +149,13 @@ class StructureNode:
                         parent._type = StructureNode.TYPE_INVALID
                     else:
                         parent._type = meta[meta.KEY_NODE_TYPE]
-                    parent.name = parent.name + meta[meta.KEY_TITLE]
                     datas.append(parent)
                 sublevel_id = level.replace(" ","") + StructureNode.SEP + sublevel.replace(" ","")
                 sublevel_name = StructureNode._prepare_node_name(sublevel, second_level)
                 sublevel_node = StructureNode(sublevel_id, sublevel_name, children= datas)
-                #capitalize the first letter
                 sublevel_node._type = StructureNode._capitalize_first_letter(second_level)
                 level_children.append(sublevel_node)
+                
             dir_name = StructureNode._prepare_node_name(level, first_level)
             level_node = StructureNode(level, dir_name, children=level_children)
             level_node._type = StructureNode._capitalize_first_letter(first_level)
@@ -203,7 +202,7 @@ class StructureNode:
         result = ""
         place_comma = False
         for node in nodes_list:
-            json_node = '{data: {title:"' + (node.name if len(node.name) < 78 else node.name[:75] + "...")
+            json_node = '{data: {title:"' + (node.name if len(node.name) < 100 else node.name[:95] + "...")
             json_node = json_node + '",icon: "/static/style/nodes/node'
             if node.is_group:
                 json_node = json_node + 'Group.png"},'

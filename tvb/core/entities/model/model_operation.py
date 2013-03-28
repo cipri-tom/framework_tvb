@@ -38,7 +38,7 @@ from tvb.core.utils import string2date, generate_guid
 from tvb.core.entities.exportable import Exportable
 from tvb.core.entities.model.model_base import Base
 from tvb.core.entities.model.model_project import Project, User
-from tvb.core.utils import string2bool, date2string
+from tvb.core.utils import string2bool, date2string, LESS_COMPLEX_TIME_FORMAT
 
 
 LOG = get_logger(__name__)
@@ -231,7 +231,7 @@ class OperationGroup(Base, Exportable):
         if self.range3 is not None:
             new_name += " x " + json.loads(self.range3)[0]
             
-        new_name += " - " + date2string(datetime.datetime.now())
+        new_name += " - " + date2string(datetime.datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
         self.name = new_name
 
 

@@ -45,9 +45,9 @@ CHAR_SPACE = "--"
 CHAR_DRIVE = "-DriVe-"
 DRIVE_SEP = ":"
 COMPLEX_TIME_FORMAT = '%Y-%m-%d,%H-%M-%S.%f'
-# We keep this to be backwards compatible with the export format of data
-# from TVB 1.0. This is only used as a fallback in the string to date conversion.
-COMPLEX_TIME_FORMAT_v1 = '%Y-%m-%d,%H-%M-%S'
+# LESS_COMPLEX_TIME_FORMAT is also compatible with data exported from TVB 1.0. 
+# This is only used as a fallback in the string to date conversion.
+LESS_COMPLEX_TIME_FORMAT = '%Y-%m-%d,%H-%M-%S'
 SIMPLE_TIME_FORMAT = "%m-%d-%Y"
  
    
@@ -163,7 +163,7 @@ def string2date(string_input, complex_format=True, date_format=None):
             return datetime.datetime.strptime(string_input, COMPLEX_TIME_FORMAT)
         except ValueError:
             # For backwards compatibility with TVB 1.0
-            return datetime.datetime.strptime(string_input, COMPLEX_TIME_FORMAT_v1)
+            return datetime.datetime.strptime(string_input, LESS_COMPLEX_TIME_FORMAT)
     return datetime.datetime.strptime(string_input, SIMPLE_TIME_FORMAT)       
 
 

@@ -36,7 +36,7 @@ from abc import ABCMeta, abstractmethod
 from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.types_mapped import MappedType
-from tvb.core.utils import date2string, string2array
+from tvb.core.utils import date2string, string2array, LESS_COMPLEX_TIME_FORMAT
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.fileshelper import FilesHelper
 from tvb.core.entities.file.filesupdatemanager import FilesUpdateManager
@@ -260,7 +260,7 @@ class ABCAdapter(object):
         data_type_group_id = None
         operation = dao.get_operation_by_id(self.operation_id)
         if operation.user_group is None or len(operation.user_group) == 0:
-            operation.user_group = date2string(datetime.now())
+            operation.user_group = date2string(datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
             operation = dao.store_entity(operation)
         if operation.fk_operation_group is not None:
             data_type_group_id = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group).id
