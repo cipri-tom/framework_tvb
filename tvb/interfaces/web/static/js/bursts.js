@@ -27,7 +27,8 @@
 // Object holding current burst ID/ NAME / STATE
 var EMPTY_BURST = {id: "", 
 				   name: "", 
-				   isFinished: false
+				   isFinished: false,
+				   isRange: false
 				   };
 var sessionStoredBurst = clone(EMPTY_BURST);
 
@@ -302,7 +303,7 @@ function _fillSimulatorParametersArea(htmlContent, isConfigure) {
 		$("#button-uncheck-all-params").hide();
 		$("#button-check-all-params").hide();
 	}
-	_toggleLaunchButtons(!isConfigure && sessionStoredBurst.id=='', !isConfigure && sessionStoredBurst.id!='' && sessionStoredBurst.isFinished);
+	_toggleLaunchButtons(!isConfigure && sessionStoredBurst.id=='', !isConfigure && sessionStoredBurst.id!='' && sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
 	
 	MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
 }
@@ -904,10 +905,11 @@ function loadBurst(burst_id) {
 	        	selectedTab = result['selected_tab'];
 	        	var groupId = result['group_id'];
 				selectedBurst = $("#burst_id_"+burst_id)[0]
-				// This is for the back-button issue with chrome. Should be removed after permanent solution.
+				// This is for the back-button issue with Chrome. Should be removed after permanent solution.
 				if (selectedBurst != undefined) {
 					selectedBurst.className = selectedBurst.className + ' ' + ACTIVE_BURST_CLASS;
 					sessionStoredBurst.isFinished = (result['status']=='finished');
+					sessionStoredBurst.isRange = (groupId > 0);
 					fill_burst_name(selectedBurst.children[0].text, true, false);
 					updatePortletsToolbar(3);
 				}
@@ -1030,7 +1032,7 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
 		}
 		inputBurstName.parent().parent().addClass('is-created');
 	}
-	_toggleLaunchButtons(!isReadOnly, isReadOnly && sessionStoredBurst.isFinished);
+	_toggleLaunchButtons(!isReadOnly, isReadOnly && sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
 	user_edited_title = false;
 }
 
