@@ -21,21 +21,23 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
 import unittest
 
-#from tvb.interfaces.web.run import init_cherrypy
-
 from tvb_test.interfaces.web.controllers import userscontroller_test
+from tvb_test.interfaces.web.controllers import flowcontroller_test
+from tvb_test.interfaces.web.controllers import settingscontrollers_test
+from tvb_test.interfaces.web.controllers import burstcontroller_test
 
 
 def suite():
     """
     Gather all the tests in a test suite.
     """
-#    init_cherrypy()
     test_suite = unittest.TestSuite()
     test_suite.addTest(userscontroller_test.suite())
+    test_suite.addTest(flowcontroller_test.suite())
+    test_suite.addTest(settingscontrollers_test.suite())
+    test_suite.addTest(burstcontroller_test.suite())
     return test_suite
 
 

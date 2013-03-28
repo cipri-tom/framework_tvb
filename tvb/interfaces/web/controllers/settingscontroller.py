@@ -120,7 +120,7 @@ class SettingsController(UserController):
             return json.dumps({'status' : 'ok', 'message' : 'The database URL is valid.'})
         except InvalidSettingsException, excep:
             self.logger.error(excep)
-            json.dumps({'status' : 'not ok', 'message' : 'The database URL is not valid.'})
+            return json.dumps({'status' : 'not ok', 'message' : 'The database URL is not valid.'})
             
             
     @cherrypy.expose

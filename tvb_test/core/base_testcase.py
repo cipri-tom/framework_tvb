@@ -180,11 +180,11 @@ class BaseTestCase(unittest.TestCase):
             This is done without any check on database. You might get 
             projects in DB but no folder for them on disk.
         """
-            
-        for current_file in os.listdir(cfg.TVB_STORAGE):
-            full_path = os.path.join(cfg.TVB_STORAGE, current_file) 
-            if (current_file != "db_repo" and os.path.isdir(full_path)):
-                shutil.rmtree(full_path, ignore_errors=True)
+        if os.path.exists(cfg.TVB_STORAGE):
+            for current_file in os.listdir(cfg.TVB_STORAGE):
+                full_path = os.path.join(cfg.TVB_STORAGE, current_file) 
+                if (current_file != "db_repo" and os.path.isdir(full_path)):
+                    shutil.rmtree(full_path, ignore_errors=True)
     
                 
     def get_all_entities(self, entity_type):

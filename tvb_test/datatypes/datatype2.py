@@ -22,7 +22,7 @@
 '''
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 '''
-
+import numpy
 from tvb.basic.traits.types_basic import String
 from tvb.basic.traits.types_mapped import MappedType
 from tvb.datatypes.arrays import StringArray
@@ -36,4 +36,8 @@ class Datatype2(MappedType):
     row2 = String(label = "temporal_parameters", default="test-temporal")
     
     string_data = StringArray(label = "String data")
+    
+    def return_test_data(self, length=0):
+        return numpy.arange(length)
+    
     
