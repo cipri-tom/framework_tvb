@@ -24,10 +24,6 @@
 import os
 import json
 
-from tvb.basic.profile import TvbProfile as tvb_profile
-#set the current environment to the test setup
-tvb_profile.set_profile(["-profile", "TEST_POSTGRES_PROFILE"])
-
 import unittest
 import cherrypy
 import tvb.interfaces.web.controllers.basecontroller as b_c

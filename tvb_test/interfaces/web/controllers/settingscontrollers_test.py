@@ -22,7 +22,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import os
-import shutil
 import json
 
 import unittest
