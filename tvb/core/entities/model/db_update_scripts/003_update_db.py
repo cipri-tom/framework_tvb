@@ -88,9 +88,9 @@ def upgrade(migrate_engine):
     session = SA_SESSIONMAKER()
     session.execute(text('DELETE FROM "MAPPED_LOOK_UP_TABLE_DATA";'))
     session.execute(text('insert into "MAPPED_LOOK_UP_TABLE_DATA"(id, _equation, _number_of_values, _invdx, _xmax, _xmin, _df, _dx, _data) '
-                         'select id, "", _number_of_values, _invdx, _xmax, _xmin, _df, _dx, _data from "MAPPED_NERF_TABLE_DATA";'))
+                         'select id, \'\', _number_of_values, _invdx, _xmax, _xmin, _df, _dx, _data from "MAPPED_NERF_TABLE_DATA";'))
     session.execute(text('insert into "MAPPED_LOOK_UP_TABLE_DATA"(id, _equation, _number_of_values, _invdx, _xmax, _xmin, _df, _dx, _data) '
-                         'select id, "", _number_of_values, _invdx, _xmax, _xmin, _df, _dx, _data from "MAPPED_PSI_TABLE_DATA";'))
+                         'select id, \'\', _number_of_values, _invdx, _xmax, _xmin, _df, _dx, _data from "MAPPED_PSI_TABLE_DATA";'))
     session.commit()
     session.close()
         
