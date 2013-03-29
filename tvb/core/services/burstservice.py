@@ -24,8 +24,8 @@ Created on Apr 27, 2012
 
 .. moduleauthor:: lia.domide <lia.domide@codemart.ro>
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
-
 """
+
 import json
 import threading
 from types import IntType
@@ -43,7 +43,7 @@ from tvb.core.services.operationservice import OperationService
 from tvb.core.services.flowservice import FlowService
 from tvb.core.services.workflowservice import WorkflowService
 from tvb.core.services.projectservice import ProjectService
-from tvb.core.services.exceptions import RemoveDataTypeException, InvalidPortletConfiguration
+from tvb.core.services.exceptions import RemoveDataTypeException, InvalidPortletConfiguration, BurstServiceException
 from tvb.core.portlets.portlet_configurer import PortletConfigurer
 
 
@@ -301,7 +301,13 @@ class BurstService():
             ## Branch or Continue simulation
             burst_config = burst_configuration
             simulation_state = dao.get_generic_entity(SIMULATION_DATATYPE_MODULE + "." + SIMULATION_DATATYPE_CLASS,
-                                                      burst_config.id, "fk_parent_burst")[0]
+                                                      burst_config.id, "fk_parent_burst")
+            if simulation_state is None or len(simulation_state) < 1:
+                exc = BurstServiceException("Simulation state not found for burst_id %s" % (burst_config.id))
+                self.logger.error(exc)
+                raise exc
+            
+            simulation_state = simulation_state[0]
             burst_config.update_simulation_parameter("simulation_state", simulation_state.gid)
             burst_config = burst_configuration.clone()
             

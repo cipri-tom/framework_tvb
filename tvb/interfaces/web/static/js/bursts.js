@@ -1059,7 +1059,7 @@ function launchNewBurst(launchMode) {
 	                		changeBurstHistory(result[0]);
                 } ,
                 error: function(r) {
-                    		displayMessage("Error when launching simulation. Simulation Name accepts only letters, numbers, or _", "errorMessage");
+                    		displayMessage("Error when launching simulation. Please check te logs or contact your administrator.", "errorMessage");
                 }
             });	
 }
