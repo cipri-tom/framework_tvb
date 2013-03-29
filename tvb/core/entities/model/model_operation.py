@@ -326,6 +326,7 @@ class Operation(Base, Exportable):
         base_dict['fk_launched_in'] = self.project.gid
         base_dict['fk_from_algo'] = json.dumps(dict(module=self.algorithm.algo_group.module,
                                                     classname=self.algorithm.algo_group.classname,
+                                                    init_parameter=self.algorithm.algo_group.init_parameter,
                                                     identifier=self.algorithm.identifier))
         # We keep the information for the operation_group in this place (on each operation)
         #because we don't have an XML file for the operation_group entity.
@@ -353,8 +354,13 @@ class Operation(Base, Exportable):
         
         # Find parent Algorithm
         source_algorithm = json.loads(dictionary['fk_from_algo'])
+        init_parameter = None
+        if 'init_parameter' in source_algorithm:
+            init_parameter = source_algorithm['init_parameter']
+            
+        algo_group = dao.find_group(source_algorithm['module'], source_algorithm['classname'], init_parameter)
         algorithm = None
-        algo_group = dao.find_group(source_algorithm['module'], source_algorithm['classname'])
+        
         if algo_group:
             algorithm = dao.get_algorithm_by_group(algo_group.id, source_algorithm['identifier'])
             self.algorithm = algorithm
@@ -363,12 +369,14 @@ class Operation(Base, Exportable):
             # The algorithm that produced this operation no longer exists most likely due to
             # exported operation from different version. Fallback to tvb importer.
             LOG.warning("Algorithm group %s was not found in DB. Most likely cause is that archive was exported "
-                        "from a different TVB version. Using fallback TVB_Importer as source of this operation."%(source_algorithm['module'],))
+                        "from a different TVB version. Using fallback TVB_Importer as source of "
+                        "this operation." % (source_algorithm['module'],))
             algo_group = dao.find_group(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
             algorithm = dao.get_algorithm_by_group(algo_group.id)
             self.fk_from_algo = algorithm.id
-            dictionary['additional_info'] = "The original parameters for this operation were: \nAdapter: %s \nParameters %s"%(
-                                             source_algorithm['module'] + '.' + source_algorithm['classname'], dictionary['parameters'])
+            dictionary['additional_info'] = ("The original parameters for this operation were: \nAdapter: %s "
+                                             "\nParameters %s" % (source_algorithm['module'] + '.' + 
+                                                            source_algorithm['classname'], dictionary['parameters']))
         
         # Find OperationGroup, if any
         if 'fk_operation_group' in dictionary:      
