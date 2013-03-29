@@ -65,35 +65,6 @@
             </inputs>
         </algorithm>
         
-        <!-- Commented out since the HistogramViewer only accepts 1D arrays and the BCT adapter generated a 2D array. -->
-        <!-- <algorithm name="BCT - Distance binary matrix" identifier="DBIN">
-            <code value=""/>
-            <inputs>
-                <input>
-                    <name value="chain_1"/>
-                    <label value="First adapter from chain"/>
-                    <type value="tvb.adapters.analyzers.group_matlab_adapter.MatlabAdapter" initparam="adapters/analyzers/matlab_interfaces/bct_distance.xml" field="bct" default="DBIN"/>
-                </input>
-                <input overwrite="chain_1">
-                    <name value="bct_parameters_option_DBIN_A"/>
-                    <label value="Overwrite with first input of the simulator adapter."/>
-                    <type value="dynamic" default="step_0[connectivity]" />
-                </input>
-                
-                <input>
-                    <name value="chain_2"/>
-                    <label value="Second adapter from chain"/>
-                    <type value="tvb.adapters.visualizers.histogram.HistogramViewer" field=""/>
-                </input>
-                <input overwrite="chain_2">
-                	<name value="input_data"/>
-                	<label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
-                	<type value="dynamic" default="step_1[0]"/>
-                </input>
-                
-            </inputs>
-        </algorithm> -->
-        
         <algorithm name="BCT - Instrength and Outstrength" identifier="ISOS">
             <code value=""/>
             <inputs>

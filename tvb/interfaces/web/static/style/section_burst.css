@@ -450,17 +450,13 @@ background-size: 100%, contain;
 background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/brainv.png");
 background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/brainv.png");
 }
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-ccbu {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/ccbu.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/ccbu.png");
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-ccwd {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/ccwd.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/ccwd.png");
 }
 .view-portlets .portlet-container.portlet-preview .portlet.portlet-type-nbcb {
 background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/nbcb.png");
 background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/nbcb.png");
-}
-.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-dbin {
-background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/dbin.png");
-background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/dbin.png");
 }
 .view-portlets .portlet-container.portlet-preview .portlet.portlet-type-isos {
 background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/isos.png");
