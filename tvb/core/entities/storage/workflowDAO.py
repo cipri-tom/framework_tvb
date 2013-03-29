@@ -131,8 +131,11 @@ class WorkflowDAO(RootDAO):
     def get_workflow_steps(self, workflow_id):
         """Retrieve all the simulation/analyzers steps for a workflow."""
         try:
+            # Also check that index is non-negative to preserve backwards
+            # compatibility to versions < 1.0.2.
             result = self.session.query(model.WorkflowStep
                                         ).filter(model.WorkflowStep.fk_workflow == workflow_id
+                                        ).filter(model.WorkflowStep.step_index > -1
                                         ).order_by(model.WorkflowStep.step_index).all()
             return result
         except Exception, excep:
