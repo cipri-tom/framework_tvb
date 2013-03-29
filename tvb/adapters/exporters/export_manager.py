@@ -198,6 +198,10 @@ class ExportManager:
         wf_steps = []
         view_steps = []
         for wf_step in dao.get_workflow_steps(workflow.id):
+            
+            if wf_step.fk_operation is None:
+                ## Avoid exporting old form of View Steps.
+                continue
             # Get all basic information for this workflow step
             wf_step_info = WorkflowStepInformation(wf_step.to_dict()[1])
             # We need to store the gid for the operation since the id might be 
