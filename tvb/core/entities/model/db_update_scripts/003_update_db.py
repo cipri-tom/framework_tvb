@@ -18,13 +18,26 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
+
 """
  Change of DB structure to TVB 1.0.3.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from sqlalchemy import Table, MetaData
+from sqlalchemy.sql import text
+from sqlalchemy import Table, MetaData, Column, Integer, String
+from migrate.changeset.schema import create_column
+from tvb.core.entities.storage import SA_SESSIONMAKER
+
+
+COL_1 = Column('_number_of_values', Integer)
+COL_2 = Column('_invdx', String)
+COL_3 = Column('_xmax', String)
+COL_4 = Column('_df', String)
+COL_5 = Column('_dx', String)
+COL_6 = Column('_xmin', String)
+COL_7 = Column('_data', String)
 
 
 def _prepare_table(meta, table_name):
@@ -51,9 +64,6 @@ def upgrade(migrate_engine):
     table = _prepare_table(meta, 'BURST_CONFIGURATIONS')
     table.c.project_id.alter(name='fk_project')
     
-    table = _prepare_table(meta, 'MAPPED_DATATYPE_MEASURE')
-    table.c.analyzed_datatype.alter(name='_analyzed_datatype')
-    
     table = _prepare_table(meta, 'WORKFLOWS',)
     table.c.project_id.alter(name='fk_project')
     table.c.burst_id.alter(name='fk_burst')
@@ -62,6 +72,33 @@ def upgrade(migrate_engine):
     table.c.workflow_id.alter(name='fk_workflow')
     table.c.algorithm_id.alter(name='fk_algorithm')
     table.c.resulted_op_id.alter(name='fk_operation')
+    
+    table = _prepare_table(meta, 'MAPPED_DATATYPE_MEASURE')
+    table.c.analyzed_datatype.alter(name='_analyzed_datatype')
+    
+    ## Fix Lookup Table mapping.
+    table = _prepare_table(meta, 'MAPPED_LOOK_UP_TABLE_DATA')
+    create_column(COL_1, table)
+    create_column(COL_2, table)
+    create_column(COL_3, table)
+    create_column(COL_4, table)
+    create_column(COL_5, table)
+    create_column(COL_6, table)
+    create_column(COL_7, table)
+    session = SA_SESSIONMAKER()
+    session.execute(text('DELETE FROM "MAPPED_LOOK_UP_TABLE_DATA";'))
+    session.execute(text('insert into "MAPPED_LOOK_UP_TABLE_DATA"(id, _equation, _number_of_values, _invdx, _xmax, _xmin, _df, _dx, _data) '
+                         'select id, "", _number_of_values, _invdx, _xmax, _xmin, _df, _dx, _data from "MAPPED_NERF_TABLE_DATA";'))
+    session.execute(text('insert into "MAPPED_LOOK_UP_TABLE_DATA"(id, _equation, _number_of_values, _invdx, _xmax, _xmin, _df, _dx, _data) '
+                         'select id, "", _number_of_values, _invdx, _xmax, _xmin, _df, _dx, _data from "MAPPED_PSI_TABLE_DATA";'))
+    session.commit()
+    session.close()
+        
+    table = _prepare_table(meta, 'MAPPED_NERF_TABLE_DATA')
+    table.drop()
+    
+    table = _prepare_table(meta, 'MAPPED_PSI_TABLE_DATA')
+    table.drop()
 
 
 
@@ -77,9 +114,6 @@ def downgrade(migrate_engine):
     table = _prepare_table(meta, 'BURST_CONFIGURATIONS')
     table.c.fk_project.alter(name='project_id')
     
-    table = _prepare_table(meta, 'MAPPED_DATATYPE_MEASURE')
-    table.c._analyzed_datatype.alter(name='analyzed_datatype')
-    
     table = _prepare_table(meta, 'WORKFLOWS')
     table.c.fk_project.alter(name='project_id')
     table.c.fk_burst.alter(name='burst_id')
@@ -89,5 +123,8 @@ def downgrade(migrate_engine):
     table.c.fk_algorithm.alter(name='algorithm_id')
     table.c.fk_operation.alter(name='resulted_op_id')
     
-        
+    table = _prepare_table(meta, 'MAPPED_DATATYPE_MEASURE')
+    table.c._analyzed_datatype.alter(name='analyzed_datatype') 
+    
+    
         
