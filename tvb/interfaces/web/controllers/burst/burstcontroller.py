@@ -264,10 +264,10 @@ class BurstController(base.BaseController):
         if need_relaunch:
             #### Reset Burst Configuration into an entity not persisted (id = None for all)
             base.add2session(base.KEY_BURST_CONFIG, burst_config.clone())
-            return "noRelaunch"
+            return "relaunchView"
         else:
             self.workflow_service.store_workflow_step(old_portlet_config.visualizer)
-            return "relaunchView"
+            return "noRelaunch"
         
         
     @cherrypy.expose

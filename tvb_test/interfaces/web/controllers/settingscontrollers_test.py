@@ -29,11 +29,11 @@ import cherrypy
 import tvb.interfaces.web.controllers.basecontroller as b_c
 from tvb.interfaces.web.controllers.settingscontroller import SettingsController
 from tvb.basic.config.settings import TVBSettings as cfg
-from tvb_test.core.base_testcase import BaseControllersTest
+from tvb_test.core.base_testcase import BaseControllersTest, TransactionalTestCase
 from tvb_test.core.test_factory import TestFactory
 
 
-class SettingsControllerTest(BaseControllersTest): 
+class SettingsControllerTest(TransactionalTestCase, BaseControllersTest): 
     """Unit tests for settingscontroller""" 
     
     def setUp(self):

@@ -41,6 +41,14 @@
             <arg name='sensors_type' value='MEG sensors' type='str' />  
         </args>
     </event>
+    <event hookpoint="ProjectService.store_project" type="adapter" delay="4">
+        <adapter module="tvb.adapters.uploaders.sensors_importer" class="Sensors_Importer"/>
+        <method name="launch"/>
+        <args>
+            <arg name='sensors_file' value="internal_39.txt.bz2" module='demoData.sensors' type="file" /> 
+            <arg name='sensors_type' value='Internal Sensors' type='str' />  
+        </args>
+    </event>
     <event hookpoint="ProjectService.store_project" type="adapter" delay="8">
         <adapter module="tvb.adapters.uploaders.lookup_table_importer" class="LookupTableImporter"/>
         <method name="launch" irrelevant="true"/>
@@ -127,6 +135,16 @@
             <arg name='uploaded' value="face-surface.zip" module='demoData.surfaceData' type="file" /> 
             <arg name='surface_type' value='Face' type='str' />  
             <arg name='zero_based_triangles' value='1' type='int' />  
+        </args>
+    </event>
+    
+    
+    <event hookpoint="CodeVersionsManager.update.4770" type="adapter" delay="4">
+        <adapter module="tvb.adapters.uploaders.sensors_importer" class="Sensors_Importer"/>
+        <method name="launch"/>
+        <args>
+            <arg name='sensors_file' value="internal_39.txt.bz2" module='demoData.sensors' type="file" /> 
+            <arg name='sensors_type' value='Internal Sensors' type='str' />  
         </args>
     </event>
 </events>

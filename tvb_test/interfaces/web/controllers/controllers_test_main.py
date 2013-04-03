@@ -27,6 +27,8 @@ from tvb_test.interfaces.web.controllers import userscontroller_test
 from tvb_test.interfaces.web.controllers import flowcontroller_test
 from tvb_test.interfaces.web.controllers import settingscontrollers_test
 from tvb_test.interfaces.web.controllers import burstcontroller_test
+from tvb_test.interfaces.web.controllers import explorationcontroller_test
+from tvb_test.interfaces.web.controllers import projectcontroller_test
 
 
 def suite():
@@ -38,6 +40,8 @@ def suite():
     test_suite.addTest(flowcontroller_test.suite())
     test_suite.addTest(settingscontrollers_test.suite())
     test_suite.addTest(burstcontroller_test.suite())
+    test_suite.addTest(explorationcontroller_test.suite())
+    test_suite.addTest(projectcontroller_test.suite())
     return test_suite
 
 

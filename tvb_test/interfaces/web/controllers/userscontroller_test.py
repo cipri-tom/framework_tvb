@@ -22,20 +22,21 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import os 
-
 import unittest
 import cherrypy
+from hashlib import md5
 import tvb.core.utils as utils
 import tvb.interfaces.web.controllers.basecontroller as b_c
 from tvb.interfaces.web.controllers.userscontroller import UserController
 from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.model import UserPreferences
-from tvb_test.core.base_testcase import BaseControllersTest
+from tvb_test.core.base_testcase import BaseControllersTest, TransactionalTestCase
 from tvb_test.core.test_factory import TestFactory
 
 
-class UsersControllerTest(BaseControllersTest): 
+class UsersControllerTest(TransactionalTestCase, BaseControllersTest): 
     """Unit test for userscontroller""" 
     
     def setUp(self):
@@ -51,6 +52,15 @@ class UsersControllerTest(BaseControllersTest):
     def tearDown(self):
         if os.path.exists(cfg.TVB_CONFIG_FILE):
             os.remove(cfg.TVB_CONFIG_FILE)
+    
+    
+    def test_index_valid_post(self):
+        user = model.User('valid_user', md5('valid_pass').hexdigest(), 
+                          'mail@mail.com', True, 'CLINICIAN')
+        dao.store_entity(user)
+        login_data = { 'username' : 'valid_user', 'password' : 'valid_pass'}
+        cherrypy.request.method = "POST"
+        self._expect_redirect('/user/profile', self.user_c.index, **login_data)
     
     
     def test_profile_logout(self):

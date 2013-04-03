@@ -30,11 +30,11 @@ from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.core.entities.storage import dao
 from tvb_test.adapters.testadapter1 import TestAdapter1
 from tvb_test.datatypes.datatypes_factory import DatatypesFactory
-from tvb_test.core.base_testcase import BaseControllersTest
+from tvb_test.core.base_testcase import BaseControllersTest, TransactionalTestCase
 from tvb_test.core.test_factory import TestFactory
 
 
-class FlowContollerTest(BaseControllersTest):
+class FlowContollerTest(TransactionalTestCase, BaseControllersTest):
     """ Unit tests for flowcontoller """
     
     def setUp(self):

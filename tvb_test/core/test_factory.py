@@ -77,7 +77,7 @@ class TestFactory():
     
     @staticmethod
     def create_operation(algorithm=None, test_user=None, test_project=None, 
-                         operation_status="FINISHED"):
+                         operation_status="FINISHED", parameters="test params"):
         """
         Create persisted operation.
         
@@ -96,7 +96,7 @@ class TestFactory():
             
         meta = {DataTypeMetaData.KEY_SUBJECT : "John Doe",
                 DataTypeMetaData.KEY_STATE: "RAW"}
-        operation = model.Operation(test_user.id, test_project.id, algorithm.id, 'test params', meta=json.dumps(meta),
+        operation = model.Operation(test_user.id, test_project.id, algorithm.id, parameters, meta=json.dumps(meta),
                                     status=operation_status, method_name= ABCAdapter.LAUNCH_METHOD)
         dao.store_entity(operation)
         ### Make sure lazy attributes are correctly loaded.

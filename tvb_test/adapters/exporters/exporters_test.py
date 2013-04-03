@@ -128,7 +128,8 @@ class ExportersTest(TransactionalTestCase):
             count_datatypes = dao.count_datatypes_in_group(datatype_group.id)
             
             # Check if ZIP files contains files for data types + operation
-            self.assertEqual(count_datatypes + 1, len(list_of_files), "Number of operation folders in the ZIP file is wrong")
+            self.assertEqual(count_datatypes * 2, len(list_of_files), 
+                             "Should have 2 x nr datatypes files, one for operations one for datatypes")
 
         
     def test_export_with_invalid_data(self):

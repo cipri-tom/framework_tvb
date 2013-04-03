@@ -99,7 +99,7 @@ class TVBImporterTest(TransactionalTestCase):
         self._import(self.zip_file_path)
         data_types = FlowService().get_available_datatypes(self.test_project.id,
                                 self.datatype.module + "." + self.datatype.type)
-        self.assertEqual(4, len(data_types), "Project should contain only one data type.")
+        self.assertEqual(3, len(data_types), "3 datatypes should have been imported from group.")
     
     def test_h5_import(self):
         """

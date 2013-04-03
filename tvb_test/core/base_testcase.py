@@ -222,7 +222,7 @@ class TransactionalTestCase(BaseTestCase):
     __metaclass__ = TransactionalTestMeta
         
     
-class BaseControllersTest(TransactionalTestCase):    
+class BaseControllersTest(BaseTestCase):    
     
     class CherrypySession(EnhancedDictionary):
     

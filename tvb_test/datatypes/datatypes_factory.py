@@ -45,7 +45,6 @@ class DatatypesFactory():
     DATATYPE_STATE = "RAW_DATA"
     DATATYPE_DATA = ["test", "for", "datatypes", "factory"]
     OPERATION_GROUP_NAME = "OperationsGroup"
-    OPERATION_GROUP_RANGE = "range[1..2]"
     
     user = None
     project = None
@@ -75,14 +74,14 @@ class DatatypesFactory():
         dao.store_entity(alg_group)
         algorithm = model.Algorithm(alg_group.id, 'id', name = '', req_data = '', 
                                param_name = '', output = '')
-        dao.store_entity(algorithm)
+        self.algorithm = dao.store_entity(algorithm)
         
         #Create an operation
-        meta = {DataTypeMetaData.KEY_SUBJECT : self.USER_FULL_NAME, 
+        self.meta = {DataTypeMetaData.KEY_SUBJECT : self.USER_FULL_NAME, 
                 DataTypeMetaData.KEY_STATE : self.DATATYPE_STATE}
         operation = model.Operation(self.user.id, self.project.id,
-                                    algorithm.id, 'test parameters', 
-                                    meta = json.dumps(meta), status="FINISHED",
+                                    self.algorithm.id, 'test parameters', 
+                                    meta = json.dumps(self.meta), status="FINISHED",
                                     method_name = ABCAdapter.LAUNCH_METHOD)
         self.operation = dao.store_entity(operation)
         
@@ -105,18 +104,20 @@ class DatatypesFactory():
         """
         return self.user
     
-    def _store_datatype(self, data_type):
+    def _store_datatype(self, data_type, operation_id=None):
         """
             Launch adapter to store a create a persistent DataType.
         """
+        operation_id = operation_id or self.operation.id
         data_type.type = data_type.__class__.__name__
         data_type.module = data_type.__class__.__module__
         data_type.subject = self.USER_FULL_NAME
         data_type.state = self.DATATYPE_STATE
-        data_type.set_operation_id(self.operation.id)
+        data_type.set_operation_id(operation_id)
         
         adapter_instance = StoreAdapter([data_type])
-        OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
+        operation = dao.get_operation_by_id(operation_id)
+        OperationService().initiate_prelaunch(operation, adapter_instance, {})
         
         return data_type
     
@@ -132,34 +133,37 @@ class DatatypesFactory():
         return self._store_datatype(datatype_inst)
     
         
-    def create_datatype_with_storage(self, subject = USER_FULL_NAME, state = DATATYPE_STATE, data = DATATYPE_DATA):
+    def create_datatype_with_storage(self, subject = USER_FULL_NAME, state = DATATYPE_STATE, 
+                                     data = DATATYPE_DATA, operation_id = None):
         """
             This method creates and stores a data type which imply storage on the file system.
         """    
         datatype_inst = Datatype2() 
-        self._fill_datatype(datatype_inst, subject, state)
+        self._fill_datatype(datatype_inst, subject, state, operation_id)
         
         datatype_inst.string_data = data
        
-        return self._store_datatype(datatype_inst)
+        return self._store_datatype(datatype_inst, operation_id)
     
     
-    def _fill_datatype(self, datatype, subject, state):
+    def _fill_datatype(self, datatype, subject, state, operation_id = None):
         """
         This method sets some common attributes on dataType 
         """
+        operation_id = operation_id or self.operation.id
         datatype.subject = subject
         datatype.state = state
         # Set_operation_id also sets storage_path attribute
-        datatype.set_operation_id(self.operation.id)
+        datatype.set_operation_id(operation_id)
         
         
     def create_datatype_group(self, subject = USER_FULL_NAME, state = DATATYPE_STATE,):
         """ 
             This method creates / stores and returns a DataTypeGroup
         """
+        OPERATION_GROUP_RANGE = [json.dumps(["row1", ['a', 'b', 'c']])]
         group = model.OperationGroup(self.project.id, self.OPERATION_GROUP_NAME, 
-                                     self.OPERATION_GROUP_RANGE)
+                                     OPERATION_GROUP_RANGE)
         group = dao.store_entity(group)
             
         datatype_group = model.DataTypeGroup(group.id, subject = subject, 
@@ -170,10 +174,18 @@ class DatatypesFactory():
         datatype_group = dao.store_entity(datatype_group)
         
         # Now create some data types and add them to group
-        for _ in range(3):
-            datatype = self.create_datatype_with_storage()
+        for range_val in ['a', 'b', 'c']:
+            operation = model.Operation(self.user.id, self.project.id,
+                                    self.algorithm.id, 'test parameters', 
+                                    meta = json.dumps(self.meta), status="FINISHED",
+                                    method_name = ABCAdapter.LAUNCH_METHOD,
+                                    range_values = json.dumps({'row1' : range_val}))
+            operation.fk_operation_group = group.id
+            operation = dao.store_entity(operation)
+            datatype = self.create_datatype_with_storage(operation_id = operation.id)
+            datatype.row1 = range_val
             datatype.fk_datatype_group = datatype_group.id
+            datatype.set_operation_id(operation.id)
             dao.store_entity(datatype)
-            print datatype.storage_path        
         
         return datatype_group
