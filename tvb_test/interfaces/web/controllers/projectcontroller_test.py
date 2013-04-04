@@ -215,7 +215,7 @@ class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
         """
         datatype = DatatypesFactory().create_datatype_with_storage()
         result_dict = self.project_c.get_linkable_projects(datatype.id, False, False)
-        self.assertIsNone(result_dict['projectslinked'])
+        self.assertTrue(result_dict['projectslinked'] is None)
         self.assertEqual(result_dict['datatype_id'], datatype.id)
         
         
@@ -257,7 +257,7 @@ class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
         cherrypy.session[b_c.KEY_USER] = dt_factory.user
         datatype = dt_factory.create_datatype_with_storage()
         result = self.project_c.readprojectsforlink(datatype.id)
-        self.assertIsNone(result) #No projects to link into
+        self.assertTrue(result is None) #No projects to link into
         new_project = TestFactory.create_project(dt_factory.user)
         result = self.project_c.readprojectsforlink(datatype.id)
         self.assertEqual(result, '{"%s": "%s"}'%(new_project.id, new_project.name))

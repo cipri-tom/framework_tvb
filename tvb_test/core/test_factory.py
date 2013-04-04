@@ -76,6 +76,14 @@ class TestFactory():
     
     
     @staticmethod
+    def create_figure(operation_id, user_id, project_id, session_name=None, 
+                      name=None, path=None, file_format=None):
+        figure = model.ResultFigure(operation_id, user_id, project_id, 
+                                    session_name, name, path, file_format)
+        return dao.store_entity(figure)
+    
+    
+    @staticmethod
     def create_operation(algorithm=None, test_user=None, test_project=None, 
                          operation_status="FINISHED", parameters="test params"):
         """

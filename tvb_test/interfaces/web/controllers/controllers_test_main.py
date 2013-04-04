@@ -23,12 +23,14 @@
 """
 import unittest
 
-from tvb_test.interfaces.web.controllers import userscontroller_test
-from tvb_test.interfaces.web.controllers import flowcontroller_test
-from tvb_test.interfaces.web.controllers import settingscontrollers_test
 from tvb_test.interfaces.web.controllers import burstcontroller_test
 from tvb_test.interfaces.web.controllers import explorationcontroller_test
+from tvb_test.interfaces.web.controllers import figurecontroller_test
+from tvb_test.interfaces.web.controllers import flowcontroller_test
+from tvb_test.interfaces.web.controllers import helpcontroller_test
 from tvb_test.interfaces.web.controllers import projectcontroller_test
+from tvb_test.interfaces.web.controllers import settingscontrollers_test
+from tvb_test.interfaces.web.controllers import userscontroller_test
 
 
 def suite():
@@ -36,12 +38,14 @@ def suite():
     Gather all the tests in a test suite.
     """
     test_suite = unittest.TestSuite()
-    test_suite.addTest(userscontroller_test.suite())
-    test_suite.addTest(flowcontroller_test.suite())
-    test_suite.addTest(settingscontrollers_test.suite())
     test_suite.addTest(burstcontroller_test.suite())
     test_suite.addTest(explorationcontroller_test.suite())
+    test_suite.addTest(figurecontroller_test.suite())
+    test_suite.addTest(flowcontroller_test.suite())
+    test_suite.addTest(helpcontroller_test.suite())
     test_suite.addTest(projectcontroller_test.suite())
+    test_suite.addTest(settingscontrollers_test.suite())
+    test_suite.addTest(userscontroller_test.suite())
     return test_suite
 
 
