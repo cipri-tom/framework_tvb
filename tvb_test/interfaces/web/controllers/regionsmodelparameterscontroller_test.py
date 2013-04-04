@@ -33,7 +33,6 @@ from tvb_test.core.base_testcase import BaseControllersTest, TransactionalTestCa
 from tvb_test.core.test_factory import TestFactory
 from tvb_test.datatypes.datatypes_factory import DatatypesFactory
 from tvb_test.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
-from tvb.core.entities.transient.context_local_connectivity import ContextLocalConnectivity
 
 
 class RegionsModelParametersContollerTest(TransactionalTestCase, BaseControllersTest):

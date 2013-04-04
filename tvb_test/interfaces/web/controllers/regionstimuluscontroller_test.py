@@ -21,18 +21,17 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+import os
 import unittest
 import cherrypy
 import tvb.interfaces.web.controllers.basecontroller as b_c
-from tvb.interfaces.web.controllers.spatial.localconnectivitycontroller import LocalConnectivityController
-from tvb.interfaces.web.controllers.spatial.localconnectivitycontroller import KEY_LCONN_CONTEXT
+from tvb.interfaces.web.controllers.spatial.regionstimuluscontroller import RegionStimulusController
 from tvb.basic.config.settings import TVBSettings as cfg
 from tvb_test.core.base_testcase import BaseControllersTest, TransactionalTestCase
 from tvb_test.core.test_factory import TestFactory
-from tvb.core.entities.transient.context_local_connectivity import ContextLocalConnectivity
 
 
-class LocalConnectivityContollerTest(TransactionalTestCase, BaseControllersTest):
+class RegionsStimulusContollerTest(TransactionalTestCase, BaseControllersTest):
     """ Unit tests for burstcontroller """
     
     def setUp(self):
@@ -42,7 +41,7 @@ class LocalConnectivityContollerTest(TransactionalTestCase, BaseControllersTest)
                                         'test2' : 'test2'})
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user, "Test")
-        self.local_p_c =  LocalConnectivityController()
+        self.region_s_c =  RegionStimulusController()
         cherrypy.session = BaseControllersTest.CherrypySession()
         cherrypy.session[b_c.KEY_USER] = self.test_user
         cherrypy.session[b_c.KEY_PROJECT] = self.test_project
@@ -51,48 +50,23 @@ class LocalConnectivityContollerTest(TransactionalTestCase, BaseControllersTest)
     def tearDown(self):
         if os.path.exists(cfg.TVB_CONFIG_FILE):
             os.remove(cfg.TVB_CONFIG_FILE)
-            
-    def _default_checks(self, result_dict):
-        """
-        Check for some info that should be true for all steps from the
-        local connectivity controller.
-        """
-        self.assertEqual(result_dict['data'], {})
-        self.assertTrue(isinstance(result_dict['existentEntitiesInputList'], list))
-    
     
     def test_step_1(self):
-        result_dict = self.local_p_c.step_1(1)
-        self._default_checks(result_dict)
-        self.assertEqual(result_dict['equationViewerUrl'], 
-                         '/spatial/localconnectivity/get_equation_chart')
-        self.assertTrue(isinstance(result_dict['inputList'], list))
-        self.assertEqual(result_dict['mainContent'], 'spatial/local_connectivity_step1_main')
-        self.assertEqual(result_dict['next_step_url'], '/spatial/localconnectivity/step_2')
-        self.assertEqual(result_dict['resetToDefaultUrl'], 
-                         '/spatial/localconnectivity/reset_local_connectivity')
-        self.assertEqual(result_dict['submit_parameters_url'], 
-                         '/spatial/localconnectivity/create_local_connectivity')
-        self.assertEqual(result_dict['resetToDefaultUrl'], 
-                         '/spatial/localconnectivity/reset_local_connectivity')
-        
-        
-    def test_step_2(self):
-        context = ContextLocalConnectivity()
-        cherrypy.session[KEY_LCONN_CONTEXT] = context
-        result_dict = self.local_p_c.step_2()
-        self._default_checks(result_dict)
-        self.assertEqual(result_dict['loadExistentEntityUrl'], '/spatial/localconnectivity/load_local_connectivity')
-        self.assertEqual(result_dict['mainContent'], 'spatial/local_connectivity_step2_main')
-        self.assertEqual(result_dict['next_step_url'], '/spatial/localconnectivity/step_1')
-        
+        self.region_s_c.step_1_submit(1, 1)
+        result_dict = self.region_s_c.step_1()
+        self.assertEqual(result_dict['equationViewerUrl'], '/spatial/stimulus/region/get_equation_chart')
+        self.assertTrue('fieldsPrefixes' in result_dict)
+        self.assertEqual(result_dict['loadExistentEntityUrl'], '/spatial/stimulus/region/load_region_stimulus')
+        self.assertEqual(result_dict['mainContent'], 'spatial/stimulus_region_step1_main')
+        self.assertEqual(result_dict['next_step_url'], '/spatial/stimulus/region/step_1_submit')
+
             
 def suite():
     """
     Gather all the tests in a test suite.
     """
     test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(LocalConnectivityContollerTest))
+    test_suite.addTest(unittest.makeSuite(RegionsStimulusContollerTest))
     return test_suite
 
 
