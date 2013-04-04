@@ -21,10 +21,6 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-from tvb.basic.profile import TvbProfile as tvb_profile
-#set the current environment to the test setup
-tvb_profile.set_profile(["-profile", "TEST_POSTGRES_PROFILE"])
-
 import os
 
 import unittest

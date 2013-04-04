@@ -21,9 +21,6 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-from tvb.basic.profile import TvbProfile as tvb_profile
-#set the current environment to the test setup
-tvb_profile.set_profile(["-profile", "TEST_SQLITE_PROFILE"])
 import os
 import copy
 import json
@@ -58,7 +55,6 @@ class BurstContollerTest(BaseControllersTest):
     
     def setUp(self):
         # Add 3 entries so we no longer consider this the first run.
-        self.clean_database()
         cfg.add_entries_to_config_file({'test' : 'test',
                                         'test1' : 'test1',
                                         'test2' : 'test2'})
@@ -73,7 +69,7 @@ class BurstContollerTest(BaseControllersTest):
     def tearDown(self):
         if os.path.exists(cfg.TVB_CONFIG_FILE):
             os.remove(cfg.TVB_CONFIG_FILE)
-        self.clean_database()
+        self.reset_database()
             
             
     def test_index(self):
