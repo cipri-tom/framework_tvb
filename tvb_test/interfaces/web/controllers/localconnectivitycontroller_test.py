@@ -21,15 +21,17 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
+import os
 import unittest
 import cherrypy
+from tvb.basic.config.settings import TVBSettings as cfg
+from tvb.core.entities.transient.context_local_connectivity import ContextLocalConnectivity
 import tvb.interfaces.web.controllers.basecontroller as b_c
 from tvb.interfaces.web.controllers.spatial.localconnectivitycontroller import LocalConnectivityController
 from tvb.interfaces.web.controllers.spatial.localconnectivitycontroller import KEY_LCONN_CONTEXT
-from tvb.basic.config.settings import TVBSettings as cfg
 from tvb_test.core.base_testcase import BaseControllersTest, TransactionalTestCase
 from tvb_test.core.test_factory import TestFactory
-from tvb.core.entities.transient.context_local_connectivity import ContextLocalConnectivity
 
 
 class LocalConnectivityContollerTest(TransactionalTestCase, BaseControllersTest):
@@ -51,6 +53,7 @@ class LocalConnectivityContollerTest(TransactionalTestCase, BaseControllersTest)
     def tearDown(self):
         if os.path.exists(cfg.TVB_CONFIG_FILE):
             os.remove(cfg.TVB_CONFIG_FILE)
+          
             
     def _default_checks(self, result_dict):
         """
@@ -62,6 +65,9 @@ class LocalConnectivityContollerTest(TransactionalTestCase, BaseControllersTest)
     
     
     def test_step_1(self):
+        """
+        Test that the dictionary returned by the controller for the LC Workflow first step is correct.
+        """
         result_dict = self.local_p_c.step_1(1)
         self._default_checks(result_dict)
         self.assertEqual(result_dict['equationViewerUrl'], 
@@ -78,6 +84,9 @@ class LocalConnectivityContollerTest(TransactionalTestCase, BaseControllersTest)
         
         
     def test_step_2(self):
+        """
+        Test that the dictionary returned by the controller for the LC Workflow second step is correct.
+        """
         context = ContextLocalConnectivity()
         cherrypy.session[KEY_LCONN_CONTEXT] = context
         result_dict = self.local_p_c.step_2()
@@ -85,6 +94,7 @@ class LocalConnectivityContollerTest(TransactionalTestCase, BaseControllersTest)
         self.assertEqual(result_dict['loadExistentEntityUrl'], '/spatial/localconnectivity/load_local_connectivity')
         self.assertEqual(result_dict['mainContent'], 'spatial/local_connectivity_step2_main')
         self.assertEqual(result_dict['next_step_url'], '/spatial/localconnectivity/step_1')
+        
         
             
 def suite():
@@ -101,3 +111,7 @@ if __name__ == "__main__":
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
     TEST_RUNNER.run(TEST_SUITE)
+    
+    
+    
+    
