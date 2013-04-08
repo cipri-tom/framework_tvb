@@ -21,31 +21,23 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-import os
-
 import unittest
-import cherrypy
 from tvb.interfaces.web.structure import WebStructure
 from tvb.interfaces.web.controllers.help.helpcontroller import HelpController
-from tvb.basic.config.settings import TVBSettings as cfg
-from tvb_test.core.base_testcase import BaseControllersTest, TransactionalTestCase
+from tvb_test.core.base_testcase import TransactionalTestCase
+from tvb_test.interfaces.web.controllers.basecontroller_test import BaseControllersTest
 
 
 class HelpControllerTest(TransactionalTestCase, BaseControllersTest):
     """ Unit tests for helpcontroller """
     
     def setUp(self):
-        # Add 3 entries so we no longer consider this the first run.
-        cfg.add_entries_to_config_file({'test' : 'test',
-                                        'test1' : 'test1',
-                                        'test2' : 'test2'})
+        BaseControllersTest.init(self)
         self.help_c =  HelpController()
-        cherrypy.session = BaseControllersTest.CherrypySession()
     
     
     def tearDown(self):
-        if os.path.exists(cfg.TVB_CONFIG_FILE):
-            os.remove(cfg.TVB_CONFIG_FILE)
+        BaseControllersTest.cleanup(self)
             
             
     def test_show_online_help(self):

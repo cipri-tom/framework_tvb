@@ -21,31 +21,22 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-import os
 import unittest
 import cherrypy
 import tvb.interfaces.web.controllers.basecontroller as b_c
 from tvb.interfaces.web.controllers.spatial.surfacemodelparameterscontroller import SurfaceModelParametersController
 from tvb.interfaces.web.controllers.burst.burstcontroller import BurstController
-from tvb.basic.config.settings import TVBSettings as cfg
-from tvb_test.core.test_factory import TestFactory
 from tvb_test.datatypes.datatypes_factory import DatatypesFactory
 from tvb_test.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
+from tvb_test.core.base_testcase import TransactionalTestCase
 from tvb_test.interfaces.web.controllers.basecontroller_test import BaseControllersTest
 
 
-class SurfaceModelParametersContollerTest(BaseControllersTest):
+class SurfaceModelParametersContollerTest(TransactionalTestCase, BaseControllersTest):
     """ Unit tests for burstcontroller """
     
     def setUp(self):
-        cfg.add_entries_to_config_file({'test' : 'test',
-                                        'test1' : 'test1',
-                                        'test2' : 'test2'})
-        self.test_user = TestFactory.create_user(username="CtrlTstUsr")
-        self.test_project = TestFactory.create_project(self.test_user, "Test")
-        cherrypy.session = BaseControllersTest.CherrypySession()
-        cherrypy.session[b_c.KEY_USER] = self.test_user
-        cherrypy.session[b_c.KEY_PROJECT] = self.test_project
+        BaseControllersTest.init(self)
         self.surface_m_p_c =  SurfaceModelParametersController()
         BurstController().index()
         stored_burst = cherrypy.session[b_c.KEY_BURST_CONFIG]
@@ -61,8 +52,7 @@ class SurfaceModelParametersContollerTest(BaseControllersTest):
    
    
     def tearDown(self):
-        if os.path.exists(cfg.TVB_CONFIG_FILE):
-            os.remove(cfg.TVB_CONFIG_FILE)
+        BaseControllersTest.cleanup(self)
     
     
     def test_edit_model_parameters(self):

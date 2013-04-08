@@ -23,32 +23,26 @@
 """
 import os
 import json
-
 import unittest
-import cherrypy
-import tvb.interfaces.web.controllers.basecontroller as b_c
 from tvb.interfaces.web.controllers.settingscontroller import SettingsController
 from tvb.basic.config.settings import TVBSettings as cfg
-from tvb_test.core.base_testcase import BaseControllersTest, TransactionalTestCase
-from tvb_test.core.test_factory import TestFactory
+from tvb_test.core.base_testcase import TransactionalTestCase
+from tvb_test.interfaces.web.controllers.basecontroller_test import BaseControllersTest
 
 
 class SettingsControllerTest(TransactionalTestCase, BaseControllersTest): 
     """Unit tests for settingscontroller""" 
     
     def setUp(self):
-        # Add 3 entries so we no longer consider this the first run.
-        self.test_user = TestFactory.create_user()
+        BaseControllersTest.init(self)
         self.settings_c =  SettingsController()
-        cherrypy.session = BaseControllersTest.CherrypySession()
-        cherrypy.session[b_c.KEY_USER] = self.test_user
         if os.path.exists(cfg.TVB_CONFIG_FILE):
             os.remove(cfg.TVB_CONFIG_FILE)
     
     
     def tearDown(self):
-        if os.path.exists(cfg.TVB_CONFIG_FILE):
-            os.remove(cfg.TVB_CONFIG_FILE)
+        BaseControllersTest.cleanup(self)
+
             
 #    TODO: This sees settings as being changed so it will restart a tvb process. See if there is any way around else drop test.
 #    def test_settings(self):

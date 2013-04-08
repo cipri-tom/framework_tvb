@@ -221,28 +221,3 @@ class TransactionalTestCase(BaseTestCase):
     """
     __metaclass__ = TransactionalTestMeta
         
-    
-class BaseControllersTest(BaseTestCase):    
-    
-    class CherrypySession(EnhancedDictionary):
-    
-        data = {}
-        
-        def acquire_lock(self):
-            pass
-        
-        def release_lock(self):
-            pass
-        
-    def _expect_redirect(self, page, method, *args, **kwargs):
-        """
-        A generic mechanism that calls a method with some arguments and expects a redirect
-        to a given page.
-        """
-        try:
-            method(*args, **kwargs)
-            self.fail("Should be redirect to %s."%(page,))
-        except cherrypy.HTTPRedirect, redirect:
-            self.assertTrue(redirect.urls[0].endswith(page), "Should be redirect to %s"%(page,))
-    
-    

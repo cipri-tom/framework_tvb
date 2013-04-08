@@ -32,7 +32,8 @@ from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.model import UserPreferences
-from tvb_test.core.base_testcase import BaseControllersTest, TransactionalTestCase
+from tvb_test.core.base_testcase import TransactionalTestCase
+from tvb_test.interfaces.web.controllers.basecontroller_test import BaseControllersTest
 from tvb_test.core.test_factory import TestFactory
 
 
@@ -40,18 +41,12 @@ class UsersControllerTest(TransactionalTestCase, BaseControllersTest):
     """Unit test for userscontroller""" 
     
     def setUp(self):
-        # Add 3 entries so we no longer consider this the first run.
-        cfg.add_entries_to_config_file({'test' : 'test',
-                                        'test1' : 'test1',
-                                        'test2' : 'test2'})
-        self.test_user = TestFactory.create_user()
+        BaseControllersTest.init(self)
         self.user_c =  UserController()
-        cherrypy.session = BaseControllersTest.CherrypySession()
-        cherrypy.session[b_c.KEY_USER] = self.test_user
+
     
     def tearDown(self):
-        if os.path.exists(cfg.TVB_CONFIG_FILE):
-            os.remove(cfg.TVB_CONFIG_FILE)
+        BaseControllersTest.cleanup(self)
     
     
     def test_index_valid_post(self):
