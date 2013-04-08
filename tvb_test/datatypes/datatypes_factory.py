@@ -31,6 +31,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.file.fileshelper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.surfaces import CorticalSurface
 from tvb.core.services.flowservice import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb_test.adapters.storeadapter import StoreAdapter
@@ -164,8 +165,6 @@ class DatatypesFactory():
     def create_connectivity(self):
         """
         Create a connectivity that will be used in "non-dummy" burst launches (with the actual simulator).
-        TODO: This is duplicate code from burstservice_test. Should go into the 'generic' DataType factory
-        once that is done.
         """
         meta = {DataTypeMetaData.KEY_SUBJECT : "John Doe", DataTypeMetaData.KEY_STATE : "RAW"}
         algo_id, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
@@ -181,6 +180,37 @@ class DatatypesFactory():
         adapter_instance = StoreAdapter([connectivity])
         OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
         return algo_id, connectivity
+        
+        
+    def create_surface(self):
+        """
+        Create a dummy surface entity.
+        """
+        meta = {DataTypeMetaData.KEY_SUBJECT : "John Doe", DataTypeMetaData.KEY_STATE : "RAW"}
+        algo_id, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        self.operation = model.Operation(self.user.id, self.project.id, algo_group.id, 
+                                         json.dumps(''), 
+                                         meta = json.dumps(meta), status="STARTED",
+                                         method_name = ABCAdapter.LAUNCH_METHOD)
+        self.operation = dao.store_entity(self.operation)
+        storage_path = FilesHelper().get_project_folder(self.project, str(self.operation.id))
+        surface = CorticalSurface(storage_path=storage_path)
+        surface.vertices = numpy.array([[-10, 0, 0],
+                                        [0, 0, -10],
+                                        [10, 0, 0],
+                                        [0, 10, 0]], dtype=float)
+        surface.triangles = numpy.array([[0, 1, 2],
+                                         [0, 1, 3],
+                                         [1, 2, 3],
+                                         [0, 2, 3]], dtype=int)
+        surface.number_of_triangles = 4
+        surface.number_of_vertices = 4
+        surface.triangle_normals = numpy.ones((4, 3))
+        surface.vertex_normals = numpy.ones((4, 3))
+        surface.zero_based_triangles = True
+        adapter_instance = StoreAdapter([surface])
+        OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
+        return algo_id, surface
         
         
     def create_datatype_group(self, subject = USER_FULL_NAME, state = DATATYPE_STATE,):

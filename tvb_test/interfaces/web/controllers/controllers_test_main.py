@@ -33,6 +33,8 @@ from tvb_test.interfaces.web.controllers import projectcontroller_test
 from tvb_test.interfaces.web.controllers import regionsmodelparameterscontroller_test
 from tvb_test.interfaces.web.controllers import regionstimuluscontroller_test
 from tvb_test.interfaces.web.controllers import settingscontrollers_test
+from tvb_test.interfaces.web.controllers import surfacemodelparameterscontroller_test
+from tvb_test.interfaces.web.controllers import surfacestimuluscontroller_test
 from tvb_test.interfaces.web.controllers import userscontroller_test
 
 
@@ -51,6 +53,8 @@ def suite():
     test_suite.addTest(regionsmodelparameterscontroller_test.suite())
     test_suite.addTest(regionstimuluscontroller_test.suite())
     test_suite.addTest(settingscontrollers_test.suite())
+    test_suite.addTest(surfacemodelparameterscontroller_test.suite())
+    test_suite.addTest(surfacestimuluscontroller_test.suite())
     test_suite.addTest(userscontroller_test.suite())
     return test_suite
 
