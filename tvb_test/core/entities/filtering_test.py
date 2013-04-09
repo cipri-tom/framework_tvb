@@ -28,7 +28,6 @@ from sqlalchemy import and_
 from tvb.core.entities.transient.filtering import StaticFiltersFactory
 from tvb.core.entities.storage.sessionmaker import SessionMaker 
 from tvb.basic.filters.chain import FilterChain
-from tvb.basic.filters.exceptions import InvalidFilterChainInput, InvalidFilterEntity
 from tvb_test.core.base_testcase import TransactionalTestCase
 from tvb_test.datatypes import datatypes_factory
 from tvb_test.datatypes.datatype1 import Datatype1
@@ -59,18 +58,8 @@ class FilteringTest(TransactionalTestCase):
             
     def tearDown(self):
         self.clean_database()
-            
-            
-    def __should_pass(self, filter_entity, dt_entity):
-        """Private method for throwing exception when filter does not passes."""
-        self.assertTrue(filter_entity.get_python_filter_equivalent(datatype_to_check=dt_entity), 
-                        "Filter %s should pass %s but fails it for some reason!"%(filter_entity, dt_entity))
-        
-    def __should_fail(self, filter_entity, dt_entity):
-        """Private method for throwing exception when filter does not fail to remove entity."""
-        self.assertFalse(filter_entity.get_python_filter_equivalent(datatype_to_check=dt_entity),
-                         "Filter %s should drop from results %s but passes it!"%(filter_entity, dt_entity))
-    
+
+
     def test_operation_page_filter(self):
         DUMMY_USER_ID = 1
         entity = FilteringTest.DummyFilterClass()
@@ -80,109 +69,6 @@ class FilteringTest(TransactionalTestCase):
         for entry in op_page_filters:
             self.assertTrue(isinstance(entry, FilterChain), "We expect a list of filters.")
     
-    def test_input_passed_simple(self):
-        """
-        Supported operators should be "==", "!=", "<", ">", "in", "not in" so far.
-        """
-        test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
-                                  operations = ["=="], values = ['test_val'])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 1))
-        
-        test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
-                                  operations = ["!="], values = ['test_val'])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val_other'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val'))
-        
-        test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
-                                  operations = [">"],  values = [3])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 5))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 1))
-        
-        test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
-                                  operations = ["<"], values = [3])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 1))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 5))
-        
-        test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
-                                  operations = ["in"], values = ['test_val'])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_bla'))
-        
-        test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
-                                  operations = ["in"], values = [['test_val', 'other_val']])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_bla'))
-        
-        test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
-                                  operations = ["not in"], values = ['test_val'])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'valoare'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'val'))
-        
-        test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
-                                  operations = ["not in"], values = [['test_val', 'other']])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'taest_val'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val'))
-
-
-    def test_invalid_filter(self):
-        """
-        Error test-case when evaluating filter in Python.
-        """
-        test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
-                                  operations = ["in"], values = [None])
-        self.assertRaises(InvalidFilterEntity, test_filter.get_python_filter_equivalent, 
-                          FilteringTest.DummyFilterClass(attribute_1 = ['test_val', 'test2']))
-
-        
-    def test_invalid_input(self):
-        """
-        Error test-case.
-        """
-        test_filter = FilterChain(fields = [FilterChain.datatype + '.other_attribute_1'], 
-                                  operations = ["in"], values = ['test'])
-        self.assertRaises(InvalidFilterChainInput, test_filter.get_python_filter_equivalent, 
-                          FilteringTest.DummyFilterClass(attribute_1 = ['test_val', 'test2']))
-
-        
-    def test_complex_filter(self):
-        """
-        Test a filter with at least 2 conditions
-        """
-        test_filter = FilterChain(fields= [FilterChain.datatype+ '.attribute_1', FilterChain.datatype+ '.attribute_2'],
-                                  operations = ["==", 'in'], values = ['test_val', ['test_val2', 1]])
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 1))
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 1))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 2))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val1', attribute_2 = 1))
-
-    
-    def test_filter_add_condition(self):
-        """
-        Test that adding a condition to a filter is working.
-        """
-        test_filter = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
-                                  operations = ["=="], values = ['test_val'])
-        filter_input = FilteringTest.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 1)
-        self.__should_pass(test_filter, filter_input)
-        test_filter.add_condition(FilterChain.datatype + '.attribute_2', '==', 2)
-        self.__should_fail(test_filter, filter_input)
-
-    
-    def test_filter_addition(self):
-        """
-        test addition in filter chain
-        """
-        filter1 = FilterChain(fields = [FilterChain.datatype + '.attribute_1'], 
-                              operations = ["=="], values = ['test_val'])
-        filter2 = FilterChain(fields = [FilterChain.datatype + '.attribute_2'], 
-                              operations = ['in'], values = [['test_val2', 1]])
-        test_filter = filter1 + filter2
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 1))
-        self.__should_pass(test_filter, FilteringTest.DummyFilterClass(attribute_1='test_val', attribute_2='test_val2'))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val', attribute_2 = 2))
-        self.__should_fail(test_filter, FilteringTest.DummyFilterClass(attribute_1 = 'test_val1', attribute_2 = 1))
-
     
     def test_filter_sql_equivalent(self):
         """

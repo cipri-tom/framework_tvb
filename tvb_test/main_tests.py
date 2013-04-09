@@ -85,7 +85,6 @@ if not os.path.exists(cfg.TVB_STORAGE):
 import matplotlib
 matplotlib.use('module://tvb.interfaces.web.mplh5.mplh5_backend')        
 from tvb_test.xmlrunner import XMLTestRunner
-from tvb_test.basic import basic_test_main
 from tvb_test.core import core_tests_main
 from tvb_test.adapters import adapters_tests_main
 from tvb_test.analyzers import bct_test
@@ -97,7 +96,6 @@ def suite():
     Gather all the tests in a test suite.
     """
     test_suite = unittest.TestSuite()
-    test_suite.addTest(basic_test_main.suite())
     test_suite.addTest(core_tests_main.suite())
     test_suite.addTest(adapters_tests_main.suite())
     test_suite.addTest(bct_test.suite())
@@ -126,6 +124,4 @@ if __name__ == "__main__":
     if KEY_COVERAGE in argv:
         COVERAGE.stop()
         COVERAGE.html_report(directory = os.path.join(os.path.dirname(__file__), 'test_coverage_html'))
-
-
 
