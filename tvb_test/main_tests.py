@@ -50,17 +50,12 @@ def generage_excludes(root_folders):
             for file_n in files:
                 full_path = os.path.join(root, file_n)
                 if (full_path.endswith('__init__.py') or 
-#                    os.path.join('adapters', 'visualizers') in full_path or 
-                    os.path.join('tvb', 'simulator') in full_path or
-#                    os.path.join('interfaces', 'web', 'entities') in full_path or
                     os.path.join('interfaces', 'web', 'mplh5') in full_path or
                     os.path.join('interfaces', 'web', 'static') in full_path or
                     os.path.join('interfaces', 'web', 'templates') in full_path or
-                    os.path.join('interfaces', 'web', 'run') in full_path or
-                    os.path.join('interfaces', 'web', 'request_handler') in full_path or
-                    os.path.join('interfaces', 'web', 'structure') in full_path or
-                    'scientific_library' in full_path or
-                    os.path.join('entities', 'model', 'db_update_scripts') in full_path):
+                    os.path.join('entities', 'model', 'db_update_scripts') in full_path or
+                    os.path.join('tvb', 'simulator') in full_path or
+                    'scientific_library' in full_path):
                     excludes.append(full_path)
     return excludes
 
