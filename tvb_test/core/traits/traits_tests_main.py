@@ -34,7 +34,6 @@ def suite():
     test_suite.addTest(traits_test.suite())
     test_suite.addTest(traited_interface_test.suite())
     test_suite.addTest(mapping_test.suite())
-    #test_suite.addTest(traits_console_test.suite())
     #test_suite.addTest(db_mapping_test.suite())
     return test_suite
 
