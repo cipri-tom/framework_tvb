@@ -87,8 +87,6 @@ def do_operation_launch(operation_id):
             WorkflowService().mark_burst_finished(parent_burst, error=True, error_message=str(excep))
     
     
-    
-
 if __name__ == '__main__':
     OPERATION_ID = sys.argv[1]
     # Make sure DB events are linked.
