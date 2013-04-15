@@ -32,7 +32,7 @@ Project, User, Operation, basic imports (e.g. CFF).
 import os
 import json
 import random
-import demoData.cff as dataset
+import demoData.cff as cff_dataset
 from hashlib import md5
 from tvb.config import EVENTS_FOLDER
 from tvb.core.entities import model
@@ -205,7 +205,7 @@ class TestFactory():
         """
         ### Prepare Data
         if cff_path is None:
-            cff_path = os.path.join(os.path.dirname(dataset.__file__), 'dataset_74.cff')
+            cff_path = os.path.join(os.path.dirname(cff_dataset.__file__), 'dataset_74.cff')
         if test_user is None:
             test_user = TestFactory.create_user()  
         if test_project is None:
@@ -220,7 +220,34 @@ class TestFactory():
         
         ### Launch Operation
         FlowService().fire_operation(importer, test_user, test_project.id, **args)
-
+        
+        
+    @staticmethod
+    def import_surface_zip(user, project, zip_path, surface_type, zero_based):
+        ### Retrieve Adapter instance 
+        group = dao.find_group('tvb.adapters.uploaders.zip_surface_importer', 'ZIPSurfaceImporter')
+        importer = ABCAdapter.build_adapter(group)
+        importer.meta_data = {DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT,
+                              DataTypeMetaData.KEY_STATE: "RAW"}
+        args = {'uploaded': zip_path, 'surface_type' : surface_type, 
+                'zero_based_triangles' : zero_based}
+        
+        ### Launch Operation
+        FlowService().fire_operation(importer, user, project.id, **args)
+        
+        
+    @staticmethod
+    def import_sensors(user, project, zip_path, sensors_type):
+        ### Retrieve Adapter instance 
+        group = dao.find_group('tvb.adapters.uploaders.sensors_importer', 'Sensors_Importer')
+        importer = ABCAdapter.build_adapter(group)
+        importer.meta_data = {DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT,
+                              DataTypeMetaData.KEY_STATE: "RAW"}
+        args = {'sensors_file': zip_path, 'sensors_type' : sensors_type}
+        ### Launch Operation
+        FlowService().fire_operation(importer, user, project.id, **args)
+    
+    
     
 
 class ExtremeTestFactory():

@@ -20,20 +20,14 @@
 #
 
 """
-.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Bogdan Neacs <lia.domide@codemart.ro>
 """
 
 import unittest
-from tvb_test.adapters.analyzers import timeseries_metrics_adapter_test
-from tvb_test.adapters.exporters import exporters_test
-from tvb_test.adapters.simulator import simulator_adapter_test
-from tvb_test.adapters.uploaders import cff_importer_test
-from tvb_test.adapters.uploaders import tvb_importer_test
-from tvb_test.adapters.uploaders import nifti_importer_test
-from tvb_test.adapters.uploaders import gifti_importer_test
-from tvb_test.adapters.uploaders import sensors_importer_test
-from tvb_test.adapters.uploaders import region_mapping_importer_test
-from tvb_test.adapters.visualizers import visualizers_tests_main
+from tvb_test.adapters.visualizers import brainviewer_test
+from tvb_test.adapters.visualizers import connectivityviewer_test
+from tvb_test.adapters.visualizers import covarianceviewer_test
+
 
 
 def suite():
@@ -41,18 +35,10 @@ def suite():
     Gather all the tests in package 'adapters' in a test suite.
     """
     test_suite = unittest.TestSuite()
-    test_suite.addTest(timeseries_metrics_adapter_test.suite())
-    test_suite.addTest(exporters_test.suite())
-    test_suite.addTest(simulator_adapter_test.suite())
-    test_suite.addTest(cff_importer_test.suite())
-    test_suite.addTest(tvb_importer_test.suite())
-    test_suite.addTest(nifti_importer_test.suite())
-    test_suite.addTest(gifti_importer_test.suite())
-    test_suite.addTest(sensors_importer_test.suite())
-    test_suite.addTest(region_mapping_importer_test.suite())
-    test_suite.addTest(visualizers_tests_main.suite())
+    test_suite.addTest(brainviewer_test.suite())
+    test_suite.addTest(connectivityviewer_test.suite())
+    test_suite.addTest(covarianceviewer_test.suite())
     return test_suite
-
 
 
 if __name__ == "__main__":

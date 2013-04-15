@@ -18,6 +18,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
+from tvb.datatypes.graph import Covariance
 '''
     This module contains 
     moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
@@ -32,6 +33,7 @@ from tvb.core.entities.file.fileshelper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces import CorticalSurface
+from tvb.datatypes.time_series import TimeSeries, TimeSeriesEEG
 from tvb.core.services.flowservice import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb_test.adapters.storeadapter import StoreAdapter
@@ -180,7 +182,47 @@ class DatatypesFactory():
         adapter_instance = StoreAdapter([connectivity])
         OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
         return algo_id, connectivity
-        
+
+
+    def create_timeseries(self, connectivity, ts_type=None, sensors=None):
+        meta = {DataTypeMetaData.KEY_SUBJECT : "John Doe", DataTypeMetaData.KEY_STATE : "RAW"}
+        _, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        self.operation = model.Operation(self.user.id, self.project.id, algo_group.id, 
+                                         json.dumps(''), 
+                                         meta = json.dumps(meta), status="STARTED",
+                                         method_name = ABCAdapter.LAUNCH_METHOD)
+        self.operation = dao.store_entity(self.operation)
+        storage_path = FilesHelper().get_project_folder(self.project, str(self.operation.id))
+        if ts_type=="EEG":
+            time_series = TimeSeriesEEG(storage_path=storage_path)
+            time_series.sensors = sensors
+        else:
+            time_series = TimeSeries(storage_path=storage_path)
+        data = numpy.random.random((10, 10, 10, 10))
+        time = numpy.arange(10)
+        time_series.write_data_slice(data)
+        time_series.write_time_slice(time)
+        time_series.connectivity = connectivity
+        adapter_instance = StoreAdapter([time_series])
+        OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
+        return time_series
+    
+    
+    def create_covaraince(self, time_series):
+        meta = {DataTypeMetaData.KEY_SUBJECT : "John Doe", DataTypeMetaData.KEY_STATE : "RAW"}
+        _, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        self.operation = model.Operation(self.user.id, self.project.id, algo_group.id, 
+                                         json.dumps(''), 
+                                         meta = json.dumps(meta), status="STARTED",
+                                         method_name = ABCAdapter.LAUNCH_METHOD)
+        self.operation = dao.store_entity(self.operation)
+        storage_path = FilesHelper().get_project_folder(self.project, str(self.operation.id))
+        covariance = Covariance(storage_path=storage_path, source=time_series)
+        covariance.write_data_slice(numpy.random.random((10, 10, 10)))
+        adapter_instance = StoreAdapter([covariance])
+        OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
+        return covariance
+
         
     def create_surface(self):
         """
