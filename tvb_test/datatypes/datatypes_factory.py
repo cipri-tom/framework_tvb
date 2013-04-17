@@ -18,7 +18,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
-from tvb.datatypes.graph import Covariance
+from tvb.datatypes.mode_decompositions import IndependentComponents
 '''
     This module contains 
     moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
@@ -33,7 +33,10 @@ from tvb.core.entities.file.fileshelper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces import CorticalSurface
-from tvb.datatypes.time_series import TimeSeries, TimeSeriesEEG
+from tvb.datatypes.time_series import TimeSeries, TimeSeriesEEG, TimeSeriesRegion
+from tvb.datatypes.graph import Covariance, ConnectivityMeasure
+from tvb.datatypes.spectral import CoherenceSpectrum
+from tvb.datatypes.temporal_correlations import CrossCorrelation
 from tvb.core.services.flowservice import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb_test.adapters.storeadapter import StoreAdapter
@@ -164,78 +167,91 @@ class DatatypesFactory():
         datatype.set_operation_id(operation_id)
         
         
+    def __create_operation(self):
+        """
+        Create a operation entity. Return the operation, algo_id and the storage path.
+        """
+        meta = {DataTypeMetaData.KEY_SUBJECT : "John Doe", DataTypeMetaData.KEY_STATE : "RAW"}
+        algo_id, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        operation = model.Operation(self.user.id, self.project.id, algo_group.id, 
+                                         json.dumps(''), 
+                                         meta = json.dumps(meta), status="STARTED",
+                                         method_name = ABCAdapter.LAUNCH_METHOD)
+        operation = dao.store_entity(operation)
+        storage_path = FilesHelper().get_project_folder(self.project, str(operation.id))
+        return operation, algo_id, storage_path
+        
+        
     def create_connectivity(self):
         """
         Create a connectivity that will be used in "non-dummy" burst launches (with the actual simulator).
         """
-        meta = {DataTypeMetaData.KEY_SUBJECT : "John Doe", DataTypeMetaData.KEY_STATE : "RAW"}
-        algo_id, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        self.operation = model.Operation(self.user.id, self.project.id, algo_group.id, 
-                                         json.dumps(''), 
-                                         meta = json.dumps(meta), status="STARTED",
-                                         method_name = ABCAdapter.LAUNCH_METHOD)
-        self.operation = dao.store_entity(self.operation)
-        storage_path = FilesHelper().get_project_folder(self.project, str(self.operation.id))
+        operation, algo_id, storage_path = self.__create_operation()
         connectivity = Connectivity(storage_path=storage_path)
         connectivity.weights = numpy.ones((74, 74))
         connectivity.centres = numpy.ones((74, 3))
         adapter_instance = StoreAdapter([connectivity])
-        OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
+        OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return algo_id, connectivity
 
 
     def create_timeseries(self, connectivity, ts_type=None, sensors=None):
-        meta = {DataTypeMetaData.KEY_SUBJECT : "John Doe", DataTypeMetaData.KEY_STATE : "RAW"}
-        _, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        self.operation = model.Operation(self.user.id, self.project.id, algo_group.id, 
-                                         json.dumps(''), 
-                                         meta = json.dumps(meta), status="STARTED",
-                                         method_name = ABCAdapter.LAUNCH_METHOD)
-        self.operation = dao.store_entity(self.operation)
-        storage_path = FilesHelper().get_project_folder(self.project, str(self.operation.id))
+        operation, _, storage_path = self.__create_operation()
         if ts_type=="EEG":
-            time_series = TimeSeriesEEG(storage_path=storage_path)
-            time_series.sensors = sensors
+            time_series = TimeSeriesEEG(storage_path=storage_path,
+                                        sensors=sensors)
         else:
-            time_series = TimeSeries(storage_path=storage_path)
+            time_series = TimeSeriesRegion(storage_path=storage_path,
+                                           connectivity=connectivity)
         data = numpy.random.random((10, 10, 10, 10))
         time = numpy.arange(10)
         time_series.write_data_slice(data)
         time_series.write_time_slice(time)
-        time_series.connectivity = connectivity
         adapter_instance = StoreAdapter([time_series])
-        OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
+        OperationService().initiate_prelaunch(operation, adapter_instance, {})
+        time_series = dao.get_datatype_by_gid(time_series.gid)
         return time_series
     
     
     def create_covaraince(self, time_series):
-        meta = {DataTypeMetaData.KEY_SUBJECT : "John Doe", DataTypeMetaData.KEY_STATE : "RAW"}
-        _, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        self.operation = model.Operation(self.user.id, self.project.id, algo_group.id, 
-                                         json.dumps(''), 
-                                         meta = json.dumps(meta), status="STARTED",
-                                         method_name = ABCAdapter.LAUNCH_METHOD)
-        self.operation = dao.store_entity(self.operation)
-        storage_path = FilesHelper().get_project_folder(self.project, str(self.operation.id))
+        operation, _, storage_path = self.__create_operation()
         covariance = Covariance(storage_path=storage_path, source=time_series)
         covariance.write_data_slice(numpy.random.random((10, 10, 10)))
         adapter_instance = StoreAdapter([covariance])
-        OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
+        OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return covariance
+    
+    
+    def create_crosscoherence(self, time_series):
+        operation, _, storage_path = self.__create_operation()
+        partial_coh = CoherenceSpectrum(array_data=numpy.random.random((10, 10, 10, 10)), 
+                                        use_storage=False)
+        coherence = CoherenceSpectrum(source=time_series, storage_path=storage_path,
+                                      frequency=0.1, nfft=256)
+        coherence.write_data_slice(partial_coh) 
+        coherence.close_file()
+        adapter_instance = StoreAdapter([coherence])
+        OperationService().initiate_prelaunch(operation, adapter_instance, {})
+        return coherence
+
+
+    def create_crosscorrelation(self, time_series):
+        operation, _, storage_path = self.__create_operation()
+        partial_corr = CrossCorrelation(array_data=numpy.random.random((10, 10, 10, 10, 10)), 
+                                        use_storage=False)
+        crossc = CrossCorrelation(source=time_series, storage_path=storage_path, time=range(10))
+        crossc.write_data_slice(partial_corr) 
+        crossc.close_file()
+        adapter_instance = StoreAdapter([crossc])
+        OperationService().initiate_prelaunch(operation, adapter_instance, {})
+        return crossc
 
         
     def create_surface(self):
         """
         Create a dummy surface entity.
         """
-        meta = {DataTypeMetaData.KEY_SUBJECT : "John Doe", DataTypeMetaData.KEY_STATE : "RAW"}
-        algo_id, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        self.operation = model.Operation(self.user.id, self.project.id, algo_group.id, 
-                                         json.dumps(''), 
-                                         meta = json.dumps(meta), status="STARTED",
-                                         method_name = ABCAdapter.LAUNCH_METHOD)
-        self.operation = dao.store_entity(self.operation)
-        storage_path = FilesHelper().get_project_folder(self.project, str(self.operation.id))
+        operation, algo_id, storage_path = self.__create_operation()
         surface = CorticalSurface(storage_path=storage_path)
         surface.vertices = numpy.array([[-10, 0, 0],
                                         [0, 0, -10],
@@ -251,8 +267,34 @@ class DatatypesFactory():
         surface.vertex_normals = numpy.ones((4, 3))
         surface.zero_based_triangles = True
         adapter_instance = StoreAdapter([surface])
-        OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
+        OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return algo_id, surface
+        
+        
+    def create_connectivity_measure(self, connectivity):
+        operation, _, storage_path = self.__create_operation()
+        conn_measure = ConnectivityMeasure(storage_path=storage_path)
+        conn_measure.connectivity = connectivity
+        adapter_instance = StoreAdapter([conn_measure])
+        OperationService().initiate_prelaunch(operation, adapter_instance, {})
+        return conn_measure
+        
+        
+    def create_ICA(self, timeseries):
+        operation, _, storage_path = self.__create_operation()
+        partial_ts = TimeSeries(use_storage=False)
+        partial_ts.data = numpy.random.random((10, 10, 10, 10))
+        partial_ica = IndependentComponents( source = partial_ts,
+                                             component_time_series = numpy.random.random((10, 10, 10, 10)), 
+                                             prewhitening_matrix = numpy.random.random((10, 10, 10, 10)),
+                                             unmixing_matrix = numpy.random.random((10, 10, 10, 10)),
+                                             n_components = 10, 
+                                             use_storage = False)
+        ica = IndependentComponents(source = timeseries, n_components=10, storage_path=storage_path)
+        ica.write_data_slice(partial_ica)
+        adapter_instance = StoreAdapter([ica])
+        OperationService().initiate_prelaunch(operation, adapter_instance, {})
+        return ica
         
         
     def create_datatype_group(self, subject = USER_FULL_NAME, state = DATATYPE_STATE,):

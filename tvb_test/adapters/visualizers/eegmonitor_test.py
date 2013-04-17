@@ -21,19 +21,22 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+import os
 import unittest
+import demoData.sensors as sensors_dataset
 from tvb.core.entities.file.fileshelper import FilesHelper
 from tvb_test.datatypes.datatypes_factory import DatatypesFactory
 from tvb_test.core.base_testcase import TransactionalTestCase
-from tvb.adapters.visualizers.covariance import CovarianceVisualizer
+from tvb.adapters.visualizers.eeg_monitor import EegMonitor
 from tvb.core.services.flowservice import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.datatypes.connectivity import Connectivity
 from tvb_test.core.test_factory import TestFactory
+from tvb.datatypes.sensors import SensorsEEG
 
 
-class CovarianceViewerTest(TransactionalTestCase):
+class EEGMonitorTest(TransactionalTestCase):
     """
     Unit-tests for BrainViewer.
     """
@@ -59,12 +62,17 @@ class CovarianceViewerTest(TransactionalTestCase):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        time_series = self.datatypeFactory.create_timeseries(self.connectivity)
-        covariance = self.datatypeFactory.create_covaraince(time_series)
-        viewer = CovarianceVisualizer()
-        result = viewer.launch(covariance)
-        expected_keys = ['matrix_strides', 'matrix_shape', 'matrix_data', 'mainContent', 'isAdapter',
-                         'figure_exportable']
+        zip_path = os.path.join(os.path.dirname(sensors_dataset.__file__), 
+                                'EEG_unit_vectors_BrainProducts_62.txt.bz2')
+        
+        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, 'EEG Sensors')
+        sensors = TestFactory.get_entity(self.test_project, SensorsEEG())
+        time_series = self.datatypeFactory.create_timeseries(self.connectivity, 'EEG', sensors)
+        viewer = EegMonitor()
+        result = viewer.launch(time_series)
+        expected_keys = ['tsStateVars', 'tsModes', 'translationStep', 'total_length', 'title', 
+                         'timeSetPaths', 'number_of_visible_points', 'normalizedSteps', 'noOfChannels',
+                         'labelsForCheckBoxes', 'label_x', 'graphLabels', 'entities', 'channelsPage']
         for key in expected_keys:
             self.assertTrue(key in result)
     
@@ -74,7 +82,7 @@ def suite():
     Gather all the tests in a test suite.
     """
     test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(CovarianceViewerTest))
+    test_suite.addTest(unittest.makeSuite(EEGMonitorTest))
     return test_suite
 
 

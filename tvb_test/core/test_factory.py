@@ -50,7 +50,23 @@ class TestFactory():
     """
     Expose mostly static methods for creating different entities used in tests.
     """
+    @staticmethod
+    def get_entity(project, expected_data, filters = None):
+        """
+        Return the first entity with class given by @param expected_data
+        """
+        data_types = FlowService().get_available_datatypes(project.id,
+                                expected_data.module + "." + expected_data.type, filters)
+        entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
+        return entity
     
+    @staticmethod
+    def get_entity_count(project, datatype):
+        """
+        Return the count of stored datatypes with class given by @param datatype
+        """
+        data_types = FlowService().get_available_datatypes(project.id, datatype.module + "." + datatype.type)
+        return len(data_types)
     
     @staticmethod
     def create_user(username='test_user', password='test_pass',

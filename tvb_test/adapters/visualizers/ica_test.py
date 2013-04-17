@@ -25,7 +25,7 @@ import unittest
 from tvb.core.entities.file.fileshelper import FilesHelper
 from tvb_test.datatypes.datatypes_factory import DatatypesFactory
 from tvb_test.core.base_testcase import TransactionalTestCase
-from tvb.adapters.visualizers.covariance import CovarianceVisualizer
+from tvb.adapters.visualizers.ica import ICA
 from tvb.core.services.flowservice import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.datatypes.surfaces import CorticalSurface
@@ -33,7 +33,7 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb_test.core.test_factory import TestFactory
 
 
-class CovarianceViewerTest(TransactionalTestCase):
+class ICATest(TransactionalTestCase):
     """
     Unit-tests for BrainViewer.
     """
@@ -60,11 +60,10 @@ class CovarianceViewerTest(TransactionalTestCase):
         Check that all required keys are present in output from BrainViewer launch.
         """
         time_series = self.datatypeFactory.create_timeseries(self.connectivity)
-        covariance = self.datatypeFactory.create_covaraince(time_series)
-        viewer = CovarianceVisualizer()
-        result = viewer.launch(covariance)
-        expected_keys = ['matrix_strides', 'matrix_shape', 'matrix_data', 'mainContent', 'isAdapter',
-                         'figure_exportable']
+        conn_measure = self.datatypeFactory.create_ICA(time_series)
+        viewer = ICA()
+        result = viewer.launch(conn_measure)
+        expected_keys = ['matrix_strides', 'matrix_shape', 'matrix_data', 'mainContent', 'isAdapter'] 
         for key in expected_keys:
             self.assertTrue(key in result)
     
@@ -74,7 +73,7 @@ def suite():
     Gather all the tests in a test suite.
     """
     test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(CovarianceViewerTest))
+    test_suite.addTest(unittest.makeSuite(ICATest))
     return test_suite
 
 

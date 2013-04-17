@@ -43,9 +43,9 @@ class ConnectivityViewerTest(TransactionalTestCase):
         self.test_user = self.datatypeFactory.get_user()
         
         TestFactory.import_cff(test_user = self.test_user, test_project=self.test_project)
-        self.connectivity = self._get_entity(Connectivity())
+        self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
         self.assertTrue(self.connectivity is not None)
-        self.surface = self._get_entity(CorticalSurface())
+        self.surface = TestFactory.get_entity(self.test_project, CorticalSurface())
         self.assertTrue(self.surface is not None)
                 
     def tearDown(self):
@@ -53,14 +53,6 @@ class ConnectivityViewerTest(TransactionalTestCase):
         Clean-up tests data
         """
         FilesHelper().remove_project_structure(self.test_project.name)
-    
-    def _get_entity(self, expected_data, filters = None):
-        data_types = FlowService().get_available_datatypes(self.test_project.id,
-                                expected_data.module + "." + expected_data.type, filters)
-        self.assertEqual(1, len(data_types), "Project should contain only one data type:" + str(expected_data.type))
-        entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        self.assertTrue(entity is not None, "Instance should not be none")
-        return entity
     
     
     def test_launch(self):
