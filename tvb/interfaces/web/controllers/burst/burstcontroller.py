@@ -45,19 +45,20 @@ from tvb.interfaces.web.controllers.flowcontroller import context_selected, KEY_
 PORTLET_STEP_SEPARATOR = "____"
 BURST_NAME = 'burstName'
 
+
 class BurstController(base.BaseController):
     """
     Controller class for Burst-Pages.
     """
-    
+
     def __init__(self):
         base.BaseController.__init__(self)
         self.burst_service = BurstService()
         self.workflow_service = WorkflowService()
         self.context = SelectedAdapterContext()
-    
-    
-    @cherrypy.expose    
+
+
+    @cherrypy.expose
     @using_template('base_template')
     @base.settings()
     @logged()
@@ -65,7 +66,7 @@ class BurstController(base.BaseController):
     def index(self):
         """Get on burst main page"""
         template_specification = dict(mainContent="burst/main_burst", title="Simulation Cockpit",
-                                      baseUrl = cfg.BASE_URL, dontShowDummyLeaf = StructureNode.JSTREE_DUMMY_LEAF,
+                                      baseUrl=cfg.BASE_URL, dontShowDummyLeaf=StructureNode.JSTREE_DUMMY_LEAF,
                                       includedResources='project/included_resources')
         portlets_list = self.burst_service.get_available_portlets()
         session_stored_burst = base.get_from_session(base.KEY_BURST_CONFIG)
@@ -92,15 +93,15 @@ class BurstController(base.BaseController):
         ### Prepare PSE available metrics
         ### We put here all available algorithms, because the metrics select area is a generic one, 
         ### and not loaded with every Burst Group change in history.
-        algo_group = self.flow_service.get_algorithm_by_module_and_class(MEASURE_METRICS_MODULE, 
+        algo_group = self.flow_service.get_algorithm_by_module_and_class(MEASURE_METRICS_MODULE,
                                                                          MEASURE_METRICS_CLASS)[1]
         adapter_instance = ABCAdapter.build_adapter(algo_group)
         if adapter_instance is not None and hasattr(adapter_instance, 'available_algorithms'):
-            template_specification['available_metrics'] = [metric_name for metric_name 
+            template_specification['available_metrics'] = [metric_name for metric_name
                                                            in adapter_instance.available_algorithms.keys()]
         else:
             template_specification['available_metrics'] = []
-            
+
         template_specification[base.KEY_PARAMETERS_CONFIG] = False
         template_specification[base.KEY_SECTION] = 'burst'
         return self.fill_default_attributes(template_specification)
@@ -114,11 +115,11 @@ class BurstController(base.BaseController):
         This is one alternative to 'chrome-back problem'.
         """
         session_burst = base.get_from_session(base.KEY_BURST_CONFIG)
-        return {'burst_list' : self.burst_service.get_available_bursts(base.get_current_project().id),
-                'selectedBurst' : session_burst.id}
-        
-        
-    @cherrypy.expose    
+        return {'burst_list': self.burst_service.get_available_bursts(base.get_current_project().id),
+                'selectedBurst': session_burst.id}
+
+
+    @cherrypy.expose
     def get_selected_burst(self):
         """
         Return the burst that is currently stored in session.
@@ -129,8 +130,8 @@ class BurstController(base.BaseController):
             return str(session_burst.id)
         else:
             return 'None'
-    
-    
+
+
     @cherrypy.expose
     @using_template('burst/portlet_configure_parameters')
     def get_portlet_configurable_interface(self, index_in_tab):
@@ -151,8 +152,8 @@ class BurstController(base.BaseController):
         portlet_interface[base.KEY_PARAMETERS_CONFIG] = False
         portlet_interface[base.KEY_SESSION_TREE] = self.context.KEY_PORTLET_CONFIGURATION
         return self.fill_default_attributes(portlet_interface)
-    
-    
+
+
     @cherrypy.expose
     @using_template('burst/portlets_preview')
     def portlet_tab_display(self, **data):
@@ -179,13 +180,13 @@ class BurstController(base.BaseController):
                 if (portlet_id >= 0):
                     saved_config = current_tab.portlets[idx_in_tab]
                     if saved_config is None or saved_config.portlet_id != portlet_id:
-                        current_tab.portlets[idx_in_tab] = self.burst_service.new_portlet_configuration(portlet_id, 
+                        current_tab.portlets[idx_in_tab] = self.burst_service.new_portlet_configuration(portlet_id,
                                                                                     tab_idx, idx_in_tab, portlet_name)
                     else:
                         saved_config.visualizer.ui_name = portlet_name
                 else:
                     current_tab.portlets[idx_in_tab] = None
-        #For generating the HTML get for each id the corresponding portlet
+            #For generating the HTML get for each id the corresponding portlet
         selected_tab_portlets = []
         saved_selected_tab = burst_config.tabs[selected_tab_idx]
         for idx in range(len(saved_selected_tab.portlets)):
@@ -194,10 +195,10 @@ class BurstController(base.BaseController):
                 portlet_entity = self.burst_service.get_portlet_by_id(portlet_id)
                 portlet_entity.name = saved_selected_tab.portlets[idx].name
                 selected_tab_portlets.append(portlet_entity)
-        
-        return {'portlet_tab_list' : selected_tab_portlets}
-    
-    
+
+        return {'portlet_tab_list': selected_tab_portlets}
+
+
     @cherrypy.expose
     @using_template('burst/portlets_preview')
     def get_configured_portlets(self):
@@ -208,7 +209,7 @@ class BurstController(base.BaseController):
         burst_config = base.get_from_session(base.KEY_BURST_CONFIG)
         if burst_config is None:
             return {'portlet_tab_list': []}
-        
+
         tab_idx = burst_config.selected_tab
         tab_portlet_list = []
         for portlet_cfg in burst_config.tabs[int(tab_idx)].portlets:
@@ -216,9 +217,9 @@ class BurstController(base.BaseController):
                 portlet_entity = self.burst_service.get_portlet_by_id(portlet_cfg.portlet_id)
                 portlet_entity.name = portlet_cfg.name
                 tab_portlet_list.append(portlet_entity)
-        return {'portlet_tab_list':tab_portlet_list}
-    
-    
+        return {'portlet_tab_list': tab_portlet_list}
+
+
     @cherrypy.expose
     def change_selected_tab(self, tab_nr):
         """
@@ -226,8 +227,8 @@ class BurstController(base.BaseController):
         configuration. 
         """
         base.get_from_session(base.KEY_BURST_CONFIG).selected_tab = int(tab_nr)
-        
-        
+
+
     @cherrypy.expose
     def get_portlet_session_configuration(self):
         """
@@ -237,8 +238,8 @@ class BurstController(base.BaseController):
         burst_entity = base.get_from_session(base.KEY_BURST_CONFIG)
         returned_configuration = burst_entity.update_selected_portlets()
         return json.dumps(returned_configuration)
-    
-    
+
+
     @cherrypy.expose
     def save_parameters(self, index_in_tab, **data):
         """
@@ -254,12 +255,12 @@ class BurstController(base.BaseController):
         burst_config = base.get_from_session(base.KEY_BURST_CONFIG)
         tab_nr = burst_config.selected_tab
         old_portlet_config = burst_config.tabs[int(tab_nr)].portlets[int(index_in_tab)]
-        
+
         # Replace all void entries with 'None'
         for entry in data:
             if data[entry] == '':
                 data[entry] = None
-        
+
         need_relaunch = self.burst_service.update_portlet_configuration(old_portlet_config, data)
         if need_relaunch:
             #### Reset Burst Configuration into an entity not persisted (id = None for all)
@@ -268,8 +269,8 @@ class BurstController(base.BaseController):
         else:
             self.workflow_service.store_workflow_step(old_portlet_config.visualizer)
             return "noRelaunch"
-        
-        
+
+
     @cherrypy.expose
     def rename_burst(self, burst_id, burst_name):
         """
@@ -278,8 +279,8 @@ class BurstController(base.BaseController):
         """
         self._validate_burst_name(burst_name)
         self.burst_service.rename_burst(burst_id, burst_name)
-        
-        
+
+
     @cherrypy.expose
     def launch_burst(self, launch_mode, burst_name, **data):
         """
@@ -289,24 +290,24 @@ class BurstController(base.BaseController):
         :param data: kwargs for simulation input parameters.
         """
         burst_config = base.get_from_session(base.KEY_BURST_CONFIG)
-        
+
         ## Validate new burst-name
         if burst_name != 'none_undefined':
             self._validate_burst_name(burst_name)
             burst_config.name = burst_name
-           
+
         ## Fill all parameters 
-        user_id = base.get_logged_user().id 
+        user_id = base.get_logged_user().id
         sim_algo_id, _ = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
         data[base.KEY_ADAPTER] = sim_algo_id
         burst_config.update_simulator_configuration(data)
         burst_config.fk_project = base.get_current_project().id
-           
+
         ## Do the asynchronous launch
         burst_id, burst_name = self.burst_service.launch_burst(burst_config, 0, sim_algo_id, user_id, launch_mode)
-        return json.dumps([burst_id, burst_name]) 
-        
-        
+        return json.dumps([burst_id, burst_name])
+
+
     @cherrypy.expose
     def load_burst(self, burst_id):
         """
@@ -319,7 +320,7 @@ class BurstController(base.BaseController):
             burst, group_id = self.burst_service.load_burst(burst_id)
             burst.selected_tab = old_burst.selected_tab
             base.add2session(base.KEY_BURST_CONFIG, burst)
-            result = {'status' : burst.status, 'group_id' : group_id, 'selected_tab' : burst.selected_tab}
+            result = {'status': burst.status, 'group_id': group_id, 'selected_tab': burst.selected_tab}
             return json.dumps(result)
         except Exception, excep:
             ### Most probably Burst was removed. Delete it from session, so that client 
@@ -327,8 +328,8 @@ class BurstController(base.BaseController):
             self.logger.error(excep)
             base.remove_from_session(base.KEY_BURST_CONFIG)
             raise excep
-        
-        
+
+
     @cherrypy.expose
     def get_history_status(self, **data):
         """
@@ -336,8 +337,8 @@ class BurstController(base.BaseController):
         """
         result = self.burst_service.update_history_status(json.loads(data['burst_ids']))
         return json.dumps(result)
-        
-        
+
+
     @cherrypy.expose
     def remove_burst_entity(self, burst_id):
         """
@@ -351,12 +352,12 @@ class BurstController(base.BaseController):
         if removed:
             if session_burst.id == burst_id:
                 return "reset-new"
-            return 'done' 
+            return 'done'
         else:
             #only stopped since it was running
             return 'canceled'
-        
-        
+
+
     @cherrypy.expose
     def get_selected_portlets(self):
         """
@@ -364,7 +365,7 @@ class BurstController(base.BaseController):
         """
         burst = base.get_from_session(base.KEY_BURST_CONFIG)
         return json.dumps(burst.update_selected_portlets())
-        
+
 
     @cherrypy.expose
     def get_visualizers_for_operation_id(self, op_id, width, height):
@@ -398,10 +399,10 @@ class BurstController(base.BaseController):
         for portlet_cfg in burst.tabs[int(selected_tab)].portlets:
             if portlet_cfg is not None:
                 tab_portlet_list.append(self.__portlet_config2portlet_entity(portlet_cfg))
-        return {'status':burst.status, 'portlet_tab_list':tab_portlet_list, 
-                'max_width':int(width), 'max_height':int(height)}
-    
-    
+        return {'status': burst.status, 'portlet_tab_list': tab_portlet_list,
+                'max_width': int(width), 'max_height': int(height)}
+
+
     @cherrypy.expose
     @using_template("burst/portlet_visualization_template")
     def check_status_for_visualizer(self, selected_tab, index_in_tab, width='800', height='600'):
@@ -412,10 +413,10 @@ class BurstController(base.BaseController):
         burst = base.get_from_session(base.KEY_BURST_CONFIG)
         target_portlet = burst.tabs[int(selected_tab)].portlets[int(index_in_tab)]
         target_portlet = self.__portlet_config2portlet_entity(target_portlet)
-        template_dict = {'portlet_entity' : target_portlet, 'width' : int(width), 'height' : int(height)}
+        template_dict = {'portlet_entity': target_portlet, 'width': int(width), 'height': int(height)}
         return template_dict
-        
-        
+
+
     @cherrypy.expose
     def reset_burst(self):
         """
@@ -424,8 +425,8 @@ class BurstController(base.BaseController):
         """
         new_burst = self.burst_service.new_burst_configuration(base.get_current_project().id)
         base.add2session(base.KEY_BURST_CONFIG, new_burst)
-            
-            
+
+
     @cherrypy.expose
     def copy_burst(self, burst_id):
         """
@@ -436,8 +437,8 @@ class BurstController(base.BaseController):
             return self.reset_burst()
         base.add2session(base.KEY_BURST_CONFIG, base_burst.clone())
         return base_burst.name
-            
-            
+
+
     @cherrypy.expose
     @using_template("burst/base_portlets_iframe")
     def launch_visualization(self, index_in_tab, frame_width, frame_height, method_name="generate_preview"):
@@ -449,7 +450,7 @@ class BurstController(base.BaseController):
         try:
             burst = base.get_from_session(base.KEY_BURST_CONFIG)
             visualizer = burst.tabs[burst.selected_tab].portlets[int(index_in_tab)].visualizer
-            result = self.burst_service.launch_visualization(visualizer, float(frame_width), 
+            result = self.burst_service.launch_visualization(visualizer, float(frame_width),
                                                              float(frame_height), method_name)[0]
             result['launch_success'] = True
         except Exception, ex:
@@ -470,20 +471,20 @@ class BurstController(base.BaseController):
         burst_config = base.get_from_session(base.KEY_BURST_CONFIG)
         _, algo_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
         simulator_input_tree = self.flow_service.prepare_adapter(base.get_current_project().id, algo_group)[1]
-                                    
+
         default_values, any_checked = burst_config.get_all_simulator_values()
         simulator_input_tree = ABCAdapter.fill_defaults(simulator_input_tree, default_values)
         ### Add simulator tree to session to be available in filters
-        self.context.add_adapter_to_session(algo_group, simulator_input_tree, default_values) 
-        
-        template_specification = {"inputList" : simulator_input_tree}
+        self.context.add_adapter_to_session(algo_group, simulator_input_tree, default_values)
+
+        template_specification = {"inputList": simulator_input_tree}
         ## Setting this to true means check-boxes are displayed next to all inputs ##
         template_specification[base.KEY_PARAMETERS_CONFIG] = True
         template_specification['none_checked'] = not any_checked
         template_specification['selectedParametersDictionary'] = burst_config.simulator_configuration
         return self.fill_default_attributes(template_specification)
-    
-    
+
+
     @cherrypy.expose
     @using_template("flow/genericAdapterFormFields")
     def get_reduced_simulator_interface(self):
@@ -501,16 +502,16 @@ class BurstController(base.BaseController):
         ## In case no values were checked just skip tree-cut part and show entire simulator tree ##
         if any_checked:
             simulator_input_tree = self.burst_service.select_simulator_inputs(simulator_input_tree, simulator_config)
-            
+
         ### Add simulator tree to session to be available in filters
-        self.context.add_adapter_to_session(algo_group, simulator_input_tree, default_values)    
-        
-        template_specification = {"inputList" : simulator_input_tree}
+        self.context.add_adapter_to_session(algo_group, simulator_input_tree, default_values)
+
+        template_specification = {"inputList": simulator_input_tree}
         template_specification[base.KEY_PARAMETERS_CONFIG] = False
         template_specification['draw_hidden_ranges'] = True
         return self.fill_default_attributes(template_specification)
-    
-    
+
+
     @cherrypy.expose
     def get_previous_selected_rangers(self):
         """
@@ -522,8 +523,8 @@ class BurstController(base.BaseController):
             first_range = burst_config.get_simulation_parameter_value('first_range') or '0'
             second_range = burst_config.get_simulation_parameter_value('second_range') or '0'
         return json.dumps([first_range, second_range])
-        
-    
+
+
     @cherrypy.expose
     def save_simulator_configuration(self, exclude_ranges, **data):
         """
@@ -546,14 +547,14 @@ class BurstController(base.BaseController):
             burst_config.name = data[BURST_NAME]
         data = json.loads(data['simulator_parameters'])
         for entry in data:
-            if exclude_ranges and (entry.endswith("_checked") or entry=='first_range' or entry=='second_range'):
+            if exclude_ranges and (entry.endswith("_checked") or entry == 'first_range' or entry == 'second_range'):
                 continue
             burst_config.update_simulation_parameter(entry, data[entry])
             checkbox_for_entry = entry + "_checked"
             if checkbox_for_entry in data:
                 burst_config.update_simulation_parameter(entry, data[checkbox_for_entry], KEY_PARAMETER_CHECKED)
-    
-    
+
+
     @cherrypy.expose
     @using_template('base_template')
     @base.settings()
@@ -568,7 +569,7 @@ class BurstController(base.BaseController):
         visualizer = burst.tabs[selected_tab].portlets[int(index_in_tab)].visualizer
         result, input_data, operation_id = self.burst_service.launch_visualization(visualizer, is_preview=False)
         algorithm = self.flow_service.get_algorithm_by_identifier(visualizer.fk_algorithm)
-        
+
         result[base.KEY_TITLE] = algorithm.name
         result[base.KEY_ADAPTER] = algorithm.algo_group.id
         result[base.KEY_OPERATION_ID] = operation_id
@@ -576,21 +577,21 @@ class BurstController(base.BaseController):
         ## Add required field to input dictionary and return it so that it can be used ##
         ## for top right control.                                                    ####
         input_data[base.KEY_ADAPTER] = algorithm.algo_group.id
-        
+
         if base.KEY_PARENT_DIV not in result:
             result[base.KEY_PARENT_DIV] = ''
         self.context.add_adapter_to_session(algorithm.algo_group, None, copy.deepcopy(input_data))
-        
+
         self._populate_section(algorithm.algo_group, result)
         result[base.KEY_DISPLAY_MENU] = True
         result[base.KEY_BACK_PAGE] = "/burst"
-        result[base.KEY_SUBMIT_LINK] = self.get_url_adapter(algorithm.algo_group.group_category.id, 
+        result[base.KEY_SUBMIT_LINK] = self.get_url_adapter(algorithm.algo_group.group_category.id,
                                                             algorithm.algo_group.id, 'burst')
         if KEY_CONTROLLS not in result:
             result[KEY_CONTROLLS] = ''
         return self.fill_default_attributes(result)
-    
-    
+
+
     def __portlet_config2portlet_entity(self, portlet_cfg):
         """
         From a portlet configuration as it is stored in session, update status and add the index in 
@@ -604,22 +605,21 @@ class BurstController(base.BaseController):
         portlet_entity.index_in_tab = portlet_cfg.index_in_tab
         portlet_entity.td_gid = generate_guid()
         return portlet_entity
-    
-    
-    def _validate_burst_name(self, burst_name): 
+
+
+    def _validate_burst_name(self, burst_name):
         """
         Validate a new burst name, to have only plain text.
         """
         try:
             form = BurstNameForm()
-            data = {'burst_name' : burst_name}
+            data = {'burst_name': burst_name}
             data = form.to_python(data)
         except formencode.Invalid, excep:
             self.logger.error(excep)
             self.logger.exception("Invalid Burst name " + str(burst_name))
-            raise excep 
-        
-    
+            raise excep
+
 
 class BurstNameForm(formencode.Schema):
     """

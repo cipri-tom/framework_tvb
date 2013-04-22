@@ -1,6 +1,6 @@
 var startColorRGB = [192, 192, 192];
 var endColorRGB = [255, 0, 0];
-var nodeColorRGB = [255, 255, 255]
+var nodeColorRGB = [255, 255, 255];
 
 /**
  * @param startColorComponentId id of the container in which will be drawn the color picker for the start color
