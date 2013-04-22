@@ -29,11 +29,12 @@ This is the main UI entry point.
 """
 
 import os
+import json
 import cherrypy
 from copy import copy
 from genshi.template.loader import TemplateLoader
 from tvb.config import CONNECTIVITY_CLASS, CONNECTIVITY_MODULE
-from tvb.basic.config.settings import TVBSettings as cfg 
+from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.basic.logger.builder import get_logger
 from tvb.core.services.settingsservice import SettingsService
 from tvb.core.services.userservice import UserService
@@ -47,7 +48,6 @@ from tvb.interfaces.web.structure import WebStructure
 TYPE_ERROR = "ERROR"
 TYPE_WARNING = "WARNING"
 TYPE_INFO = "INFO"
-
 
 KEY_CURRENT_VERSION = "currentVersion"
 KEY_SESSION = "session"
@@ -101,14 +101,18 @@ def settings():
     Annotation to check if a the settings file exists before allowing access
     to some parts of TVB.
     """
+
     def dec(func):
         """ Annotation wrapping web public function"""
+
         def deco(*a, **b):
             """ Decorator for public method"""
             if not SettingsService.is_first_run():
                 return func(*a, **b)
             raise cherrypy.HTTPRedirect('/settings/settings')
+
         return deco
+
     return dec
 
 
@@ -131,8 +135,10 @@ def using_template(template_name):
     Annotation to check if a user is logged before accessing a controller method.
     """
     template_path = os.path.join(cfg.TEMPLATE_ROOT, template_name + '.html')
+
     def dec(func):
         """ Allow to get the signature back"""
+
         def deco(*a, **b):
             """ Allow to get the docstring back"""
             try:
@@ -140,11 +146,11 @@ def using_template(template_name):
                 #import cherrypy.lib.profiler as profiler
                 #p = profiler.Profiler("/Users/lia.domide/TVB/profiler/")
                 #return p.run(profile, template_path, func, *a, **b)
-                
+
                 template_dict = func(*a, **b)
                 if not cfg.RENDER_HTML:
                     return template_dict
-                ### Generate HTML given the path to the template and the data dictionary.
+                    ### Generate HTML given the path to the template and the data dictionary.
                 loader = TemplateLoader()
                 template = loader.load(template_path)
                 stream = template.generate(**template_dict)
@@ -156,7 +162,40 @@ def using_template(template_name):
                 get_logger("tvb.interface.web.controllers.basecontroller").exception(excep)
                 set_error_message("An unexpected exception appeared. Please contact your system administrator.")
                 raise cherrypy.HTTPRedirect("/tvb?error=True")
+
         return deco
+
+    return dec
+
+
+def ajax_call(json_form = True):
+    """
+    Annotation to wrap all JSON calls, and log on server in case of an exception.
+    """
+
+    def dec(func):
+        """ Allow to get the signature back"""
+
+        def deco(*a, **b):
+            """ Allow to get the docstring back"""
+            try:
+                result = func(*a, **b)
+                if json_form:
+                    return json.dumps(result)
+                return result
+
+            except Exception, excep:
+
+                if isinstance(excep, cherrypy.HTTPRedirect):
+                    raise excep
+
+                logger =  get_logger("tvb.interface.web.controllers.basecontroller")
+                logger.error("Encountered exception when calling asynchronously :" + str(func))
+                logger.exception(excep)
+                raise excep
+
+        return deco
+
     return dec
 
 
@@ -171,8 +210,8 @@ def set_message(msg, m_type):
 def set_error_message(msg):
     """ Set error message in session"""
     set_message(msg, TYPE_ERROR)
-    
-    
+
+
 def set_warning_message(msg):
     """ Set warning message in session"""
     set_message(msg, TYPE_WARNING)
@@ -181,8 +220,8 @@ def set_warning_message(msg):
 def set_info_message(msg):
     """ Set info message in session"""
     set_message(msg, TYPE_INFO)
-    
-    
+
+
 def get_from_session(attribute):
     """ check if something exists in session and return"""
     if cherrypy.session.has_key(attribute):
@@ -198,15 +237,15 @@ def get_current_project():
 def get_logged_user():
     """Get current logged User from session"""
     return get_from_session(KEY_USER)
-    
+
 
 def add2session(key, value):
     """ Set in session, at a key, a value"""
     cherrypy.session.acquire_lock()
     cherrypy.session[key] = value
     cherrypy.session.release_lock()
- 
- 
+
+
 def remove_from_session(key):
     """ Remove from session an attributes if exists."""
     cherrypy.session.acquire_lock()
@@ -222,41 +261,42 @@ def remove_from_session(key):
 # Constants used be the mechanism that deletes files on disk
 FILES_TO_DELETE_ATTR = "files_to_delete"
 
+
 class BaseController(object):
     """
     This class contains the methods served at the root of the Web site.
     """
-        
+
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
         self.version_info = None
-        
+
         self.user_service = UserService()
         self.flow_service = FlowService()
-        
+
         analyze_category = self.flow_service.get_launchable_non_viewers()
-        self.analyze_category_link = '/flow/step/'+ str(analyze_category.id)
+        self.analyze_category_link = '/flow/step/' + str(analyze_category.id)
         self.analyze_adapters = None
-        
+
         self.connectivity_tab_link = '/flow/step_connectivity'
         view_category = self.flow_service.get_visualisers_category()
         conn_id = self.flow_service.get_algorithm_by_module_and_class(CONNECTIVITY_MODULE, CONNECTIVITY_CLASS)[1].id
         connectivity_link = self.get_url_adapter(view_category.id, conn_id)
-       
+
         local_connectivity_link = '/spatial/localconnectivity/step_1/1'
-       
+
         connectivity_submenu = []
         connectivity_submenu.append(dict(title="Large Scale Connectivity", subsection="connectivity",
                                          description="View Connectivity Regions. Perform Connectivity lesions",
                                          link=connectivity_link))
-        connectivity_submenu.append(dict(title="Local Connectivity", subsection="local", 
+        connectivity_submenu.append(dict(title="Local Connectivity", subsection="local",
                                          description="Create or view existent Local Connectivity entities.",
                                          link=local_connectivity_link))
         self.connectivity_submenu = connectivity_submenu
-        
+
 
     @staticmethod
-    def mark_file_for_delete(file_name, delete_parent_folder = False):
+    def mark_file_for_delete(file_name, delete_parent_folder=False):
         """
         This method stores provided file name in session, 
         and later on when request is done, all these files/folders
@@ -270,20 +310,20 @@ class BaseController(object):
         # No processing if no file specified
         if file_name is None:
             return
-        
+
         files_list = get_from_session(FILES_TO_DELETE_ATTR)
         if files_list is None:
             files_list = []
             add2session(FILES_TO_DELETE_ATTR, files_list)
-        
+
         # Now add file/folder to list
         if delete_parent_folder:
             folder_name = os.path.split(file_name)[0]
             files_list.append(folder_name)
         else:
             files_list.append(file_name)
-            
-        
+
+
     def _mark_selected(self, project):
         """
         Set the project passed as parameter as the selected project.
@@ -293,7 +333,7 @@ class BaseController(object):
         members = self.user_service.get_users_for_project("", project.id)[1]
         project.members = members
         add2session(KEY_PROJECT, project)
-        
+
         if previous_project is None or previous_project.id != project.id:
             ### Clean Burst selection from session in case of a different project.
             remove_from_session(KEY_BURST_CONFIG)
@@ -303,9 +343,9 @@ class BaseController(object):
                 self.user_service.save_project_to_user(user.id, project.id)
             ### Display info message about project change
             self.logger.debug("Selected project is now " + project.name)
-            set_info_message("Your current working project is: "+ str(project.name))
-        
-    
+            set_info_message("Your current working project is: " + str(project.name))
+
+
     @staticmethod
     def get_url_adapter(step_key, adapter_id, back_page=None):
         """
@@ -314,10 +354,10 @@ class BaseController(object):
         """
         result_url = '/flow/' + str(step_key) + '/' + str(adapter_id)
         if back_page is not None:
-            result_url = result_url + "?back_page="+ str(back_page)
+            result_url = result_url + "?back_page=" + str(back_page)
         return result_url
-    
-    
+
+
     @cherrypy.expose
     def index(self):
         """
@@ -325,16 +365,16 @@ class BaseController(object):
         Redirects to /tvb
         """
         raise cherrypy.HTTPRedirect('/user')
-        
-        
+
+
     @cherrypy.expose()
     @using_template('user/base_user')
-    def tvb(self, error = False, **data):
+    def tvb(self, error=False, **data):
         """
         /tvb URL
         Returns the home page with the messages stored in the user's session.
         """
-        self.logger.debug("Unused submit attributes:"+ str(data))
+        self.logger.debug("Unused submit attributes:" + str(data))
         template_dictionary = dict(mainContent="../index", title="The Virtual Brain Project")
         template_dictionary = self._fill_user_specific_attributes(template_dictionary)
         if get_from_session(KEY_IS_RESTART):
@@ -347,12 +387,12 @@ class BaseController(object):
     @using_template('user/base_user')
     def error(self, **data):
         """Error page to redirect when something extremely bad happened"""
-        template_specification = dict(mainContent="../error", title="Error page", data = data)
+        template_specification = dict(mainContent="../error", title="Error page", data=data)
         template_specification = self._fill_user_specific_attributes(template_specification)
         return self.fill_default_attributes(template_specification)
-    
-    
-    def _populate_user_and_project(self, template_dictionary, escape_db_operations = False):
+
+
+    def _populate_user_and_project(self, template_dictionary, escape_db_operations=False):
         """
          Populate the template dictionary with current logged user (from session).
          """
@@ -360,15 +400,15 @@ class BaseController(object):
         template_dictionary[KEY_USER] = logged_user
         show_help = logged_user is not None and logged_user.is_online_help_active()
         template_dictionary[KEY_SHOW_ONLINE_HELP] = show_help
-        
+
         project = get_current_project()
         template_dictionary[KEY_PROJECT] = project
         if project is not None and not escape_db_operations:
             self.update_operations_count()
         return template_dictionary
-    
-    
-    @staticmethod     
+
+
+    @staticmethod
     def _populate_message(template_dictionary):
         """
          Populate the template dictionary with current message stored in session. 
@@ -379,14 +419,14 @@ class BaseController(object):
         if message_type is None:
             message_type = TYPE_INFO
         template_dictionary[KEY_MESSAGE_TYPE] = message_type
-        
+
         message = remove_from_session(KEY_MESSAGE)
         if message is None:
             message = ""
         template_dictionary[KEY_MESSAGE] = message
         return template_dictionary
-    
-     
+
+
     def _populate_menu(self, template_dictionary):
         """
         Populate current template with information for the Left Menu.
@@ -400,7 +440,7 @@ class BaseController(object):
         template_dictionary[KEY_SECTION_TITLES] = WebStructure.WEB_SECTION_TITLES
         template_dictionary[KEY_SUBSECTION_TITLES] = WebStructure.WEB_SUBSECTION_TITLES
         return template_dictionary
-    
+
 
     def _populate_section(self, algo_group, result_template):
         """
@@ -413,8 +453,8 @@ class BaseController(object):
         elif algo_group.group_category.display:
             ### Visualizers on the Burst Page
             result_template[KEY_SECTION] = 'burst'
-            result_template[KEY_SUB_SECTION] = 'view_' + algo_group.subsection_name 
-            
+            result_template[KEY_SUB_SECTION] = 'view_' + algo_group.subsection_name
+
         elif algo_group.group_category.rawinput:
             ### Upload algorithms
             result_template[KEY_SECTION] = 'project'
@@ -441,14 +481,14 @@ class BaseController(object):
         return template_dictionary
 
 
-    def fill_default_attributes(self, template_dictionary, escape_db_operations = False):
+    def fill_default_attributes(self, template_dictionary, escape_db_operations=False):
         """
         Fill into 'template_dictionary' data that we want to have ready in UI.
         """
         template_dictionary = self._populate_user_and_project(template_dictionary, escape_db_operations)
         template_dictionary = self._populate_message(template_dictionary)
         template_dictionary = self._populate_menu(template_dictionary)
-        
+
         if KEY_ERRORS not in template_dictionary:
             template_dictionary[KEY_ERRORS] = {}
         if KEY_FORM_DATA not in template_dictionary:
@@ -457,12 +497,12 @@ class BaseController(object):
             template_dictionary[KEY_SUB_SECTION] = template_dictionary[KEY_SECTION]
         if KEY_SUBMENU_LIST not in template_dictionary:
             template_dictionary[KEY_SUBMENU_LIST] = None
-            
+
         template_dictionary[KEY_CURRENT_VERSION] = cfg.BASE_VERSION
-        return  template_dictionary
-         
-         
-    def fill_overlay_attributes(self, template_dictionary, title, description, content_template, 
+        return template_dictionary
+
+
+    def fill_overlay_attributes(self, template_dictionary, title, description, content_template,
                                 css_class, tabs=None, overlay_indexes=None):
         """
         This method prepares parameters for rendering overlay (overlay.html)
@@ -475,21 +515,21 @@ class BaseController(object):
         """
         if template_dictionary is None:
             template_dictionary = dict()
-        
+
         template_dictionary[KEY_OVERLAY_TITLE] = title
         template_dictionary[KEY_OVERLAY_DESCRIPTION] = description
         template_dictionary[KEY_OVERLAY_CONTENT_TEMPLATE] = content_template
-        template_dictionary[KEY_OVERLAY_CLASS] = css_class        
+        template_dictionary[KEY_OVERLAY_CLASS] = css_class
         template_dictionary[KEY_OVERLAY_TABS] = tabs if tabs is not None and len(tabs) > 0 else []
         if overlay_indexes is not None:
-            template_dictionary[KEY_OVERLAY_INDEXES] = overlay_indexes  
+            template_dictionary[KEY_OVERLAY_INDEXES] = overlay_indexes
         else:
             template_dictionary[KEY_OVERLAY_INDEXES] = range(len(tabs)) if tabs is not None else []
         template_dictionary[KEY_OVERLAY_PAGINATION] = False
-            
+
         return template_dictionary
-    
-    
+
+
     @cherrypy.expose
     @using_template('overlay_blocker')
     def showBlockerOverlay(self, **data):
@@ -497,8 +537,8 @@ class BaseController(object):
         Returns the content of the blocking overlay (covers entire page and do not allow any action)
         """
         return self.fill_default_attributes(dict(data))
-    
-        
+
+
     def update_operations_count(self):
         """
         If a project is selected, update Operation Numbers in call-out.

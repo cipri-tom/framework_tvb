@@ -30,7 +30,7 @@ import json
 from tvb.datatypes.surfaces import LocalConnectivity
 from tvb.core.adapters.abcadapter import ABCAdapter
 import tvb.interfaces.web.controllers.basecontroller as base
-from tvb.interfaces.web.controllers.basecontroller import using_template
+from tvb.interfaces.web.controllers.basecontroller import using_template, ajax_call
 from tvb.interfaces.web.controllers.userscontroller import logged
 from tvb.interfaces.web.controllers.spatial.base_spatiotemporalcontroller import SpatioTemporalController
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
@@ -46,11 +46,12 @@ RELOAD_DEFAULT_PAGE_URL = '/spatial/localconnectivity/reset_local_connectivity'
 
 KEY_LCONN_CONTEXT = "local-conn-ctx"
 
+
 class LocalConnectivityController(SpatioTemporalController):
     """
     Controller layer for displaying/creating a LocalConnectivity entity.
     """
-    
+
     def __init__(self):
         SpatioTemporalController.__init__(self)
         self.plotted_equations_prefixes = ['equation', 'surface']
@@ -70,7 +71,7 @@ class LocalConnectivityController(SpatioTemporalController):
             base.add2session(KEY_LCONN_CONTEXT, new_context)
         context = base.get_from_session(KEY_LCONN_CONTEXT)
         right_side_interface = self._get_lconn_interface()
-        left_side_interface = self.get_select_existent_entities('Load Local Connectivity', LocalConnectivity, 
+        left_side_interface = self.get_select_existent_entities('Load Local Connectivity', LocalConnectivity,
                                                                 context.selected_entity)
         #add interface to session, needed for filters
         self.add_interface_to_session(left_side_interface, right_side_interface['inputList'])
@@ -98,7 +99,7 @@ class LocalConnectivityController(SpatioTemporalController):
             use the same js function for this. TODO: do this in a smarter way
         """
         context = base.get_from_session(KEY_LCONN_CONTEXT)
-        left_side_interface = self.get_select_existent_entities('Load Local Connectivity:', LocalConnectivity, 
+        left_side_interface = self.get_select_existent_entities('Load Local Connectivity:', LocalConnectivity,
                                                                 context.selected_entity)
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step2_main'
@@ -128,14 +129,15 @@ class LocalConnectivityController(SpatioTemporalController):
         if context.selected_entity == None:
             input_list = self.get_creator_and_interface(LOCAL_CONN_CREATOR_MODULE,
                                                         LOCAL_CONN_CREATOR_CLASS, LocalConnectivity(),
-                                                        lock_midpoint_for_eq = [1])[1]
+                                                        lock_midpoint_for_eq=[1])[1]
             input_list = self._add_extra_fields_to_interface(input_list)
             return self.prepare_entity_interface(input_list)
         else:
             return self.get_template_from_context()
-        
+
 
     @cherrypy.expose
+    @ajax_call(False)
     @logged()
     def create_local_connectivity(self, **kwargs):
         """
@@ -152,6 +154,7 @@ class LocalConnectivityController(SpatioTemporalController):
 
 
     @cherrypy.expose
+    @ajax_call(False)
     @logged()
     def load_local_connectivity(self, local_connectivity_gid, from_step=None):
         """
@@ -159,14 +162,15 @@ class LocalConnectivityController(SpatioTemporalController):
         """
         context = base.get_from_session(KEY_LCONN_CONTEXT)
         context.selected_entity = local_connectivity_gid
-        base.add2session(base.KEY_MESSAGE, "Successfully loaded existent entity gid=%s"%(local_connectivity_gid,))
+        base.add2session(base.KEY_MESSAGE, "Successfully loaded existent entity gid=%s" % (local_connectivity_gid,))
         if int(from_step) == 1:
             return self.step_1()
         if int(from_step) == 2:
             return self.step_2()
 
-    
+
     @cherrypy.expose
+    @ajax_call(False)
     @logged()
     def reset_local_connectivity(self, from_step):
         """
@@ -179,7 +183,7 @@ class LocalConnectivityController(SpatioTemporalController):
         context = base.get_from_session(KEY_LCONN_CONTEXT)
         context.reset()
         return self.step_1()
-        
+
 
     def get_template_from_context(self):
         """
@@ -197,7 +201,7 @@ class LocalConnectivityController(SpatioTemporalController):
             equation_type = equation.__class__.__name__
             default_dict['equation'] = equation_type
             for param in equation.parameters:
-                prepared_name = 'equation_parameters_option_' + str(equation_type) 
+                prepared_name = 'equation_parameters_option_' + str(equation_type)
                 prepared_name = prepared_name + '_parameters_parameters_' + str(param)
                 default_dict[prepared_name] = equation.parameters[param]
         else:
@@ -210,7 +214,7 @@ class LocalConnectivityController(SpatioTemporalController):
 
         input_list = self.get_creator_and_interface(LOCAL_CONN_CREATOR_MODULE,
                                                     LOCAL_CONN_CREATOR_CLASS, LocalConnectivity(),
-                                                    lock_midpoint_for_eq = [1])[1]
+                                                    lock_midpoint_for_eq=[1])[1]
         input_list = self._add_extra_fields_to_interface(input_list)
         input_list = ABCAdapter.fill_defaults(input_list, default_dict)
 
@@ -230,8 +234,8 @@ class LocalConnectivityController(SpatioTemporalController):
                         'type': 'str', "disabled": "False"}
         input_list.append(display_name)
         return input_list
-    
-    
+
+
     def fill_default_attributes(self, template_dictionary):
         """
         Overwrite base controller to add required parameters for adapter templates.
@@ -242,8 +246,10 @@ class LocalConnectivityController(SpatioTemporalController):
         template_dictionary[base.KEY_INCLUDE_RESOURCES] = 'spatial/included_resources'
         base.BaseController.fill_default_attributes(self, template_dictionary)
         return template_dictionary
-    
+
+
     @cherrypy.expose
+    @ajax_call()
     @logged()
     def compute_data_for_gradient_view(self, local_connectivity_gid, selected_triangle):
         """
@@ -267,7 +273,7 @@ class LocalConnectivityController(SpatioTemporalController):
                 result.append(picked_data[start_idx:start_idx + chunk_size + buffer_size])
         result = {'min_value': min(picked_data), 'max_value': max(picked_data), 'data': json.dumps(result)}
 
-        return json.dumps(result)
+        return result
 
 
     @staticmethod
@@ -277,23 +283,23 @@ class LocalConnectivityController(SpatioTemporalController):
         normal = '{"data": ' + json.dumps(ideal_case) + ', "lines" : {"lineWidth" : 1},'
         normal += '"label": "Theoretical case", color : "rgb(52, 255, 25)"'
         normal += '}'
-        
+
         data_2_by_2 = '{"data": ' + json.dumps(average_case) + ', "lines" : {"lineWidth" : 1},'
         data_2_by_2 += '"label": "Most probable", color : "rgb(148, 0, 179)"'
         data_2_by_2 += '}'
-        
+
         data_3_by_3 = '{"data": ' + json.dumps(worst_case) + ', "lines" : {"lineWidth" : 1},'
         data_3_by_3 += '"label": "Worst case", color : "rgb(0, 0, 255)"'
         data_3_by_3 += '}'
-        
+
         data_double_length = '{"data": ' + json.dumps(best_case) + ', "lines" : {"lineWidth" : 1},'
         data_double_length += '"label": "Best case", color : "rgb(122, 122, 0)"'
         data_double_length += '}'
-        
+
         data_vertical_line = '{"data": ' + json.dumps(vertical_line) + ', "points": { "show" : true, "radius" : 1 },'
         data_vertical_line += '"label": "Cut-off distance", color : "rgb(255, 0, 0)"'
         data_vertical_line += '}'
-        
+
         series.append(normal)
         series.append(data_2_by_2)
         series.append(data_3_by_3)
@@ -314,8 +320,7 @@ class LocalConnectivityController(SpatioTemporalController):
             try:
                 context = base.get_from_session(KEY_LCONN_CONTEXT)
                 surface_gid = form_data['surface']
-                if (context.selected_surface is None or 
-                                            context.selected_surface.gid != surface_gid):
+                if (context.selected_surface is None or context.selected_surface.gid != surface_gid):
                     surface = ABCAdapter.load_entity_by_gid(surface_gid)
                 else:
                     surface = context.selected_surface
@@ -324,26 +329,26 @@ class LocalConnectivityController(SpatioTemporalController):
                 max_x = float(form_data["cutoff"])
                 if max_x <= 0:
                     max_x = 50
-                form_data = local_connectivity_creator.prepare_ui_inputs(form_data, validation_required = False)
+                form_data = local_connectivity_creator.prepare_ui_inputs(form_data, validation_required=False)
                 equation = local_connectivity_creator.get_lconn_equation(form_data)
                 #What we want
                 ideal_case_series, _ = equation.get_series_data(0, 2 * max_x)
-                
+
                 #What we'll mostly get
                 avg_res = 2 * int(max_x / surface.edge_length_mean)
-                step =  max_x * 2 / (avg_res-1)
+                step = max_x * 2 / (avg_res - 1)
                 average_case_series, _ = equation.get_series_data(0, 2 * max_x, step)
-                
+
                 #It can be this bad
                 worst_res = 2 * int(max_x / surface.edge_length_max)
-                step =  2 * max_x / (worst_res-1)
+                step = 2 * max_x / (worst_res - 1)
                 worst_case_series, _ = equation.get_series_data(0, 2 * max_x, step)
-                
+
                 #This is as good as it gets...
                 best_res = 2 * int(max_x / surface.edge_length_min)
-                step =  2 * max_x / (best_res-1)
+                step = 2 * max_x / (best_res - 1)
                 best_case_series, _ = equation.get_series_data(0, 2 * max_x, step)
-                
+
                 max_y = -1000000000
                 min_y = 10000000000
                 for i in range(len(ideal_case_series)):
@@ -359,20 +364,21 @@ class LocalConnectivityController(SpatioTemporalController):
                 vertical_step = (max_y - min_y) / NO_OF_CUTOFF_POINTS
                 for i in xrange(NO_OF_CUTOFF_POINTS):
                     vertical_line.append([max_x, min_y + i * vertical_step])
-                json_data = self.get_series_json(ideal_case_series, average_case_series, worst_case_series, best_case_series, vertical_line)
+                json_data = self.get_series_json(ideal_case_series, average_case_series, worst_case_series,
+                                                 best_case_series, vertical_line)
                 all_series = self.build_final_json(json_data)
-                
-                return {'allSeries': all_series, 'prefix': self.plotted_equations_prefixes[0], "message" : None}
+
+                return {'allSeries': all_series, 'prefix': self.plotted_equations_prefixes[0], "message": None}
             except NameError, ex:
                 self.logger.exception(ex)
-                return {'allSeries' : None, 'errorMsg' : "Incorrect parameters for equation passed."}
+                return {'allSeries': None, 'errorMsg': "Incorrect parameters for equation passed."}
             except SyntaxError, ex:
                 self.logger.exception(ex)
-                return {'allSeries' : None, 'errorMsg' : "Some of the parameters hold invalid characters."}
+                return {'allSeries': None, 'errorMsg': "Some of the parameters hold invalid characters."}
             except Exception, ex:
                 self.logger.exception(ex)
-                return {'allSeries' : None, 'errorMsg' : ex.message}
-        return {'allSeries' : None, 'errorMsg' : "Equation should not be None for a valid local connectivity."}
+                return {'allSeries': None, 'errorMsg': ex.message}
+        return {'allSeries': None, 'errorMsg': "Equation should not be None for a valid local connectivity."}
     
     
     

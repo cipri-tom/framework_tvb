@@ -39,7 +39,7 @@ from tvb.core.services.burstservice import BurstService, KEY_PARAMETER_CHECKED
 from tvb.core.services.workflowservice import WorkflowService
 import tvb.interfaces.web.controllers.basecontroller as base
 from tvb.interfaces.web.controllers.userscontroller import logged
-from tvb.interfaces.web.controllers.basecontroller import using_template
+from tvb.interfaces.web.controllers.basecontroller import using_template, ajax_call
 from tvb.interfaces.web.controllers.flowcontroller import context_selected, KEY_CONTROLLS, SelectedAdapterContext
 
 PORTLET_STEP_SEPARATOR = "____"
@@ -66,8 +66,7 @@ class BurstController(base.BaseController):
     def index(self):
         """Get on burst main page"""
         template_specification = dict(mainContent="burst/main_burst", title="Simulation Cockpit",
-                                      baseUrl=cfg.BASE_URL, dontShowDummyLeaf=StructureNode.JSTREE_DUMMY_LEAF,
-                                      includedResources='project/included_resources')
+                                      baseUrl=cfg.BASE_URL, includedResources='project/included_resources')
         portlets_list = self.burst_service.get_available_portlets()
         session_stored_burst = base.get_from_session(base.KEY_BURST_CONFIG)
         if session_stored_burst is None or session_stored_burst.id is None:
@@ -120,6 +119,7 @@ class BurstController(base.BaseController):
 
 
     @cherrypy.expose
+    @ajax_call(False)
     def get_selected_burst(self):
         """
         Return the burst that is currently stored in session.
@@ -221,6 +221,7 @@ class BurstController(base.BaseController):
 
 
     @cherrypy.expose
+    @ajax_call()
     def change_selected_tab(self, tab_nr):
         """
         Set :param tab_nr: as the currently selected tab in the stored burst
@@ -230,6 +231,7 @@ class BurstController(base.BaseController):
 
 
     @cherrypy.expose
+    @ajax_call()
     def get_portlet_session_configuration(self):
         """
         Get the current configuration of portlets stored in session for this burst,
@@ -237,10 +239,11 @@ class BurstController(base.BaseController):
         """
         burst_entity = base.get_from_session(base.KEY_BURST_CONFIG)
         returned_configuration = burst_entity.update_selected_portlets()
-        return json.dumps(returned_configuration)
+        return returned_configuration
 
 
     @cherrypy.expose
+    @ajax_call(False)
     def save_parameters(self, index_in_tab, **data):
         """
         Save parameters
@@ -272,6 +275,7 @@ class BurstController(base.BaseController):
 
 
     @cherrypy.expose
+    @ajax_call()
     def rename_burst(self, burst_id, burst_name):
         """
         Rename the burst given by burst_id, setting it's new name to
@@ -282,6 +286,7 @@ class BurstController(base.BaseController):
 
 
     @cherrypy.expose
+    @ajax_call()
     def launch_burst(self, launch_mode, burst_name, **data):
         """
         Do the actual burst launch, using the configuration saved in current session.
@@ -305,10 +310,11 @@ class BurstController(base.BaseController):
 
         ## Do the asynchronous launch
         burst_id, burst_name = self.burst_service.launch_burst(burst_config, 0, sim_algo_id, user_id, launch_mode)
-        return json.dumps([burst_id, burst_name])
+        return [burst_id, burst_name]
 
 
     @cherrypy.expose
+    @ajax_call()
     def load_burst(self, burst_id):
         """
         Given a clicked burst from the history and the selected tab, load all 
@@ -320,8 +326,7 @@ class BurstController(base.BaseController):
             burst, group_id = self.burst_service.load_burst(burst_id)
             burst.selected_tab = old_burst.selected_tab
             base.add2session(base.KEY_BURST_CONFIG, burst)
-            result = {'status': burst.status, 'group_id': group_id, 'selected_tab': burst.selected_tab}
-            return json.dumps(result)
+            return {'status': burst.status, 'group_id': group_id, 'selected_tab': burst.selected_tab}
         except Exception, excep:
             ### Most probably Burst was removed. Delete it from session, so that client 
             ### has a good chance to get a good response on refresh
@@ -331,15 +336,16 @@ class BurstController(base.BaseController):
 
 
     @cherrypy.expose
+    @ajax_call()
     def get_history_status(self, **data):
         """
         For each burst id received, get the status and return it.
         """
-        result = self.burst_service.update_history_status(json.loads(data['burst_ids']))
-        return json.dumps(result)
+        return self.burst_service.update_history_status(json.loads(data['burst_ids']))
 
 
     @cherrypy.expose
+    @ajax_call(False)
     def remove_burst_entity(self, burst_id):
         """
         Remove the burst entity given by burst_id.
@@ -359,15 +365,17 @@ class BurstController(base.BaseController):
 
 
     @cherrypy.expose
+    @ajax_call()
     def get_selected_portlets(self):
         """
         Get the selected portlets for the loaded burst.
         """
         burst = base.get_from_session(base.KEY_BURST_CONFIG)
-        return json.dumps(burst.update_selected_portlets())
+        return burst.update_selected_portlets()
 
 
     @cherrypy.expose
+    @ajax_call(False)
     def get_visualizers_for_operation_id(self, op_id, width, height):
         """
         Method called from parameters exploration page in case a burst with a range of parameters
@@ -418,6 +426,7 @@ class BurstController(base.BaseController):
 
 
     @cherrypy.expose
+    @ajax_call()
     def reset_burst(self):
         """
         Called when click on "New Burst" entry happens from UI.
@@ -428,6 +437,7 @@ class BurstController(base.BaseController):
 
 
     @cherrypy.expose
+    @ajax_call(False)
     def copy_burst(self, burst_id):
         """
         When currently selected entry is a valid Burst, create a clone of that Burst.
@@ -513,6 +523,7 @@ class BurstController(base.BaseController):
 
 
     @cherrypy.expose
+    @ajax_call()
     def get_previous_selected_rangers(self):
         """
         Retrieve Rangers, if any previously selected in Burst.
@@ -522,10 +533,11 @@ class BurstController(base.BaseController):
         if burst_config is not None:
             first_range = burst_config.get_simulation_parameter_value('first_range') or '0'
             second_range = burst_config.get_simulation_parameter_value('second_range') or '0'
-        return json.dumps([first_range, second_range])
+        return [first_range, second_range]
 
 
     @cherrypy.expose
+    @ajax_call()
     def save_simulator_configuration(self, exclude_ranges, **data):
         """
         :param exclude_ranges: should be a boolean value. If it is True than the

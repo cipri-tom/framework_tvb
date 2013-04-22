@@ -32,7 +32,7 @@ import tvb.datatypes.equations as equations
 import tvb.interfaces.web.controllers.basecontroller as base
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.interfaces.web.controllers.userscontroller import logged
-from tvb.interfaces.web.controllers.basecontroller import using_template
+from tvb.interfaces.web.controllers.basecontroller import using_template, ajax_call
 from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
 from tvb.interfaces.web.controllers.spatial.base_spatiotemporalcontroller import SpatioTemporalController
 from tvb.interfaces.web.controllers.spatial.base_spatiotemporalcontroller import PARAMS_MODEL_PATTERN
@@ -47,7 +47,6 @@ PARAMETERS = 'parameters'
 
 ### SESSION KEY for ContextModelParameter entity.
 KEY_CONTEXT_MPS = "ContextForModelParametersOnSurface"
-
 
 
 class SurfaceModelParametersController(SpatioTemporalController):
@@ -98,7 +97,8 @@ class SurfaceModelParametersController(SpatioTemporalController):
         context_model_parameters.apply_equation(model_param, equation)
         base.add2session(KEY_CONTEXT_MPS, context_model_parameters)
         template_specification = self.get_surface_model_parameters_data(model_param)
-        template_specification = self._add_entra_equation_entries(template_specification, kwargs['min_x'], kwargs['max_x'])
+        template_specification = self._add_entra_equation_entries(template_specification,
+                                                                  kwargs['min_x'], kwargs['max_x'])
         template_specification['equationViewerUrl'] = '/spatial/modelparameters/surface/get_equation_chart'
         template_specification['equationsPrefixes'] = json.dumps(self.plotted_equations_prefixes)
         return self.fill_default_attributes(template_specification)
@@ -133,8 +133,8 @@ class SurfaceModelParametersController(SpatioTemporalController):
         """
         context_model_parameters = base.get_from_session(KEY_CONTEXT_MPS)
         context_model_parameters.remove_focal_point(model_param, vertex_index)
-        return {'focal_points':context_model_parameters.get_focal_points_for_parameter(model_param),
-                'focal_points_json':json.dumps(context_model_parameters.get_focal_points_for_parameter(model_param))}
+        return {'focal_points': context_model_parameters.get_focal_points_for_parameter(model_param),
+                'focal_points_json': json.dumps(context_model_parameters.get_focal_points_for_parameter(model_param))}
 
 
     @cherrypy.expose
@@ -146,11 +146,12 @@ class SurfaceModelParametersController(SpatioTemporalController):
         equation used for computing the values for the given model parameter.
         """
         context_model_parameters = base.get_from_session(KEY_CONTEXT_MPS)
-        return {'focal_points':context_model_parameters.get_focal_points_for_parameter(model_param),
-                'focal_points_json':json.dumps(context_model_parameters.get_focal_points_for_parameter(model_param))}
+        return {'focal_points': context_model_parameters.get_focal_points_for_parameter(model_param),
+                'focal_points_json': json.dumps(context_model_parameters.get_focal_points_for_parameter(model_param))}
 
 
     @cherrypy.expose
+    @ajax_call()
     @logged()
     def submit_model_parameters(self):
         """
@@ -172,9 +173,9 @@ class SurfaceModelParametersController(SpatioTemporalController):
         ### Update in session BURST configuration for burst-page.
         base.add2session(base.KEY_BURST_CONFIG, burst_configuration.clone())
         raise cherrypy.HTTPRedirect("/burst/")
-        
 
-    def _add_entra_equation_entries(self, input_list, min_x = 0, max_x = 100):
+
+    def _add_entra_equation_entries(self, input_list, min_x=0, max_x=100):
         """
         Add additional entries for the min and max of the plot.
         """
@@ -189,7 +190,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         return input_list
 
 
-    def get_surface_model_parameters_data(self, default_selected_model_param = None):
+    def get_surface_model_parameters_data(self, default_selected_model_param=None):
         """
         Returns a dictionary which contains all the data needed for drawing the
         model parameters.
@@ -211,7 +212,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
             options.append(option)
 
         input_list = [{'name': 'model_param', 'type': 'select', 'default': default_selected_model_param,
-                        'label': 'Model param', 'required': True, 'options': options}]
+                       'label': 'Model param', 'required': True, 'options': options}]
         input_list = ABCAdapter.prepare_param_names(input_list)
         return {base.KEY_PARAMETERS_CONFIG: False, 'inputList': input_list,
                 'applied_equations': context_model_parameters.get_configure_info()}
@@ -260,11 +261,10 @@ class SurfaceModelParametersController(SpatioTemporalController):
             equation_params = {}
         for param in equation_params:
             equation_params[param] = float(equation_params[param])
-        selected_equation = get_traited_instance_for_name(equation,
-            equations.Equation, {PARAMETERS: equation_params})
+        selected_equation = get_traited_instance_for_name(equation, equations.Equation, {PARAMETERS: equation_params})
         return model_param, selected_equation
-    
-    
+
+
     def fill_default_attributes(self, template_dictionary):
         """
         Overwrite base controller to add required parameters for adapter templates.
@@ -287,21 +287,21 @@ class SurfaceModelParametersController(SpatioTemporalController):
             min_x, max_x, ui_message = self.get_x_axis_range(form_data['min_x'], form_data['max_x'])
             form_data = ABCAdapter.collapse_arrays(form_data, self.plotted_equations_prefixes)
             _, equation = self._compute_equation(form_data)
-            series_data, display_ui_message = equation.get_series_data(min_range = min_x, max_range = max_x)
+            series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
             json_data = self.get_series_json(series_data, "Spatial")
             all_series = self.build_final_json([json_data])
             ui_message = ''
             if display_ui_message:
                 ui_message = self.get_ui_message(["spatial"])
-    
+
             return {'allSeries': all_series, 'prefix': self.plotted_equations_prefixes[0], 'message': ui_message}
         except NameError, ex:
             self.logger.exception(ex)
-            return {'allSeries' : None, 'errorMsg' : "Incorrect parameters for equation passed."}
+            return {'allSeries': None, 'errorMsg': "Incorrect parameters for equation passed."}
         except SyntaxError, ex:
             self.logger.exception(ex)
-            return {'allSeries' : None, 'errorMsg' : "Some of the parameters hold invalid characters."}
+            return {'allSeries': None, 'errorMsg': "Some of the parameters hold invalid characters."}
         except Exception, ex:
             self.logger.exception(ex)
-            return {'allSeries' : None, 'errorMsg' : ex.message}
+            return {'allSeries': None, 'errorMsg': ex.message}
         

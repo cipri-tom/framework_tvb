@@ -32,7 +32,7 @@ import copy
 from tvb.datatypes.patterns import StimuliSurface
 from tvb.core.adapters.abcadapter import ABCAdapter
 import tvb.interfaces.web.controllers.basecontroller as base
-from tvb.interfaces.web.controllers.basecontroller import using_template
+from tvb.interfaces.web.controllers.basecontroller import using_template, ajax_call
 from tvb.interfaces.web.controllers.userscontroller import logged
 from tvb.interfaces.web.controllers.spatial.base_spatiotemporalcontroller import SpatioTemporalController, PARAM_SURFACE
 from tvb.core.entities.transient.context_stimulus import SurfaceStimulusContext, SURFACE_PARAMETER
@@ -48,11 +48,12 @@ CHUNK_SIZE = 20
 
 KEY_SURFACE_CONTEXT = "stim-surface-ctx"
 
+
 class SurfaceStimulusController(SpatioTemporalController):
     """
     Control layer for defining Stimulus entities on a cortical surface.
     """
-    
+
     def __init__(self):
         SpatioTemporalController.__init__(self)
         #if any field that starts with one of the following prefixes is changed
@@ -68,7 +69,8 @@ class SurfaceStimulusController(SpatioTemporalController):
         context = base.get_from_session(KEY_SURFACE_CONTEXT)
         right_side_interface = self._get_stimulus_interface()
         selected_stimulus_gid = context.get_selected_stimulus()
-        left_side_interface = self.get_select_existent_entities('Load Surface Stimulus:', StimuliSurface, selected_stimulus_gid)
+        left_side_interface = self.get_select_existent_entities('Load Surface Stimulus:', StimuliSurface,
+                                                                selected_stimulus_gid)
         #add interface to session, needed for filters
         self.add_interface_to_session(left_side_interface, right_side_interface['inputList'])
         template_specification = dict(title="Spatio temporal - Surface stimulus")
@@ -82,13 +84,15 @@ class SurfaceStimulusController(SpatioTemporalController):
         template_specification['next_step_url'] = '/spatial/stimulus/surface/step_1_submit'
         return self.fill_default_attributes(template_specification)
 
+
     def step_2(self):
         """
         Used for generating the interface which allows the user to define a stimulus.
         """
         context = base.get_from_session(KEY_SURFACE_CONTEXT)
         selected_stimulus_gid = context.get_selected_stimulus()
-        left_side_interface = self.get_select_existent_entities('Load Surface Stimulus:', StimuliSurface, selected_stimulus_gid)
+        left_side_interface = self.get_select_existent_entities('Load Surface Stimulus:', StimuliSurface,
+                                                                selected_stimulus_gid)
         template_specification = dict(title="Spatio temporal - Surface stimulus")
         template_specification['existentEntitiesInputList'] = left_side_interface
         template_specification['mainContent'] = 'spatial/stimulus_surface_step2_main'
@@ -101,7 +105,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         template_specification.update(self.display_surface(context.get_session_surface()))
         return self.fill_default_attributes(template_specification)
 
-    
+
     def do_step(self, step_idx, from_step=None):
         """
         Go to the step given by :param step_idx. In case the next step is the
@@ -119,10 +123,11 @@ class SurfaceStimulusController(SpatioTemporalController):
                 return self.step_2()
             return self.step_1()
 
+
     @cherrypy.expose
     @using_template('base_template')
     @logged()
-    def step_1_submit(self, next_step, do_reset = 0, **kwargs):
+    def step_1_submit(self, next_step, do_reset=0, **kwargs):
         """
         Any submit from the first step should be handled here. Update the context then
         go to the next step as required. In case a reset is needed create a clear context.
@@ -135,7 +140,8 @@ class SurfaceStimulusController(SpatioTemporalController):
             context.set_focal_points('[]')
         context.update_eq_kwargs(kwargs)
         return self.do_step(next_step)
-    
+
+
     @cherrypy.expose
     @using_template('base_template')
     @logged()
@@ -149,7 +155,8 @@ class SurfaceStimulusController(SpatioTemporalController):
         context.set_focal_points(submited_focal_points)
         context.equation_kwargs[DataTypeMetaData.KEY_TAG_1] = kwargs[DataTypeMetaData.KEY_TAG_1]
         return self.do_step(next_step, 2)
-        
+
+
     def create_stimulus(self):
         """
         Creates a stimulus from the given data.
@@ -162,7 +169,7 @@ class SurfaceStimulusController(SpatioTemporalController):
                                              base.get_current_project().id, **context.equation_kwargs)
             base.set_info_message("The operation for creating the stimulus was successfully launched.")
             context.selected_stimulus = None
-#            context.reset()
+
         except (NameError, ValueError, SyntaxError), _:
             base.set_error_message("The operation failed due to invalid parameter input.")
             return False
@@ -170,6 +177,7 @@ class SurfaceStimulusController(SpatioTemporalController):
             base.set_error_message(ex.message)
             return False
         return True
+
 
     @cherrypy.expose
     @using_template('base_template')
@@ -190,9 +198,9 @@ class SurfaceStimulusController(SpatioTemporalController):
         spatial_eq_type = spatial_eq.__class__.__name__
         default_dict = {'temporal': temporal_eq_type, 'spatial': spatial_eq_type,
                         'surface': surface.gid, 'focal_points_surface': json.dumps(focal_points_surface),
-                        'focal_points_triangles' : json.dumps(focal_points_triangles)}
+                        'focal_points_triangles': json.dumps(focal_points_triangles)}
         for param in temporal_eq.parameters:
-            prepared_name = 'temporal_parameters_option_' + str(temporal_eq_type) 
+            prepared_name = 'temporal_parameters_option_' + str(temporal_eq_type)
             prepared_name = prepared_name + '_parameters_parameters_' + str(param)
             default_dict[prepared_name] = str(temporal_eq.parameters[param])
         for param in spatial_eq.parameters:
@@ -203,13 +211,14 @@ class SurfaceStimulusController(SpatioTemporalController):
 
         input_list = self.get_creator_and_interface(SURFACE_STIMULUS_CREATOR_MODULE,
                                                     SURFACE_STIMULUS_CREATOR_CLASS, StimuliSurface(),
-                                                    lock_midpoint_for_eq = [1])[1]
+                                                    lock_midpoint_for_eq=[1])[1]
         input_list = ABCAdapter.fill_defaults(input_list, default_dict)
         context.reset()
         context.update_from_interface(input_list)
         context.equation_kwargs[DataTypeMetaData.KEY_TAG_1] = selected_surface_stimulus.user_tag_1
         context.set_active_stimulus(surface_stimulus_gid)
         return self.do_step(from_step)
+
 
     @cherrypy.expose
     @using_template('base_template')
@@ -226,8 +235,9 @@ class SurfaceStimulusController(SpatioTemporalController):
         context.reset()
         return self.do_step(1)
 
-    
+
     @cherrypy.expose
+    @ajax_call()
     @logged()
     def view_stimulus(self, focal_points):
         """
@@ -259,27 +269,33 @@ class SurfaceStimulusController(SpatioTemporalController):
                 data.append(step_data)
             stimulus.surface = surface.gid
             base.add2session(KEY_STIMULUS, stimulus)
-            result = {'status' : 'ok', 'max' : max_value, 'data' : data, "time_min" : min_time, "time_max" : max_time, "chunk_size" : CHUNK_SIZE}
-            return json.dumps(result)
+            result = {'status': 'ok', 'max': max_value, 'data': data, "time_min": min_time, "time_max": max_time,
+                      "chunk_size": CHUNK_SIZE}
+            return result
         except (NameError, ValueError, SyntaxError), ex:
-            return json.dumps({'status' : 'error', 'errorMsg' : "Could not generate stimulus data. Some of the parameters hold invalid characters."})
+            return {'status': 'error',
+                    'errorMsg': "Could not generate stimulus data. Some of the parameters hold invalid characters."}
         except Exception, ex:
-            return json.dumps({'allSeries' : 'error', 'errorMsg' : ex.message})
+            return {'allSeries': 'error', 'errorMsg': ex.message}
+
 
     def fill_default_attributes(self, template_specification):
         """
         Add some entries that are used in both steps then fill the default required attributes.
         """
         context = base.get_from_session(KEY_SURFACE_CONTEXT)
-        template_specification["entitiySavedName"] = [{'name': DataTypeMetaData.KEY_TAG_1, 'label': 'Display name', 'type': 'str', 
-                        "disabled": "False", "default": context.equation_kwargs.get(DataTypeMetaData.KEY_TAG_1, '')}]
+        template_specification["entitiySavedName"] = [
+            {'name': DataTypeMetaData.KEY_TAG_1, 'label': 'Display name', 'type': 'str',
+             "disabled": "False", "default": context.equation_kwargs.get(DataTypeMetaData.KEY_TAG_1, '')}]
         template_specification['loadExistentEntityUrl'] = LOAD_EXISTING_URL
         template_specification['resetToDefaultUrl'] = RELOAD_DEFAULT_PAGE_URL
         template_specification['displayedMessage'] = base.get_from_session(base.KEY_MESSAGE)
         template_specification['messageType'] = base.get_from_session(base.KEY_MESSAGE_TYPE)
-        return super(SurfaceStimulusController, self).fill_default_attributes(template_specification, subsection='surfacestim')
+        return super(SurfaceStimulusController, self).fill_default_attributes(template_specification,
+                                                                              subsection='surfacestim')
 
     @cherrypy.expose
+    @ajax_call()
     @logged()
     def get_stimulus_chunk(self, chunk_idx):
         """
@@ -291,10 +307,11 @@ class SurfaceStimulusController(SpatioTemporalController):
         if stimulus.surface.gid != surface_gid:
             raise Exception("TODO: Surface changed while visualizing stimulus. See how to handle this.")
         data = []
-        for idx in range(chunk_idx * CHUNK_SIZE, min((chunk_idx + 1) * CHUNK_SIZE, stimulus.temporal_pattern.shape[1]), 1):
+        for idx in range(chunk_idx * CHUNK_SIZE,
+                         min((chunk_idx + 1) * CHUNK_SIZE, stimulus.temporal_pattern.shape[1]), 1):
             data.append(stimulus(idx).tolist())
-        return json.dumps(data)
-        
+        return data
+
 
     @cherrypy.expose
     @using_template('spatial/equation_displayer')
@@ -310,7 +327,7 @@ class SurfaceStimulusController(SpatioTemporalController):
                                                                       SURFACE_STIMULUS_CREATOR_CLASS, StimuliSurface())[0]
             form_data = surface_stimulus_creator.prepare_ui_inputs(form_data, validation_required=False)
             equation = surface_stimulus_creator.get_temporal_equation(form_data)
-            series_data, display_ui_message = equation.get_series_data(min_range = min_x, max_range = max_x)
+            series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
             json_data = self.get_series_json(series_data, "Temporal")
             all_series = self.build_final_json([json_data])
             if display_ui_message:
@@ -318,13 +335,13 @@ class SurfaceStimulusController(SpatioTemporalController):
             return {'allSeries': all_series, 'prefix': 'temporal', 'message': ui_message}
         except NameError, ex:
             self.logger.exception(ex)
-            return {'allSeries' : None, 'errorMsg' : "Incorrect parameters for equation passed."}
+            return {'allSeries': None, 'errorMsg': "Incorrect parameters for equation passed."}
         except SyntaxError, ex:
             self.logger.exception(ex)
-            return {'allSeries' : None, 'errorMsg' : "Some of the parameters hold invalid characters."}
+            return {'allSeries': None, 'errorMsg': "Some of the parameters hold invalid characters."}
         except Exception, ex:
             self.logger.exception(ex)
-            return {'allSeries' : None, 'errorMsg' : ex.message}
+            return {'allSeries': None, 'errorMsg': ex.message}
 
 
     @cherrypy.expose
@@ -341,7 +358,7 @@ class SurfaceStimulusController(SpatioTemporalController):
                                                                       SURFACE_STIMULUS_CREATOR_CLASS, StimuliSurface())[0]
             form_data = surface_stimulus_creator.prepare_ui_inputs(form_data, validation_required=False)
             equation = surface_stimulus_creator.get_spatial_equation(form_data)
-            series_data, display_ui_message = equation.get_series_data(min_range = min_x, max_range = max_x)
+            series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
             json_data = self.get_series_json(series_data, "Spatial")
             all_series = self.build_final_json([json_data])
             ui_message = ''
@@ -350,13 +367,13 @@ class SurfaceStimulusController(SpatioTemporalController):
             return {'allSeries': all_series, 'prefix': 'spatial', 'message': ui_message}
         except NameError, ex:
             self.logger.exception(ex)
-            return {'allSeries' : None, 'errorMsg' : "Incorrect parameters for equation passed."}
+            return {'allSeries': None, 'errorMsg': "Incorrect parameters for equation passed."}
         except SyntaxError, ex:
             self.logger.exception(ex)
-            return {'allSeries' : None, 'errorMsg' : "Some of the parameters hold invalid characters."}
+            return {'allSeries': None, 'errorMsg': "Some of the parameters hold invalid characters."}
         except Exception, ex:
             self.logger.exception(ex)
-            return {'allSeries' : None, 'errorMsg' : ex.message}
+            return {'allSeries': None, 'errorMsg': ex.message}
 
 
     def _get_stimulus_interface(self):
@@ -366,7 +383,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         context = base.get_from_session(KEY_SURFACE_CONTEXT)
         input_list = self.get_creator_and_interface(SURFACE_STIMULUS_CREATOR_MODULE,
                                                     SURFACE_STIMULUS_CREATOR_CLASS, StimuliSurface(),
-                                                    lock_midpoint_for_eq = [1])[1]
+                                                    lock_midpoint_for_eq=[1])[1]
         input_list = ABCAdapter.fill_defaults(input_list, context.equation_kwargs)
         input_list, focal_points_list = self._remove_focal_points(input_list)
         input_list = self.prepare_entity_interface(input_list)
@@ -393,27 +410,27 @@ class SurfaceStimulusController(SpatioTemporalController):
         adapter interface should be added in this method.
         """
         context = base.get_from_session(KEY_SURFACE_CONTEXT)
-        
+
         temporal_iface = []
-        min_tmp_x = {'name': 'min_tmp_x', 'label': 'Temporal Start Time(ms)', 'type': 'str', "disabled": "False", 
+        min_tmp_x = {'name': 'min_tmp_x', 'label': 'Temporal Start Time(ms)', 'type': 'str', "disabled": "False",
                      "default": context.equation_kwargs.get('min_tmp_x', 0),
                      "description": "The minimum value of the x-axis for temporal equation plot."}
-        max_tmp_x = {'name': 'max_tmp_x', 'label': 'Temporal End Time(ms)', 'type': 'str', "disabled": "False", 
-                    "default": context.equation_kwargs.get('max_tmp_x', 100),
-                    "description": "The maximum value of the x-axis for temporal equation plot."}
+        max_tmp_x = {'name': 'max_tmp_x', 'label': 'Temporal End Time(ms)', 'type': 'str', "disabled": "False",
+                     "default": context.equation_kwargs.get('max_tmp_x', 100),
+                     "description": "The maximum value of the x-axis for temporal equation plot."}
         temporal_iface.append(min_tmp_x)
         temporal_iface.append(max_tmp_x)
-        
+
         spatial_iface = []
-        min_space_x = {'name': 'min_space_x', 'label': 'Spatial Start Distance(mm)', 'type': 'str', "disabled": "False", 
+        min_space_x = {'name': 'min_space_x', 'label': 'Spatial Start Distance(mm)', 'type': 'str', "disabled": "False",
                        "default": context.equation_kwargs.get('min_space_x', 0),
                        "description": "The minimum value of the x-axis for spatial equation plot."}
-        max_space_x = {'name': 'max_space_x', 'label': 'Spatial End Distance(mm)', 'type': 'str', "disabled": "False", 
+        max_space_x = {'name': 'max_space_x', 'label': 'Spatial End Distance(mm)', 'type': 'str', "disabled": "False",
                        "default": context.equation_kwargs.get('max_space_x', 100),
                        "description": "The maximum value of the x-axis for spatial equation plot."}
         spatial_iface.append(min_space_x)
         spatial_iface.append(max_space_x)
-        
+
         input_list['spatialPlotInputList'] = spatial_iface
         input_list['temporalPlotInputList'] = temporal_iface
         return input_list

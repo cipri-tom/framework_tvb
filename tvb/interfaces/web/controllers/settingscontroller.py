@@ -24,7 +24,6 @@
 """
 
 import os
-import json
 import subprocess
 import cherrypy
 import formencode
@@ -34,11 +33,10 @@ from formencode import validators
 from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.core.utils import check_matlab_version
 from tvb.core.services.settingsservice import SettingsService
-from tvb.interfaces.web.controllers.basecontroller import using_template
+from tvb.interfaces.web.controllers.basecontroller import using_template, ajax_call
 from tvb.interfaces.web.controllers.userscontroller import admin, UserController
 from tvb.core.services.exceptions import InvalidSettingsException
-import tvb.interfaces.web.controllers.basecontroller as bc 
-
+import tvb.interfaces.web.controllers.basecontroller as bc
 
 
 class SettingsController(UserController):
@@ -46,11 +44,11 @@ class SettingsController(UserController):
     Controller for TVB-Settings web page.
     Inherit from UserController, to have the same fill_default_attributes method (with versionInfo).
     """
-    
+
     def __init__(self):
-        UserController.__init__(self)  
-        self.settingsservice = SettingsService()      
-           
+        UserController.__init__(self)
+        self.settingsservice = SettingsService()
+
 
     @cherrypy.expose
     @using_template('user/base_user')
@@ -64,7 +62,7 @@ class SettingsController(UserController):
                 data = form.to_python(data)
                 isrestart, isreset = self.settingsservice.save_settings(**data)
                 if isrestart:
-                    thread = threading.Thread(target=self._restart_services, kwargs={'should_reset' : isreset})
+                    thread = threading.Thread(target=self._restart_services, kwargs={'should_reset': isreset})
                     thread.start()
                     bc.add2session(bc.KEY_IS_RESTART, True)
                     bc.set_info_message('Please wait until TVB is restarted properly!')
@@ -74,14 +72,14 @@ class SettingsController(UserController):
             except formencode.Invalid, excep:
                 template_specification[bc.KEY_ERRORS] = excep.unpack_errors()
             except InvalidSettingsException, excep:
-                self.logger.error('Invalid settings!  Exception %s was raised' %(str(excep)))
+                self.logger.error('Invalid settings!  Exception %s was raised' % (str(excep)))
                 bc.set_error_message(excep.message)
         template_specification.update({'keys_order': self.settingsservice.KEYS_DISPLAY_ORDER,
                                        'config_data': self.settingsservice.configurable_keys,
                                        bc.KEY_FIRST_RUN: self.settingsservice.is_first_run()})
         return self.fill_default_attributes(template_specification)
- 
- 
+
+
     def _restart_services(self, should_reset):
         """
         Restart CherryPy and Backend.
@@ -98,11 +96,12 @@ class SettingsController(UserController):
         proc_params = [python_path, '-m', 'bin.app', 'start', 'web']
         if should_reset:
             proc_params.append('reset')
-        subprocess.Popen(proc_params, shell=False) 
- 
- 
+        subprocess.Popen(proc_params, shell=False)
+
+
     @cherrypy.expose
-    def check_db_url(self, **data): 
+    @ajax_call()
+    def check_db_url(self, **data):
         """
         Action on DB-URL validate button.
         """
@@ -114,38 +113,37 @@ class SettingsController(UserController):
                 try:
                     os.mkdir(storage_path)
                 except OSError:
-                    return json.dumps({'status' : 'not ok', 
-                                       'message' : 'Could not create root storage for TVB. Are you sure you have permissions there?'})
+                    return {'status': 'not ok',
+                            'message': 'Could not create root storage for TVB. Are you sure you have permissions there?'}
             self.settingsservice.check_db_url(data[self.settingsservice.KEY_DB_URL])
-            return json.dumps({'status' : 'ok', 'message' : 'The database URL is valid.'})
+            return {'status': 'ok', 'message': 'The database URL is valid.'}
         except InvalidSettingsException, excep:
             self.logger.error(excep)
-            return json.dumps({'status' : 'not ok', 'message' : 'The database URL is not valid.'})
-            
-            
+            return {'status': 'not ok', 'message': 'The database URL is not valid.'}
+
+
     @cherrypy.expose
+    @ajax_call()
     def validate_matlab_path(self, **data):
         """
         Check if the set path from the ui actually corresponds to a matlab executable.
         """
         submitted_path = data[self.settingsservice.KEY_MATLAB_EXECUTABLE]
         if len(submitted_path) == 0:
-            return json.dumps({'status' : 'ok', 
-                               'message' : 'No Matlab/Ocatve path was given. Some analyzers will not be available.'})
+            return {'status': 'ok',
+                    'message': 'No Matlab/Ocatve path was given. Some analyzers will not be available.'}
         if os.path.isfile(submitted_path):
             version = check_matlab_version(submitted_path)
-            return json.dumps({'status' : 'ok', 
-                               'message' : 'Valid Matlab/Octave. Found version: %s.'%(version,)})
+            return {'status': 'ok', 'message': 'Valid Matlab/Octave. Found version: %s.' % (version,)}
         else:
-            return json.dumps({'status' : 'not ok', 
-                               'message' : 'Invalid Matlab/Octave path.'})
-    
+            return {'status': 'not ok', 'message': 'Invalid Matlab/Octave path.'}
+
 
 class DiskSpaceValidator(formencode.FancyValidator):
     """
     Custom validator for TVB disk space / user.
     """
-    
+
     def _to_python(self, value, _):
         """ 
         Validation required method.
@@ -154,8 +152,8 @@ class DiskSpaceValidator(formencode.FancyValidator):
         try:
             value = long(value)
         except Exception, _:
-            raise formencode.Invalid('Invalid disk space %s. Should be number'%value, value, None)
-        
+            raise formencode.Invalid('Invalid disk space %s. Should be number' % value, value, None)
+
         available_mem_kb = SettingsService.get_disk_free_space()
         kb_value = value * (2 ** 10)
         if kb_value > 0 and kb_value < available_mem_kb:
@@ -163,14 +161,14 @@ class DiskSpaceValidator(formencode.FancyValidator):
         else:
             available_mem_mb = available_mem_kb / (2 ** 10)
             raise formencode.Invalid('Invalid disk space %s. Should be number between 0 and %s MB (total '
-                                     'available space on your disk)!'%(value, available_mem_mb), value, None)
-     
-     
+                                     'available space on your disk)!' % (value, available_mem_mb), value, None)
+
+
 class PortValidator(formencode.FancyValidator):
     """
     Custom validator for OS Port number.
     """
-    
+
     def _to_python(self, value, _):
         """ 
         Validation required method.
@@ -178,18 +176,18 @@ class PortValidator(formencode.FancyValidator):
         try:
             value = int(value)
         except Exception, _:
-            raise formencode.Invalid('Invalid port %s. Should be number between 0 and 65535.'%value, value, None)
+            raise formencode.Invalid('Invalid port %s. Should be number between 0 and 65535.' % value, value, None)
         if value > 0 and value < 65535:
             return value
         else:
-            raise formencode.Invalid('Invalid port number %s. Should be in interval [0, 65535]'%value, value, None)
-   
-   
+            raise formencode.Invalid('Invalid port number %s. Should be in interval [0, 65535]' % value, value, None)
+
+
 class ThreadNrValidator(formencode.FancyValidator):
     """
     Custom validator number of threads.
     """
-    
+
     def _to_python(self, value, _):
         """ 
         Validation required method.
@@ -197,19 +195,19 @@ class ThreadNrValidator(formencode.FancyValidator):
         try:
             value = int(value)
         except Exception, _:
-            raise formencode.Invalid('Invalid number %d. Should be number between 1 and 16.'%value, value, None)
+            raise formencode.Invalid('Invalid number %d. Should be number between 1 and 16.' % value, value, None)
         if value > 0 and value < 17:
             return value
         else:
-            raise formencode.Invalid('Invalid number %d. Should be in interval [1, 16]'%value, value, None)
-        
+            raise formencode.Invalid('Invalid number %d. Should be in interval [1, 16]' % value, value, None)
+
 
 class SurfaceVerticesNrValidator(formencode.FancyValidator):
     """
     Custom validator for the number of vertices allowed for a surface
     """
     MAX_VALUE = 256 * 256 * 256 + 1 # Max number of colors 
-    
+
     def _to_python(self, value, _):
         """ 
         Validation required method.
@@ -219,17 +217,17 @@ class SurfaceVerticesNrValidator(formencode.FancyValidator):
             if value > 0 and value < self.MAX_VALUE:
                 return value
             else:
-                raise formencode.Invalid('Invalid value: %d. Should be a number between 1 and %d.'% (value, 
+                raise formencode.Invalid('Invalid value: %d. Should be a number between 1 and %d.'% (value,
                                                                             self.MAX_VALUE), value, None)
         except Exception, _:
-            raise formencode.Invalid('Invalid value: %d. Should be a number between 1 and %d.'% (value, 
+            raise formencode.Invalid('Invalid value: %d. Should be a number between 1 and %d.'% (value,
                                                                             self.MAX_VALUE), value, None)
-            
+
 class MatlabValidator(formencode.FancyValidator):
     """
     Custom validator for the number of vertices allowed for a surface
     """
-    
+
     def _to_python(self, value, _):
         """ 
         Validation required method.
@@ -242,13 +240,13 @@ class MatlabValidator(formencode.FancyValidator):
                 formencode.Invalid('No valid matlab installation was found at the path you provided.', '', None)
         except Exception, _:
             raise formencode.Invalid('No valid matlab installation was found at the path you provided.', '', None)
-           
-   
+
+
 class SettingsForm(formencode.Schema):
     """
     Validate Settings Page inputs.
     """
-    
+
     ADMINISTRATOR_NAME = formencode.All(validators.UnicodeString(not_empty=True), validators.PlainText())
     ADMINISTRATOR_PASSWORD = validators.UnicodeString(not_empty=True)
     ADMINISTRATOR_EMAIL = validators.Email(not_empty=True)
@@ -262,7 +260,7 @@ class SettingsForm(formencode.Schema):
     MPLH5_SERVER_PORT = PortValidator()
     MAXIMUM_NR_OF_THREADS = ThreadNrValidator()
     MAXIMUM_NR_OF_VERTICES_ON_SURFACE = SurfaceVerticesNrValidator()
-    MAXIMUM_NR_OF_OPS_IN_RANGE = validators.Int(min= 5, max= 5000, not_empty= True)
+    MAXIMUM_NR_OF_OPS_IN_RANGE = validators.Int(min=5, max=5000, not_empty=True)
     DEPLOY_CLUSTER = validators.Bool()
 
 

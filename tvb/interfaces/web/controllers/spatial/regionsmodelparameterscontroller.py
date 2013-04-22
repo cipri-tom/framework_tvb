@@ -28,7 +28,7 @@ import json
 import cherrypy
 import tvb.interfaces.web.controllers.basecontroller as base
 from tvb.interfaces.web.controllers.userscontroller import logged
-from tvb.interfaces.web.controllers.basecontroller import using_template
+from tvb.interfaces.web.controllers.basecontroller import using_template, ajax_call
 from tvb.interfaces.web.entities.context_model_parameters import ContextModelParameters
 from tvb.interfaces.web.controllers.spatial.base_spatiotemporalcontroller import SpatioTemporalController
 from tvb.interfaces.web.controllers.spatial.base_spatiotemporalcontroller import PARAMS_MODEL_PATTERN
@@ -93,6 +93,7 @@ class RegionsModelParametersController(SpatioTemporalController):
 
 
     @cherrypy.expose
+    @ajax_call()
     @logged()
     def update_model_parameter_for_nodes(self, param_name, new_param_value, connectivity_node_indexes):
         """
@@ -114,6 +115,7 @@ class RegionsModelParametersController(SpatioTemporalController):
 
 
     @cherrypy.expose
+    @ajax_call()
     @logged()
     def copy_model(self, from_node, to_nodes):
         """
@@ -155,6 +157,7 @@ class RegionsModelParametersController(SpatioTemporalController):
 
 
     @cherrypy.expose
+    @ajax_call()
     @logged()
     def submit_model_parameters(self):
         """

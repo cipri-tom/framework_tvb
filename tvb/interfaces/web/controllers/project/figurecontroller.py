@@ -36,26 +36,26 @@ from tvb.core.services.figureservice import FigureService
 from tvb.interfaces.web.controllers.userscontroller import logged
 from tvb.interfaces.web.controllers.project.projectcontroller import ProjectController
 from tvb.interfaces.web.controllers.flowcontroller import context_selected
-from tvb.interfaces.web.controllers.basecontroller import using_template
+from tvb.interfaces.web.controllers.basecontroller import using_template, ajax_call
 import tvb.interfaces.web.controllers.basecontroller as base
-
 
 
 class FigureController(ProjectController):
     """
     Resulting Figures are user-saved figures with specific visualizers which are considered important.
     """
-    
+
     def __init__(self):
         ProjectController.__init__(self)
         self.files_helper = FilesHelper()
         self.figure_service = FigureService()
-    
-    
+
+
     @cherrypy.expose
+    @ajax_call()
     @logged()
     @context_selected()
-    def storeresultfigure(self, img_type, operation_id, **data):  
+    def storeresultfigure(self, img_type, operation_id, **data):
         """Create preview for current displayed canvas and 
         store image in current session, for future comparison."""
         project = base.get_current_project()
@@ -67,8 +67,8 @@ class FigureController(ProjectController):
     @logged()
     @context_selected()
     @using_template('base_template')
-    def displayresultfigures(self, selected_session = 'all_sessions'):
-        """ Collect and display saved previews, grouped by session.""" 
+    def displayresultfigures(self, selected_session='all_sessions'):
+        """ Collect and display saved previews, grouped by session."""
         project = base.get_current_project()
         user = base.get_logged_user()
         data, all_sessions_info = self.figure_service.retrieve_result_figures(project, user, selected_session)
@@ -79,11 +79,12 @@ class FigureController(ProjectController):
                                       controlPage=None, displayControl=False, selected_sessions_data=data,
                                       all_sessions_info=all_sessions_info, selected_session=selected_session,
                                       manageFigureTitle=manage_figure_title)
-        template_specification = self.fill_default_attributes(template_specification, subsection='figures')  
+        template_specification = self.fill_default_attributes(template_specification, subsection='figures')
         return template_specification
-    
-    
-    @cherrypy.expose 
+
+
+    @cherrypy.expose
+    @ajax_call()
     @logged()
     @context_selected()
     def editresultfigures(self, remove_figure=False, rename_session=False, remove_session=False, **data):
@@ -158,6 +159,7 @@ class FigureController(ProjectController):
 
 
     @cherrypy.expose
+    @ajax_call(False)
     @logged()
     def downloadimage(self, figure_id):
         """
@@ -184,9 +186,9 @@ class FigureController(ProjectController):
         template_dictionary = dict(figure_file_path=figure_file_path)
         return self.fill_overlay_attributes(template_dictionary, "Detail", description,
                                             "project/figure_zoom_overlay", "lightbox")
-       
-  
-  
+
+
+
 class EditPreview(formencode.Schema):
     """
     Validate edit action on Stored Preview 

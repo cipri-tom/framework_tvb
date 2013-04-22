@@ -41,7 +41,7 @@ from tvb.core.services.operationservice import OperationService
 from tvb.core.services.projectservice import ProjectService
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 from tvb.interfaces.web.controllers.userscontroller import logged
-from tvb.interfaces.web.controllers.basecontroller import using_template
+from tvb.interfaces.web.controllers.basecontroller import using_template, ajax_call
 import tvb.interfaces.web.controllers.basecontroller as base
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -56,8 +56,10 @@ def context_selected():
     """
     Annotation to check if a project is currently selected.
     """
+
     def dec(funct):
         """Declare annotation"""
+
         def deco(*a, **b):
             """Declare Function Decorator."""
             if hasattr(cherrypy, base.KEY_SESSION):
@@ -65,28 +67,29 @@ def context_selected():
                     return funct(*a, **b)
             base.set_error_message('You should first select a Project!')
             raise cherrypy.HTTPRedirect('/project/viewall')
+
         return deco
+
     return dec
 
 
-    
-    
 class FlowController(base.BaseController):
     """
     This class takes care of executing steps in projects.
     """
+
     def __init__(self):
         base.BaseController.__init__(self)
         self.context = SelectedAdapterContext()
         self.files_helper = FilesHelper()
-    
-    
+
+
     @cherrypy.expose
     @using_template('base_template')
     @logged()
     @base.settings()
     @context_selected()
-    def step(self, step_key= None):
+    def step(self, step_key=None):
         """
         Choose exact action/adapter for current step.
         """
@@ -96,25 +99,25 @@ class FlowController(base.BaseController):
             base.set_warning_message(message)
             self.logger.warning(message + '- Wrong step:' + str(step_key))
             raise cherrypy.HTTPRedirect('/tvb')
-        
+
         step_name = category.displayname.lower()
-        template_specification = dict(mainContent="header_menu", section_name= step_name, controlPage=None,
+        template_specification = dict(mainContent="header_menu", section_name=step_name, controlPage=None,
                                       title="Select an algorithm", displayControl=False)
-        adapters_list = []     
+        adapters_list = []
         for algo_group in self.flow_service.get_groups_for_categories([category]):
             if algo_group.ui_display < 0:
                 continue
             adapter_link = self.get_url_adapter(step_key, algo_group.id)
-            adapters_list.append({base.KEY_TITLE: algo_group.displayname, 
+            adapters_list.append({base.KEY_TITLE: algo_group.displayname,
                                   'link': adapter_link,
                                   'description': algo_group.description,
                                   'subsection': algo_group.subsection_name})
         self.analyze_adapters = adapters_list
         template_specification[base.KEY_SUBMENU_LIST] = adapters_list
         return self.fill_default_attributes(template_specification)
-    
-    
-    @cherrypy.expose    
+
+
+    @cherrypy.expose
     @using_template('base_template')
     @base.settings()
     @logged()
@@ -123,12 +126,12 @@ class FlowController(base.BaseController):
         """
         Display menu for Connectivity Footer tab.
         """
-        template_specification = dict(mainContent="header_menu", section_name= 'connectivity', controlPage=None,
+        template_specification = dict(mainContent="header_menu", section_name='connectivity', controlPage=None,
                                       title="Select an algorithm", displayControl=False, subsection_name='step',
                                       submenu_list=self.connectivity_submenu)
         return self.fill_default_attributes(template_specification)
-    
-    
+
+
     @staticmethod
     def _compute_back_link(back_indicator, project, _step_key, _adapter_key, _algo_group):
         """
@@ -144,9 +147,9 @@ class FlowController(base.BaseController):
         else:
             back_page_link = '/project/editstructure/' + str(project.id)
         return back_page_link
-        
-    
-    @cherrypy.expose    
+
+
+    @cherrypy.expose
     @using_template('base_template')
     @base.settings()
     @logged()
@@ -156,22 +159,22 @@ class FlowController(base.BaseController):
         Render a specific adapter.
         'data' are arguments for POST
         """
-        project = base.get_current_project() 
+        project = base.get_current_project()
         algo_group = self.flow_service.get_algo_group_by_identifier(adapter_key)
         back_page_link = self._compute_back_link(back_page, project, step_key, adapter_key, algo_group)
-        
+
         if algo_group is None:
             raise cherrypy.HTTPRedirect("/tvb?error=True")
-        
+
         if cherrypy.request.method == 'POST' and cancel:
             raise cherrypy.HTTPRedirect(back_page_link)
-  
+
         submit_link = self.get_url_adapter(step_key, adapter_key, back_page)
         if cherrypy.request.method == 'POST':
             back_indicator = back_page if back_page == 'burst' else 'operations'
             success_url = self._compute_back_link(back_indicator, project, step_key, adapter_key, algo_group)
             data[base.KEY_ADAPTER] = adapter_key
-            template_specification = self.execute_post(project.id, submit_link, success_url, 
+            template_specification = self.execute_post(project.id, submit_link, success_url,
                                                        step_key, algo_group, **data)
         else:
             if (('Referer' not in cherrypy.request.headers or
@@ -180,11 +183,11 @@ class FlowController(base.BaseController):
                 #Avoid reset in case of Visualizers, as a supplementary GET
                 # might be enforced by MPLH5 on FF.
                 not_reset = True
-            template_specification = self.get_template_for_adapter(project.id, step_key, algo_group, 
+            template_specification = self.get_template_for_adapter(project.id, step_key, algo_group,
                                                                    submit_link, not not_reset)
         if template_specification is None:
             raise cherrypy.HTTPRedirect('/tvb')
-        
+
         if KEY_CONTROLLS not in template_specification:
             template_specification[KEY_CONTROLLS] = None
         if base.KEY_SUBMIT_LINK not in template_specification:
@@ -195,23 +198,23 @@ class FlowController(base.BaseController):
         else:
             template_specification[base.KEY_DISPLAY_MENU] = True
             template_specification[base.KEY_BACK_PAGE] = back_page_link
-            
+
         template_specification[base.KEY_ADAPTER] = adapter_key
         template_specification[ABCDisplayer.KEY_IS_ADAPTER] = True
         self.fill_default_attributes(template_specification, algo_group)
-        if (back_page is not None and back_page in ['operations', 'data'] and 
-            not (base.KEY_SECTION in template_specification 
+        if (back_page is not None and back_page in ['operations', 'data'] and
+            not (base.KEY_SECTION in template_specification
                  and template_specification[base.KEY_SECTION] == 'connectivity')):
             template_specification[base.KEY_SECTION] = 'project'
         return template_specification
 
-    
+
     @cherrypy.expose
     @using_template("flow/reduce_dimension_select")
     @logged()
-    def gettemplatefordimensionselect(self, entity_gid = None, select_name = "", reset_session = 'False',
-                                      parameters_prefix="dimensions", required_dimension = 1, 
-                                      expected_shape = "", operations = ""):
+    def gettemplatefordimensionselect(self, entity_gid=None, select_name="", reset_session='False',
+                                      parameters_prefix="dimensions", required_dimension=1,
+                                      expected_shape="", operations=""):
         """
         Returns the HTML which contains the selects components which allows the user
         to reduce the dimension of a multi-dimensional array.
@@ -244,7 +247,7 @@ class FlowController(base.BaseController):
 
         #if reload => populate the selected values
         session_dict = self.context.get_current_default()
-        dimensions = {1:[0], 3:[0]}
+        dimensions = {1: [0], 3: [0]}
         selected_agg_functions = {}
         if not eval(str(reset_session)) and session_dict is not None:
             starts_with_str = select_name + "_" + parameters_prefix + "_"
@@ -260,10 +263,10 @@ class FlowController(base.BaseController):
             actual_entity = ABCAdapter.load_entity_by_gid(entity_gid)
             if hasattr(actual_entity, 'shape'):
                 array_shape = actual_entity.shape
-                new_shape, current_dim = self._compute_current_dimension(list(array_shape), dimensions, 
+                new_shape, current_dim = self._compute_current_dimension(list(array_shape), dimensions,
                                                                          selected_agg_functions)
                 if required_dimension is not None and current_dim != int(required_dimension):
-                    template_params["required_dim_msg"] = "Please select a " +  str(required_dimension) + "D array"
+                    template_params["required_dim_msg"] = "Please select a " + str(required_dimension) + "D array"
                 if not current_dim:
                     template_params["currentDim"] = "1 element"
                 else:
@@ -319,7 +322,7 @@ class FlowController(base.BaseController):
                     current_dim -= 1
             if i in selected_functions and selected_functions[i] != 'none':
                 array_shape[i] = 1
-                if i not in selected_items or  len(selected_items[i]) > 1:
+                if i not in selected_items or len(selected_items[i]) > 1:
                     current_dim -= 1
         return array_shape, current_dim
 
@@ -330,13 +333,13 @@ class FlowController(base.BaseController):
         Returns the list of aggregation functions that may be
         applied on arrays.
         """
-        return {"sum" : "Sum", "average" : "Average"}
+        return {"sum": "Sum", "average": "Average"}
 
 
     @cherrypy.expose
     @using_template("flow/type2component/datatype2select_simple")
-    @logged() 
-    def getfiltereddatatypes(self, name, parent_div, tree_session_key, filters): 
+    @logged()
+    def getfiltereddatatypes(self, name, parent_div, tree_session_key, filters):
         """
         Given the name from the input tree, the dataType required and a number of
         filters, return the available dataType that satisfy the conditions imposed.
@@ -350,22 +353,22 @@ class FlowController(base.BaseController):
             raise cherrypy.HTTPRedirect("/tvb?error=True")
         current_node = self._get_node(previous_tree, name)
         if current_node is None:
-            raise Exception("Could not find node :"+ name)
+            raise Exception("Could not find node :" + name)
         datatype = current_node[ABCAdapter.KEY_DATATYPE]
-        
+
         filters = json.loads(filters)
         availablefilter = json.loads(FilterChain.get_filters_for_type(datatype))
         for i in range(len(filters[FILTER_FIELDS])):
             #Check for filter input of type 'date' as these need to be converted
             filter_ = filters[FILTER_FIELDS][i]
-            if (filter_ in availablefilter  and availablefilter[filter_][FILTER_TYPE] == 'date'):
+            if (filter_ in availablefilter and availablefilter[filter_][FILTER_TYPE] == 'date'):
                 date_var = filters[FILTER_VALUES][i]
                 try:
                     date_var = string2date(date_var, False)
                     filters[FILTER_VALUES][i] = date_var
                 except ValueError, excep:
                     raise excep
-        #In order for the filter object not to "stack up" on multiple calls to 
+        #In order for the filter object not to "stack up" on multiple calls to
         #this method, create a deepCopy to work with
         if ABCAdapter.KEY_CONDITION in current_node:
             new_filter = copy.deepcopy(current_node[ABCAdapter.KEY_CONDITION])
@@ -382,7 +385,7 @@ class FlowController(base.BaseController):
         parameters[ABCAdapter.KEY_NAME] = name
         if ABCAdapter.KEY_REQUIRED in current_node:
             parameters[ABCAdapter.KEY_REQUIRED] = current_node[ABCAdapter.KEY_REQUIRED]
-            if len(values)>0 and eval(str(parameters[ABCAdapter.KEY_REQUIRED])):
+            if len(values) > 0 and eval(str(parameters[ABCAdapter.KEY_REQUIRED])):
                 parameters[ABCAdapter.KEY_DEFAULT] = str(values[-1][ABCAdapter.KEY_VALUE])
         previous_selected = self.context.get_current_default(name)
         if (previous_selected is not None and previous_selected in [str(vv['value']) for vv in values]):
@@ -391,17 +394,17 @@ class FlowController(base.BaseController):
         parameters[ABCAdapter.KEY_TYPE] = ABCAdapter.TYPE_SELECT
         parameters[ABCAdapter.KEY_OPTIONS] = values
         parameters[ABCAdapter.KEY_DATATYPE] = datatype
-        template_specification = {"inputRow": parameters, "disabled": False, 
+        template_specification = {"inputRow": parameters, "disabled": False,
                                   "parentDivId": parent_div, base.KEY_SESSION_TREE: tree_session_key}
-        return self.fill_default_attributes(template_specification) 
-    
-    
+        return self.fill_default_attributes(template_specification)
+
+
     def _get_node(self, input_tree, name):
         """
         Given a input tree and a variable name, check to see if any default filters exist.
         """
-        for entry in input_tree:        
-            if (ABCAdapter.KEY_DATATYPE in entry and ABCAdapter.KEY_NAME in entry 
+        for entry in input_tree:
+            if (ABCAdapter.KEY_DATATYPE in entry and ABCAdapter.KEY_NAME in entry
                 and str(entry[ABCAdapter.KEY_NAME]) == str(name)):
                 return entry
             if (ABCAdapter.KEY_ATTRIBUTES in entry and entry[ABCAdapter.KEY_ATTRIBUTES] is not None):
@@ -413,22 +416,22 @@ class FlowController(base.BaseController):
                 if in_options is not None:
                     return in_options
         return None
-            
+
 
     def execute_post(self, project_id, submit_url, success_url, step_key, algo_group, method_name=None, **data):
         """ Execute HTTP POST on a generic step."""
         errors = None
         try:
             adapter_instance = self.flow_service.build_adapter_instance(algo_group)
-            if method_name is not None :
+            if method_name is not None:
                 data['method_name'] = method_name
             result = self.flow_service.fire_operation(adapter_instance, base.get_logged_user(), project_id, **data)
-            
+
             # Store input data in session, for informing user of it.
             step = self.flow_service.get_category_by_id(step_key)
             if not step.rawinput:
                 self.context.add_adapter_to_session(None, None, copy.deepcopy(data))
-                
+
             if isinstance(adapter_instance, ABCDisplayer):
                 if isinstance(result, dict):
                     result[base.KEY_OPERATION_ID] = adapter_instance.operation_id
@@ -444,25 +447,25 @@ class FlowController(base.BaseController):
             self.logger.error("Error while executing a Launch procedure:")
             self.logger.exception(excep1)
             base.set_error_message(excep1.message)
-        
+
         previous_step = self.context.get_current_substep()
-        should_reset = (previous_step is None or (base.KEY_ADAPTER not in data) 
+        should_reset = (previous_step is None or (base.KEY_ADAPTER not in data)
                         or data[base.KEY_ADAPTER] != previous_step)
-        template_specification = self.get_template_for_adapter(project_id, step_key, algo_group, 
+        template_specification = self.get_template_for_adapter(project_id, step_key, algo_group,
                                                                submit_url, should_reset)
         if (errors is not None) and (template_specification is not None):
             template_specification[base.KEY_ERRORS] = errors
         template_specification[base.KEY_OPERATION_ID] = adapter_instance.operation_id
         return template_specification
-    
-    
+
+
     def get_template_for_adapter(self, project_id, step_key, algo_group, submit_url, session_reset=True):
         """ Get Input HTML Interface template or a given adapter """
         try:
             if session_reset:
                 self.context.clean_from_session()
-            
-            group = None  
+
+            group = None
             # Cache some values in session, for performance
             previous_tree = self.context.get_current_input_tree()
             previous_sub_step = self.context.get_current_substep()
@@ -471,18 +474,18 @@ class FlowController(base.BaseController):
             else:
                 group, adapter_interface = self.flow_service.prepare_adapter(project_id, algo_group)
                 self.context.add_adapter_to_session(algo_group, adapter_interface)
-                
+
             category = self.flow_service.get_category_by_id(step_key)
-            title = "Fill parameters for step "+ category.displayname.lower()
+            title = "Fill parameters for step " + category.displayname.lower()
             if group:
                 title = title + " - " + group.displayname
-            
+
             current_defaults = self.context.get_current_default()
             if current_defaults is not None:
                 #Change default values in tree, according to selected input
                 adapter_interface = ABCAdapter.fill_defaults(adapter_interface, current_defaults)
-            
-            template_specification = dict(submitLink=submit_url, inputList= adapter_interface, title=title)
+
+            template_specification = dict(submitLink=submit_url, inputList=adapter_interface, title=title)
             self._populate_section(algo_group, template_specification)
             return template_specification
         except OperationException, oexc:
@@ -490,9 +493,10 @@ class FlowController(base.BaseController):
             self.logger.exception(oexc)
             base.set_warning_message('Inconsistent Adapter!  Please review the link (development problem)!')
         return None
-    
-    
-    @cherrypy.expose 
+
+
+    @cherrypy.expose
+    @ajax_call(False)
     @logged()
     def readserverstaticfile(self, coded_path):
         """
@@ -506,9 +510,10 @@ class FlowController(base.BaseController):
         except Exception, excep:
             self.logger.error("Could not retrieve file from path:" + str(coded_path))
             self.logger.exception(excep)
-            
-   
-    @cherrypy.expose 
+
+
+    @cherrypy.expose
+    @ajax_call()
     @logged()
     def read_datatype_attribute(self, entity_gid, dataset_name, flatten=False, **kwargs):
         """
@@ -520,23 +525,23 @@ class FlowController(base.BaseController):
         :param kwargs: extra parameters to be passed when dataset_name is method. 
         """
         try:
-            self.logger.debug("Starting to read HDF5: "+ entity_gid + "/" + dataset_name + "/" + str(kwargs))
+            self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + dataset_name + "/" + str(kwargs))
             entity = ABCAdapter.load_entity_by_gid(entity_gid)
             if kwargs is None or len(kwargs) < 1:
                 numpy_array = copy.deepcopy(getattr(entity, dataset_name))
             else:
-                numpy_array = eval("entity."+ dataset_name +"(**kwargs)")
+                numpy_array = eval("entity." + dataset_name + "(**kwargs)")
             if flatten == True or flatten == "True":
                 numpy_array = numpy_array.flatten()
-            return json.dumps(numpy_array.tolist())
+            return numpy_array.tolist()
         except Exception, excep:
             self.logger.error("Could not retrieve complex entity field:" + str(entity_gid) + "/" + str(dataset_name))
             self.logger.exception(excep)
 
-            
+
     @cherrypy.expose
     @using_template('base_template')
-    @logged()        
+    @logged()
     def invokeadaptermethod(self, adapter_id, method_name, **data):
         """
         Public web method, to be used when invoking specific 
@@ -545,7 +550,7 @@ class FlowController(base.BaseController):
         algo_group = self.flow_service.get_algo_group_by_identifier(adapter_id)
         try:
             adapter_instance = self.flow_service.build_adapter_instance(algo_group)
-            result = self.flow_service.fire_operation(adapter_instance, base.get_logged_user(), 
+            result = self.flow_service.fire_operation(adapter_instance, base.get_logged_user(),
                                                       base.get_current_project().id, method_name, **data)
             base.set_info_message("Submit OK!")
             if isinstance(adapter_instance, ABCDisplayer) and isinstance(result, dict):
@@ -562,13 +567,13 @@ class FlowController(base.BaseController):
             base.set_warning_message('Problem when submitting data!')
             self.logger.error("Invalid method, or wrong  parameters when invoking external method on post!")
             self.logger.exception(excep)
-        
+
         ### Clean from session Adapter's interface, to have the UI updated.
         self.context.clean_from_session()
         redirect_url = self.get_url_adapter(algo_group.fk_category, algo_group.id)
-        raise cherrypy.HTTPRedirect(redirect_url) 
-   
-   
+        raise cherrypy.HTTPRedirect(redirect_url)
+
+
     @cherrypy.expose
     @using_template("flow/genericAdapterFormFields")
     @logged()
@@ -581,9 +586,9 @@ class FlowController(base.BaseController):
         is_uploader = string2bool(is_uploader)
         template_specification = self.get_adapter_template(curent_project.id, algo_group_id, is_uploader)
         template_specification[base.KEY_PARENT_DIV] = parent_div
-        return self.fill_default_attributes(template_specification) 
-        
-    
+        return self.fill_default_attributes(template_specification)
+
+
     @cherrypy.expose
     @using_template("flow/full_adapter_interface")
     @logged()
@@ -597,32 +602,33 @@ class FlowController(base.BaseController):
         template_specification['figure_exportable'] = eval(export_png_available)
         return self.fill_default_attributes(template_specification)
 
-    
+
     def get_adapter_template(self, project_id, algo_group_id, is_upload=False, back_page=None):
         """
         Get the template for an adapter based on the algo group id.
         """
         if (not (project_id and int(project_id) and (algo_group_id is not None) and int(algo_group_id))):
             return ""
-        
+
         algo_group = self.flow_service.get_algo_group_by_identifier(algo_group_id)
         if is_upload:
             submit_link = "/project/launchloader/" + str(project_id) + "/" + str(algo_group_id)
         else:
             submit_link = self.get_url_adapter(algo_group.fk_category, algo_group.id, back_page)
-            
+
         current_step = self.context.get_current_substep()
         if current_step is None or str(current_step) != str(algo_group_id):
             self.context.clean_from_session()
-        template_specification = self.get_template_for_adapter(project_id, algo_group.fk_category, algo_group, 
+        template_specification = self.get_template_for_adapter(project_id, algo_group.fk_category, algo_group,
                                                                submit_link, is_upload)
         if template_specification is None:
             return ""
-        template_specification[base.KEY_DISPLAY_MENU] = not is_upload  
+        template_specification[base.KEY_DISPLAY_MENU] = not is_upload
         return template_specification
-      
-    
+
+
     @cherrypy.expose
+    @ajax_call()
     @logged()
     @context_selected()
     def reloadoperation(self, operation_id, **_):
@@ -633,10 +639,11 @@ class FlowController(base.BaseController):
         self.context.add_adapter_to_session(operation.algorithm.algo_group, None, data)
         category_id = operation.algorithm.algo_group.fk_category
         algo_id = operation.algorithm.fk_algo_group
-        raise cherrypy.HTTPRedirect("/flow/"+ str(category_id) + "/" + str(algo_id)+"?not_reset=True") 
-    
-    
+        raise cherrypy.HTTPRedirect("/flow/" + str(category_id) + "/" + str(algo_id) + "?not_reset=True")
+
+
     @cherrypy.expose
+    @ajax_call()
     def stop_operation(self, operation_id, is_group):
         """
         Stop the operation given by operation_id. If is_group is true stop all the
@@ -653,10 +660,10 @@ class FlowController(base.BaseController):
             for operation in operations_in_group:
                 tmp_res = operation_service.stop_operation(operation.id)
                 result = result or tmp_res
-        return json.dumps(result)
-     
-    
-    def fill_default_attributes(self, template_dictionary, algo_group = None):
+        return result
+
+
+    def fill_default_attributes(self, template_dictionary, algo_group=None):
         """
         Overwrite base controller to add required parameters for adapter templates.
         """
@@ -665,24 +672,24 @@ class FlowController(base.BaseController):
                 template_dictionary[base.KEY_TITLE] = algo_group.displayname
             else:
                 template_dictionary[base.KEY_TITLE] = '-'
-            
+
         if base.KEY_PARENT_DIV not in template_dictionary:
             template_dictionary[base.KEY_PARENT_DIV] = ''
         if base.KEY_PARAMETERS_CONFIG not in template_dictionary:
             template_dictionary[base.KEY_PARAMETERS_CONFIG] = False
         if algo_group is not None:
             self._populate_section(algo_group, template_dictionary)
-        
-        template_dictionary[base.KEY_INCLUDE_RESOURCES] = 'flow/included_resources'    
+
+        template_dictionary[base.KEY_INCLUDE_RESOURCES] = 'flow/included_resources'
         base.BaseController.fill_default_attributes(self, template_dictionary)
         return template_dictionary
-        
-        
+
+
     ##### Below this point are operations that might be moved to different #####
     ##### controller                                                       #####
-    
+
     NEW_SELECTION_NAME = 'New selection'
-    
+
     @cherrypy.expose
     @using_template('visualizers/connectivity/connectivity_selections_display')
     def get_available_selections(self, **data):
@@ -693,10 +700,10 @@ class FlowController(base.BaseController):
         curent_project = base.get_current_project()
         connectivity_gid = data['connectivity_gid']
         selections = self.flow_service.get_selections_for_project(curent_project.id, connectivity_gid)
-        default_selection = data['con_selection'] 
+        default_selection = data['con_selection']
         if (not len(default_selection) > 0):
             default_selection = data['con_labels']
-        
+
         nodes, ids, names = [], [], []
         #TODO (BN): Check compatibility of selection with connectivity_labels
         for selection in selections:
@@ -708,10 +715,12 @@ class FlowController(base.BaseController):
             nodes.append(selected_labels[:-1])
             names.append(selection.ui_name)
         result = dict(selection_nodes=nodes, selection_names=names, selection_ids=ids,
-                      all_labels=default_selection, new_selection_name=self.NEW_SELECTION_NAME)   
-        return self.fill_default_attributes(result) 
-    
+                      all_labels=default_selection, new_selection_name=self.NEW_SELECTION_NAME)
+        return self.fill_default_attributes(result)
+
+
     @cherrypy.expose
+    @ajax_call()
     def store_connectivity_selection(self, ui_name, **data):
         '''
         Save the passed connectivity selection. Since cherryPy/Ajax seems to 
@@ -727,10 +736,10 @@ class FlowController(base.BaseController):
             selection = json.dumps([int(idx) for idx in selection.split(',')])
             labels = json.dumps(labels.split(','))
             self.flow_service.save_connectivity_selection(ui_name, sel_project_id, selection, labels, used_names)
-            return json.dumps([True, 'Selection saved successfully.'])
+            return [True, 'Selection saved successfully.']
         else:
             error_msg = (self.NEW_SELECTION_NAME + " or empty name are not  valid as selection names.")
-            return json.dumps([False, error_msg])
+            return [False, error_msg]
         
         
  

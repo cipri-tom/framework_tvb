@@ -27,6 +27,7 @@
 import cherrypy
 from tvb.config import PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS
 from tvb.core.services import projectservice
+from tvb.interfaces.web.controllers.basecontroller import ajax_call
 from tvb.interfaces.web.controllers import basecontroller as bc
 
 
@@ -34,14 +35,15 @@ class ParameterExplorationController(bc.BaseController):
     """
     Controller to handle PSE actions.
     """
-    
-    
+
+
     def __init__(self):
         bc.BaseController.__init__(self)
         self.project_service = projectservice.ProjectService()
-        
+
 
     @cherrypy.expose
+    @ajax_call(False)
     def draw_parameter_exploration(self, datatype_group_id, color_metric, size_metric):
         """
         Create new data for when the user chooses to refresh from the UI.
@@ -50,9 +52,10 @@ class ParameterExplorationController(bc.BaseController):
             color_metric = None
         if size_metric == 'None':
             size_metric = None
+
         algo_group = self.flow_service.get_algorithm_by_module_and_class(PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS)[1]
         param_explore_adapter = self.flow_service.build_adapter_instance(algo_group)
-        
+
         params = param_explore_adapter.prepare_parameters(datatype_group_id, color_metric, size_metric)
         return params.prepare_full_json()
     
