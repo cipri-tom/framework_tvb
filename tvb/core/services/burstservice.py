@@ -171,6 +171,7 @@ class BurstService():
         burst = dao.get_burst_by_id(burst_id)
         burst.name = new_name
         dao.store_entity(burst)
+        
     
     def load_burst(self, burst_id):
         """

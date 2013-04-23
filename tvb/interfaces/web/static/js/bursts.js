@@ -468,6 +468,34 @@ function switch_top_level_visibility(currentVisibleSelection) {
 	minimizeColumn(document.getElementById('button-maximize-portlets'), 'section-portlets');
 }
 
+
+function changePSETab(clickedHref, toShow) {
+	$("#section-portlets-ul li").each(function (listItem) {
+			$(this).removeClass('active');
+		});
+	$(clickedHref).parent().addClass('active');
+	if (toShow == 'flot') {
+		$('#burst-pse-flot').show();
+		$('#burst-pse-iso').hide()
+	} else {
+		$('#burst-pse-flot').hide();
+		$('#burst-pse-iso').show()
+	}
+}
+
+function doIsoclineSpaceExploration(groupId) {
+	$('#burst-pse-iso').html('')
+	$.ajax({  	
+	type: "POST", 
+	url: '/burst/explore/draw_isocline_explorer/' + groupId,
+	success: function(r) { 
+			$('#burst-pse-iso').html(r);
+		},
+	error: function(r) {
+	    displayMessage("Could not refresh with the new metrics.", "errorMessage");
+	}});
+}
+
 /**
  * Prepare PSE display for current group.
  */
@@ -918,6 +946,7 @@ function loadBurst(burst_id) {
 				loadSimulatorInterface();
 			    if (groupId >= 0) {
 					doParameterSpaceExploration(groupId);
+					doIsoclineSpaceExploration(groupId);
 			    } else if (selectedTab == -1) {
 			    	switch_top_level_visibility();
 			    	$("#section-portlets").show();

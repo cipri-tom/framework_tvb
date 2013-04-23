@@ -30,7 +30,7 @@ from tvb.core.entities.storage import dao
 
 LOGGER = get_logger(__name__)
 PAGE_SIZE = 20
-EVENT_FILE_IDENTIFIER = "CodeVersionsManager.update.4770"
+EVENT_FILE_IDENTIFIER = "CodeVersionsManager.update.4750"
 
 
 def update():

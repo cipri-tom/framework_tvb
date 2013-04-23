@@ -1,4 +1,4 @@
-var canvas_socket = null;
+var canvas_socket = {};
 var contexts = new Array();
  // holds the contexts for this page
 var canvii = new Array();
@@ -29,20 +29,26 @@ function change_cursor_info(id) {
 function exec_user_cmd(id, cmd_str) {
     //this command is sent only to close the blocker overlay if the user clicks on a figure(not on a button)
     if (cmd_str.indexOf("FAKE_COMMAND") == 18) {
-        return;
+        closeBlockerOverlay();
+    } else if (cmd_str.indexOf("EVAL:") >= 0) {
+    	var command = cmd_str.split('EVAL:');
+    	closeBlockerOverlay();
+    	eval(command[command.length - 1]);
+    	// return;
+    } else {
+    	 var ret_str = "";
+	     try {
+	        ret_str = eval(cmd_str);
+	     } catch(err) { 
+	         ret_str = "user command failed: " + err;
+	     }
+	      try {
+	        sendMessage(id, "<user_cmd_ret id='"+id+"' args='" + ret_str + "'>");
+	      } catch (err) { 
+	          displayMessage('error returning output of user cmd:' + err, 'errorMessage'); 
+	      }
+	      closeBlockerOverlay();
     }
-
-     var ret_str = "";
-     try {
-        ret_str = eval(cmd_str);
-     } catch(err) { 
-         ret_str = "user command failed: " + err;
-     }
-      try {
-        sendMessage("<user_cmd_ret id='"+id+"' args='" + ret_str + "'>");
-      } catch (err) { 
-          displayMessage('error returning output of user cmd:' + err, 'errorMessage'); 
-      }
 }
 
 function draw_frame(id) {
@@ -104,12 +110,12 @@ function connect_manager(server_ip, server_port, id) {
     ldiv[id][0].addEventListener('mousedown', function (e) {clickCanvas(e, id, 0);}, false);
 
     if (window.MozWebSocket) {
-        canvas_socket = new MozWebSocket('ws://' + server_ip + ':' + server_port + '/do');
+        canvas_socket[id] = new MozWebSocket('ws://' + server_ip + ':' + server_port + '/do');
     } else {
-        canvas_socket = new WebSocket('ws://' + server_ip + ':' + server_port + '/');
+        canvas_socket[id] = new WebSocket('ws://' + server_ip + ':' + server_port + '/');
     }
     document.getElementById('status_' + id).innerHTML = "Connecting to figure: " + id + "...";
-    canvas_socket.onmessage = function(e) {
+    canvas_socket[id].onmessage = function(e) {
     								try {
 	                                    document.getElementById('status_' + id).innerHTML = "Connected";
 	                                    if (e.data.indexOf("/*exec_user_cmd*/") == 0) {
@@ -117,16 +123,17 @@ function connect_manager(server_ip, server_port, id) {
 	                                    } else {
 	                                        last_frames[id] = e.data;
 	                                        draw_frame(id);
+	                                        closeBlockerOverlay();
 	                                    }
 	                                }
 	                                catch(err) {
 	                                	displayMessage("Error encountered while updating image.", "errorMessage");
+	                                	closeBlockerOverlay();
 	                                }
-                                    closeBlockerOverlay();
                                 } 
-    canvas_socket.onopen = function(e) {
+    canvas_socket[id].onopen = function(e) {
                                     try{
-                                        sendMessage("<register id='"+id+"'>");
+                                        sendMessage(id, "<register id='"+id+"'>");
                                         document.getElementById('status_' + id).innerHTML = "Register message sent ("+id+")";
                                     } catch (err) {
                                         displayMessage(err, "errorMessage");
@@ -134,9 +141,11 @@ function connect_manager(server_ip, server_port, id) {
                               }
 }
 
-function sendMessage(msg) {
-	showBlockerOverlay();
-	canvas_socket.send(msg);
+function sendMessage(id, msg, showOverlay) {
+	if (showOverlay != false) {
+		showBlockerOverlay();
+	}
+	canvas_socket[id].send(msg);
 }
 
 var allow_resize = true;
@@ -171,7 +180,7 @@ function wrapClickCanvas(e, ref) {
 
 function handle_user_event(arg_string, id) {
       try {
-        sendMessage("<user_event id='"+id+"' args='" + id + "," + arg_string + "'>");
+        sendMessage(id, "<user_event id='"+id+"' args='" + id + "," + arg_string + "'>");
       } catch (err) {}
 }
 
@@ -179,7 +188,7 @@ function handle_click(e, id) {
     try {
         var pc = document.getElementById('canvas_' + id);
         var pos = findPosition(pc);
-        sendMessage("<click id='" + id + "' args='" + (e.pageX - pos[0]) +
+        sendMessage(id, "<click id='" + id + "' args='" + (e.pageX - pos[0]) +
             "," + (canvii[id].clientHeight - (e.pageY - pos[1])) + "," + (e.button + 1) + "'>");
         // we need coords based on 0,0 in bottom left corner...
     } catch (err) {}
@@ -274,7 +283,7 @@ function slideSize(e) {
 
 function do_resize(id, w, h) {
       try {
-        sendMessage("<resize id='"+id+"' args='" + w + "," + h + "'>");
+        sendMessage(id, "<resize id='"+id+"' args='" + w + "," + h + "'>");
       } catch (err) {
           displayMessage("Error when resizing!", "errorMessage");
       }
@@ -295,13 +304,13 @@ function outSize() {
 }
 
 function close_plot(id) {
-     sendMessage("<close id='"+id+"' args=''>");
+     sendMessage(id, "<close id='"+id+"' args=''>");
      stop_plotting(id);
      canvii[id].width = canvii[id].width;
 }
 
 function go_home(id) {
-     sendMessage("<home id='"+id+"' args=''>");
+     sendMessage(id, "<home id='"+id+"' args=''>");
 }
 
 function maximise(id) {
@@ -326,7 +335,7 @@ function zoom_in(id, axes) {
      var plc = document.getElementById("canvas_" + id);
      var pos = findPosition(plc);
      var zoom_coords = axes + "," + (startX - (pos[0] + aleft)) + "," + (canvii[id].height - (stopY - (pos[1] + atop))) + "," + (stopX - (pos[0] + aleft)) + "," + (canvii[id].height - (startY - (pos[1] + atop)));
-     sendMessage("<zoom id='"+id+"' args='" + zoom_coords + "'>");
+     sendMessage(id, "<zoom id='"+id+"' args='" + zoom_coords + "'>");
      startX = stopX = startY = stopY = 0;
      zdiv[id].style.width = "0px";
      zdiv[id].style.height = "0px";
@@ -352,16 +361,26 @@ function releaseCanvas(e,id) {
 }
 
 function slideCanvas(e,id,axes) {
-     if (!e) var e = window.event;
-     if (zdraw > -1)  {
-        zdiv[id].style.width = e.pageX - startX + "px";
-        zdiv[id].style.height = e.pageY - startY + "px";
-     } 
-     if (cursor_info[id] == 0) {
-        document.getElementById('cursor_info_' + id).innerHTML = "Cursor at: " + e.pageX + "," + e.pageY;
-     }
-     return false;
- }
+	try {
+        var pc = document.getElementById('canvas_' + id);
+        var pos = findPosition(pc);
+        sendMessage(id, "<motion_notify id='" + id + "' args='" + (e.pageX - pos[0]) +
+            "," + (canvii[id].clientHeight - (e.pageY - pos[1])) + "'>", false);
+        // we need coords based on 0,0 in bottom left corner...
+    } catch (err) {}
+}
+
+// function slideCanvas(e,id,axes) {
+     // if (!e) var e = window.event;
+     // if (zdraw > -1)  {
+        // zdiv[id].style.width = e.pageX - startX + "px";
+        // zdiv[id].style.height = e.pageY - startY + "px";
+     // } 
+     // if (cursor_info[id] == 0) {
+        // document.getElementById('cursor_info_' + id).innerHTML = "Cursor at: " + e.pageX + "," + e.pageY;
+     // }
+     // return false;
+ // }
  
 document.addEventListener("mousemove", slideSize, false);
 document.addEventListener("mouseup", outSize, false);

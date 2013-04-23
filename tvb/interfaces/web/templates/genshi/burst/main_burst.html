@@ -59,15 +59,28 @@
 	</section>
 
 	
-	<!-- Configure + View Parameter space exploration for selected Burst -->
+	<!-- View Parameter space exploration or ISO Parameter space for selected Burst -->
 	<section id="section-pse" class="parameter-space-exploration view-column col-3" style="display: none;">
-		<div class="flex-wrapper">
-			<h4><mark>Select</mark> Parameter space</h4>
-			<a href="#" title="Maximize Parameter space" id="button-maximize-pse" class="column-control action action-zoom-in" 
-			   onclick="toggleMaximizeColumn(this, 'section-pse');redrawPlot('main_div_pse');">Maximize</a>
-			<xi:include href="../visualizers/parameter_exploration/function_pse.html"/>
-			${generateFramePSE(available_metrics, 'burst', '')}
-		</div>
+		<ul id="section-portlets-ul" class="view-switcher tabswitcher">
+			<li class="active">
+				<a href="#" id="pse-flot" onclick="changePSETab(this, 'flot');">
+					View Parameter Space Discrete
+				</a>
+			</li>
+			<li>
+				<a href="#" id="pse-iso" onclick="changePSETab(this, 'iso');">
+					View Parameter Space Continous
+				</a>
+			</li>
+		</ul>
+			<div class="flex-wrapper" id="burst-pse-flot">
+				<h4><mark>Select</mark> Parameter space</h4>
+				<a href="#" title="Maximize Parameter space" id="button-maximize-pse" class="column-control action action-zoom-in" 
+				   onclick="toggleMaximizeColumn(this, 'section-pse');redrawPlot('main_div_pse');">Maximize</a>
+				<xi:include href="../visualizers/parameter_exploration/function_pse.html"/>
+				${generateFramePSE(available_metrics, 'burst', '')}
+			</div>
+			<div class="flex_wrapper" id="burst-pse-iso" style="display: none"></div>
 	</section>
 	
 	<!-- Configure + View portlets for selected Burst -->

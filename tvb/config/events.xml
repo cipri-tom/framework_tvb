@@ -139,7 +139,7 @@
     </event>
     
     
-    <event hookpoint="CodeVersionsManager.update.4770" type="adapter" delay="4">
+    <event hookpoint="CodeVersionsManager.update.4750" type="adapter" delay="4">
         <adapter module="tvb.adapters.uploaders.sensors_importer" class="Sensors_Importer"/>
         <method name="launch"/>
         <args>

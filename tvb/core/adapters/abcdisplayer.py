@@ -218,7 +218,7 @@ class ABCMPLH5Displayer(ABCDisplayer):
             figsize = (15, 7)
             
         self.kwargs = kwargs
-        self._create_new_figure(figsize)
+        self.figure = self._create_new_figure(figsize)
         self.plot(self.figure, **kwargs)
         self.figure.canvas.draw() 
         
@@ -234,7 +234,7 @@ class ABCMPLH5Displayer(ABCDisplayer):
         """
         synchronized method to avoid creating the same figure number.
         """
-        self.figure = pylab.figure(figsize = figsize)
+        return pylab.figure(figsize = figsize)
 
 
 

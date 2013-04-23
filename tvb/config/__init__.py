@@ -60,6 +60,9 @@ MEASURE_METRICS_CLASS = "TimeseriesMetricsAdapter"
 PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.parameter_space_exploration"
 PSE_ADAPTER_CLASS =  "ParameterExplorationAdapter"
 
+ISO_PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.isocline_pse"
+ISO_PSE_ADAPTER_CLASS = "IsoclinePseAdapter"
+
 TVB_IMPORTER_MODULE = "tvb.adapters.uploaders.tvb_importer"
 TVB_IMPORTER_CLASS = "TVBImporter"
 

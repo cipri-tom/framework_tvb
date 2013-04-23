@@ -18,14 +18,13 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
-
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
 import cherrypy
-from tvb.config import PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS
+from tvb.config import PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS, ISO_PSE_ADAPTER_CLASS, ISO_PSE_ADAPTER_MODULE
 from tvb.core.services import projectservice
 from tvb.interfaces.web.controllers.basecontroller import ajax_call
 from tvb.interfaces.web.controllers import basecontroller as bc
@@ -59,6 +58,24 @@ class ParameterExplorationController(bc.BaseController):
         params = param_explore_adapter.prepare_parameters(datatype_group_id, color_metric, size_metric)
         return params.prepare_full_json()
     
+    
+    @cherrypy.expose
+    def draw_isocline_explorer(self, datatype_group_id):
+        try:
+            html_result = self._get_iso_pse_html(datatype_group_id)
+        except cherrypy.HTTPRedirect:
+            html_result = "Continous PSE requires a 2D range of floating point values."
+        return html_result
+    
+    
+    @bc.using_template('visualizers/mplh5/figure')
+    def _get_iso_pse_html(self, datatype_group_id):
+        """
+        Generate the HTML for the isocline visualizers.
+        """
+        algo_group = self.flow_service.get_algorithm_by_module_and_class(ISO_PSE_ADAPTER_MODULE, ISO_PSE_ADAPTER_CLASS)[1]
+        iso_param_expore = self.flow_service.build_adapter_instance(algo_group)
+        return iso_param_expore.burst_preview(datatype_group_id)
     
     
                 
