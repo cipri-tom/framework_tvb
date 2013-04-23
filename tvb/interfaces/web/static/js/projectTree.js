@@ -22,7 +22,6 @@
  */
 var GRAPH_TAB = "graphTab";
 var TREE_TAB = "treeTab";
-var JSTREE_DUMMY_LEAF = null;
 
 var lastSelectedNode = undefined;
 var lastSelectedNodeType = undefined;
@@ -93,7 +92,7 @@ function select_tree_node() {
  *
  * @param projectId the id of the current project
  */
-function updateTree(projectId, baseUrl, dummyDontShowLeaf, visibilityFilter) {
+function updateTree(projectId, baseUrl, visibilityFilter) {
 	
 	if (!projectId) {
 		projectId = $("#hiddenProjectId").val();
@@ -101,13 +100,9 @@ function updateTree(projectId, baseUrl, dummyDontShowLeaf, visibilityFilter) {
 	if (!baseUrl) {
 		baseUrl = $("#hiddenBaseURL").val();
 	}
-	if (!dummyDontShowLeaf) {
-		dummyDontShowLeaf = $("#hiddenDummyTreeNode").val();
-	}
 	if (!visibilityFilter) {
     	visibilityFilter = _getSelectedVisibilityFilter();
     }
-	JSTREE_DUMMY_LEAF = dummyDontShowLeaf;
     var firstLevel = $("#levelTree_1").val();
     var secondLevel = $("#levelTree_2").val();
     var filterValue = $("#filterInput").val();
@@ -174,32 +169,7 @@ function postInitializeTree(projectId) {
 		  }
           displayNodeDetails(lastSelectedNode, TVB_NODE_DATATYPE_TYPE, backPage);
     })
-    .bind("open_node.jstree", function (event, data) {
-    	nodeId = data.rslt.obj.attr("id");
-    	gid = data.rslt.obj.attr("gid");
-    	if (gid != undefined){
-	        $.ajax({async : false,
-			        type: 'POST',
-			        url: "/project/readforgid/"+ gid,
-			        success: function(r) {		
-	     						var children = 	data.rslt.obj.find("> ul > li");
-	     						if ((children.length <= 1) && (children[0].innerHTML.indexOf(JSTREE_DUMMY_LEAF) != -1)) {
-		     						data.rslt.obj.find("> ul > li").each(function () { $('#tree4').jstree('remove', this); });
-		     						nodes = eval("(" + r + ")");
-		     						for (i in nodes) {
-		     							eval('$("#tree4").jstree("create_node", data.rslt.obj, "inside", ' + nodes[i]+')');				     							
-		     						}
-		     						$("#tree4").jstree("open_node", data.rslt.obj);
-	     						}
-				     	},
-				     error: function(r) { data.inst.refresh(); 
-				                          if(r) { 
-				                          	displayMessage(r, 'errorMessage'); 
-				                          } 
-				                        }
-			      });
-		}
-    }).bind("loaded.jstree", function () { select_tree_node(); });
+    .bind("loaded.jstree", function () { select_tree_node(); });
 }
 //-----------------------------------------------------------------------
 // 						TREE Section ends here
@@ -451,7 +421,7 @@ function doLaunch(visualizer_url, param_name, data_gid, param_algo, algo_ident, 
  *
  * @param projectId a project id.
  */
-function changedVisibilityFilter(projectId, baseUrl, dummyDontShowLeaf, filterElemId) {
+function changedVisibilityFilter(projectId, baseUrl, filterElemId) {
 	
 	// Activate visibility filter
 	$("#visibilityFiltersId > li[class='active']").each(function () {
@@ -463,7 +433,7 @@ function changedVisibilityFilter(projectId, baseUrl, dummyDontShowLeaf, filterEl
     lastSelectedNode = undefined;
     lastSelectedNodeType = undefined;
     update_workflow_graph('workflowCanvasDiv', lastSelectedNode, lastSelectedNodeType);
-    updateTree(projectId, baseUrl, dummyDontShowLeaf);
+    updateTree(projectId, baseUrl);
 }
 
 function _getSelectedVisibilityFilter() {

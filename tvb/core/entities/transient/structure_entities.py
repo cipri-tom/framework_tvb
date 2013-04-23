@@ -42,8 +42,7 @@ class StructureNode:
     PREFIX_ID_PROJECT = "projectID"
     
     SEP = "__"
-    
-    JSTREE_DUMMY_LEAF = "do_not_show_dummy__node"
+
     
     
     def __init__(self, nid, node_name, ntype = TYPE_FOLDER, meta = None, children= None):
@@ -210,8 +209,7 @@ class StructureNode:
                 json_node = json_node + node.type +'.png"},'
             if (node.metadata is None and node.has_children):
                 json_node = json_node + ' state:"open", '
-            if node.metadata:
-                json_node = json_node + ' state:"closed", '
+
             json_node = (json_node + 'attr:{id:"' + StructureNode.PREFIX_ID_NODE + 
                          node.id + '"')
             json_node = json_node + ', separator: ">>", projectId:"' 
@@ -231,10 +229,7 @@ class StructureNode:
             if node.has_children:
                 json_node = json_node + ', children:[' 
                 json_node = json_node + StructureNode.__convert2json(node.children, project_id)+']'
-            else:
-                if node.metadata is not None:
-                    json_node = json_node + ', children: [{data: "'
-                    json_node = json_node + StructureNode.JSTREE_DUMMY_LEAF + '"}]'
+
             json_node = json_node + '}'
             if place_comma:
                 result = result + ','

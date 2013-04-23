@@ -7,7 +7,7 @@
     <py:def function="drawLevelSelect(level_index, data, default_selected, project_id, baseUrl)">
         <label for="levelTree_${level_index}" id="label_levelTree_${level_index}">Level ${level_index}:</label>
         <select id="levelTree_${level_index}" name='levelTree_${level_index}' 
-                onchange="updateTree(${project_id}, '${baseUrl}', '${dontShowDummyLeaf}');">
+                onchange="updateTree(${project_id}, '${baseUrl}');">
             <py:for each="entry in data">
                 <py:for each="key in entry">
                     <option value="${key}" selected="selected" py:if="key == default_selected">${entry[key]}</option>
@@ -42,18 +42,18 @@
             <py:for each="f in filters">
                 <li id="${f.display_name}" class="active" py:if="f.selected">
                     <a href="#" title="Disable this filter ..."
-                       onclick="changedVisibilityFilter(${project.id}, '${baseUrl}', '${dontShowDummyLeaf}', '${f.display_name}')" >${f.display_name}</a>
+                       onclick="changedVisibilityFilter(${project.id}, '${baseUrl}', '${f.display_name}')" >${f.display_name}</a>
                 </li>
                 <li id="${f.display_name}" py:if="not f.selected">
                     <a href="#" title="Enable this filter ..."
-                       onclick="changedVisibilityFilter(${project.id}, '${baseUrl}', '${dontShowDummyLeaf}', '${f.display_name}')">${f.display_name}</a>
+                       onclick="changedVisibilityFilter(${project.id}, '${baseUrl}', '${f.display_name}')">${f.display_name}</a>
                 </li>
             </py:for>
 
             <li id="tree-related-li">
                 <input id="filterInput" name="filter_input" type="text" value="$filterInputValue"  placeholder="Search text here"/>
                 <button type="button" class="action action-small action-confirm"
-                        onclick="updateTree(${project.id}, '${baseUrl}', '${dontShowDummyLeaf}');">Filter</button>
+                        onclick="updateTree(${project.id}, '${baseUrl}');">Filter</button>
             </li>
         </ul>
     </section>
@@ -65,7 +65,6 @@
         
         <input id="hiddenProjectId" type="hidden" value="${project.id}"/>
         <input id="hiddenBaseURL" type="hidden" value="${baseUrl}"/>
-        <input id="hiddenDummyTreeNode" type="hidden" value="${dontShowDummyLeaf}"/>
 
         <ul class="view-switcher tabswitcher">
             <li id="treeTab" class="active"><a href="#" onclick="showTree()">Tree</a></li>
@@ -101,7 +100,7 @@
 	    <script type="text/javascript" src="/static/js/projectTree.js?4266"></script>
 	    <script type="text/javascript">
 	        displaySelectedTab();
-	        updateTree(${project.id}, '${baseUrl}', '${dontShowDummyLeaf}');
+	        updateTree(${project.id}, '${baseUrl}');
 	    </script>
     </section>
 </div>

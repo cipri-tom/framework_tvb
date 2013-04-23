@@ -86,10 +86,10 @@
         		</py:if>
         	</py:for>
         	<py:if test="'-1' != str(burstConfig.selected_tab)">
-        		<li><a href="#" id="tab-burst-tree" onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}', '${dontShowDummyLeaf}');">Results</a></li>
+        		<li><a href="#" id="tab-burst-tree" onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}');">Results</a></li>
         	</py:if>
         	<py:if test="'-1' == str(burstConfig.selected_tab)">
-        		<li class="active"><a href="#" id="tab-burst-tree" onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}', '${dontShowDummyLeaf}');">Results</a></li>
+        		<li class="active"><a href="#" id="tab-burst-tree" onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}');">Results</a></li>
         	</py:if>
 		</ul>
 		        	
