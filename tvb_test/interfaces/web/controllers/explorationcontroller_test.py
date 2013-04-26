@@ -23,6 +23,8 @@
 """
 import json
 import unittest
+from tvb.config import PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS
+from tvb.core.services.flowservice import FlowService
 from tvb.interfaces.web.controllers.burst.explorationcontroller import ParameterExplorationController
 from tvb_test.core.base_testcase import TransactionalTestCase
 from tvb_test.interfaces.web.controllers.basecontroller_test import BaseControllersTest
@@ -43,17 +45,23 @@ class ExplorationContollerTest(TransactionalTestCase, BaseControllersTest):
             
             
     def test_draw_parameter_exploration(self):
-        result = json.loads(self.param_c.draw_parameter_exploration(self.datatype_group.id, 
-                                                                    None, None))
+        flow_service = FlowService()
+        algo_group = flow_service.get_algorithm_by_module_and_class(PSE_ADAPTER_MODULE, 
+                                                                    PSE_ADAPTER_CLASS)[1]
+        param_explore_adapter = flow_service.build_adapter_instance(algo_group)
+        result = self.param_c._get_flot_html_result(param_explore_adapter, 
+                                                               self.datatype_group.id, 
+                                                               None, None)
         self.assertTrue(result['available_metrics'] == [])
         self.assertEqual(result['color_metric'], None)
         self.assertEqual(result['size_metric'], None)
         # TODO: This latter checks are strictly tied to data generated
         # in the datatypes_factory. Try and move them here?
-        self.assertEqual(result['labels_x'], ['a', 'b', 'c'])
-        self.assertEqual(result['labels_y'], ['_'])
-        self.assertEqual(len(result['data']), 3)
-        for entry in result['data']:
+        self.assertEqual(json.loads(result['labels_x']), ['a', 'b', 'c'])
+        self.assertEqual(json.loads(result['labels_y']), ['_'])
+        data = json.loads(result['data'])
+        self.assertEqual(len(data), 3)
+        for entry in data:
             self.assertEqual(entry[0]['dataType'], 'Datatype2')
             for key in ['Gid', 'color_weight', 'operationId', 'tooltip']:
                 self.assertTrue(key in entry[0])
