@@ -19,51 +19,56 @@
 #
 #
 
-'''
+"""
 A displayer for cross correlation.
 
 .. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
 
-'''
+"""
 
 import json
 from tvb.datatypes.temporal_correlations import CrossCorrelation
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 
-class CrossCorrelationVisualizer(ABCDisplayer):
 
+
+class CrossCorrelationVisualizer(ABCDisplayer):
     _ui_name = "Cross correlation"
     _ui_subsection = "correlation"
 
-    def get_input_tree(self):
-        "Inform caller of the data we need"
 
-        return [{"name"     : "cross_correlation", 
-                 "type"     : CrossCorrelation,
-                 "label"    : "Cross correlation",
-                 "required" : True
+    def get_input_tree(self):
+        """Inform caller of the data we need as input """
+
+        return [{"name": "cross_correlation",
+                 "type": CrossCorrelation,
+                 "label": "Cross correlation",
+                 "required": True
                  }]
 
+
     def get_required_memory_size(self, **kwargs):
-        "Return required memory. Here, it's unknown/insignificant."
+        """Return required memory. Here, it's unknown/insignificant."""
         return -1
 
-    def launch(self, cross_correlation):
-        "Construct data for visualization and launch it."
 
-        # get data from corr datatype, convert to json
+    def launch(self, cross_correlation):
+        """Construct data for visualization and launch it."""
+
+        # get data from corr DataType, convert to json
         matrix = cross_correlation.get_data('array_data').mean(axis=0)[:, :, 0, 0]
 
         matrix_data = self.dump_prec(matrix.flat)
         matrix_shape = json.dumps(matrix.shape)
-        matrix_strides = json.dumps(map(lambda x: x/matrix.itemsize, matrix.strides))
+        matrix_strides = json.dumps(map(lambda x: x / matrix.itemsize, matrix.strides))
 
         view_pars = dict(matrix_data=matrix_data, matrix_shape=matrix_shape, matrix_strides=matrix_strides)
-
         return self.build_display_result("cross_correlation/view", view_pars)
+
 
     def generate_preview(self, cross_correlation, figure_size):
         return self.launch(cross_correlation)
+
 
     def dump_prec(self, xs, prec=3):
         """

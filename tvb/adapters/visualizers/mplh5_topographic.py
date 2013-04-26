@@ -32,6 +32,7 @@ from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.basic.filters.chain import FilterChain
 
 
+
 class BaseTopography():
     """
     Base class for topographic visualizers.
@@ -48,6 +49,7 @@ class BaseTopography():
     sensor_locations = None
     topography_data = None
 
+
     def get_required_memory_size(self, **kwargs):
         """
         Return the required memory to run this algorithm.
@@ -55,27 +57,28 @@ class BaseTopography():
         # Don't know how much memory is needed.
         return -1
 
+
     def init_topography(self, sensor_locations):
         """
         Initialize entities for topographic computation.
         """
-        self.topography_data = self.prepare_sensors(sensor_locations, resolution = 51)
+        self.topography_data = self.prepare_sensors(sensor_locations, resolution=51)
         self.head_contour = self.compute_head_contour(self.topography_data)
         self.sensor_locations = self.compute_sensors(self.topography_data)
 
 
-    def draw_head_topo(self, figure, topography, color_bar_min = 0, color_bar_max = 0):
+    def draw_head_topo(self, figure, topography, color_bar_min=0, color_bar_max=0):
         """
         Draw Head top view.
         """
         self._fit_topology(figure, topography, self.topography_data, color_bar_min, color_bar_max)
         if self.plothead:
             # draw head contour
-            figure.gca().plot(self.head_contour["x_arr"], self.head_contour["y_arr"], 
-                              color= self.head_contour["color"], linewidth = self.head_contour["linewidth"])
+            figure.gca().plot(self.head_contour["x_arr"], self.head_contour["y_arr"],
+                              color=self.head_contour["color"], linewidth=self.head_contour["linewidth"])
         if self.plotsensors:
             # Draw Sensors
-            figure.gca().plot(self.sensor_locations["x_arr"], self.sensor_locations["y_arr"], 
+            figure.gca().plot(self.sensor_locations["x_arr"], self.sensor_locations["y_arr"],
                               self.sensor_locations["marker"])
 
 
@@ -109,17 +112,20 @@ class BaseTopography():
         figure.colorbar(map_surf)
         figure.gca().set_axis_off()
         return map_surf
-        
+
 
     @staticmethod
-    def prepare_sensors(sensor_locations, resolution =51):
+    def prepare_sensors(sensor_locations, resolution=51):
         """
         Common method, to pre-process sensors before display (project them in 2D).
         """
+
+
         def sphere_fit(params):
             """Function to fit the sensor locations to a sphere"""
             return ((sensor_locations[:, 0] - params[1]) ** 2 + (sensor_locations[:, 1] - params[2]) ** 2
                     + (sensor_locations[:, 2] - params[3]) ** 2 - params[0] ** 2)
+
 
         (radius, circle_x, circle_y, circle_z) = leastsq(sphere_fit, (1, 0, 0, 0))[0]
         # size of each square
@@ -133,8 +139,8 @@ class BaseTopography():
         sproj = sensor_locations - numpy.array((circle_x, circle_y, circle_z))
         sproj = radius * sproj / numpy.c_[numpy.sqrt(numpy.sum(sproj ** 2, axis=1))]
         sproj += numpy.array((circle_x, circle_y, circle_z))
-        return dict(sproj = sproj, x_arr = x_arr, y_arr = y_arr, 
-                    circle_x = circle_x, circle_y = circle_y, rad = radius)
+        return dict(sproj=sproj, x_arr=x_arr, y_arr=y_arr,
+                    circle_x=circle_x, circle_y=circle_y, rad=radius)
 
 
     @staticmethod
@@ -164,13 +170,13 @@ class BaseTopography():
         fac = 2 * numpy.pi * 0.01
         # Coordinates for the ears
         ear_x1 = -1 * numpy.array([.497, .510, .518, .5299, .5419, .54, .547,
-                                  .532, .510, rmax*numpy.cos(fac * (54 + 42))])
-        ear_y1 = numpy.array([.0655, .0775, .0783, .0746, .0555, -.0055, 
+                                   .532, .510, rmax * numpy.cos(fac * (54 + 42))])
+        ear_y1 = numpy.array([.0655, .0775, .0783, .0746, .0555, -.0055,
                               -.0932, -.1313, -.1384, rmax * numpy.sin(fac * (54 + 42))])
         ear_x2 = numpy.array([rmax * numpy.cos(fac * (54 + 42)), .510, .532,
-                            .547, .54, .5419, .5299, .518, .510, .497])
-        ear_y2 = numpy.array([rmax *numpy.sin(fac * (54 + 42)), -.1384, -.1313,
-                             -.0932, -.0055, .0555, .0746, .0783, .0775, .0655])
+                              .547, .54, .5419, .5299, .518, .510, .497])
+        ear_y2 = numpy.array([rmax * numpy.sin(fac * (54 + 42)), -.1384, -.1313,
+                              -.0932, -.0055, .0555, .0746, .0783, .0775, .0655])
         # Coordinates for the Head
         head_x1 = numpy.fromfunction(lambda x: rmax * numpy.cos(fac * (x + 2)), (21,))
         head_y1 = numpy.fromfunction(lambda y: rmax * numpy.sin(fac * (y + 2)), (21,))
@@ -189,7 +195,7 @@ class BaseTopography():
         x_arr += shift[0]
         y_arr += shift[1]
 
-        return dict(x_arr = x_arr, y_arr = y_arr, color = color, linewidth = linewidth)
+        return dict(x_arr=x_arr, y_arr=y_arr, color=color, linewidth=linewidth)
 
 
     @classmethod
@@ -204,30 +210,35 @@ class BaseTopography():
         return points_positions - step
 
 
+
 class TopographicViewer(ABCMPLH5Displayer, BaseTopography):
     """
     Interface between TVB Framework and web display of a topography viewer.
     """
-    
+
     _ui_name = "Topographic View"
     _ui_subsection = "topography"
 
+
     def get_input_tree(self):
-        return [{'name':'data_0', 'label':'Connectivity Measures 1',
+        return [{'name': 'data_0', 'label': 'Connectivity Measures 1',
                  'type': ConnectivityMeasure, 'required': True,
-                 'conditions': FilterChain(fields = [FilterChain.datatype + '._nr_dimensions'], operations = ["=="], values = [1]),
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
+                                           operations=["=="], values=[1]),
                  'description': 'Punctual values for each node in the connectivity matrix. '
                                 'This will give the colors of the resulting topographic image.'},
-                {'name':'data_1', 'label':'Connectivity Measures 2','type': ConnectivityMeasure,
-                 'conditions': FilterChain(fields = [FilterChain.datatype + '._nr_dimensions'], operations = ["=="], values = [1]),
+                {'name': 'data_1', 'label': 'Connectivity Measures 2', 'type': ConnectivityMeasure,
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
+                                           operations=["=="], values=[1]),
                  'description': 'Comparative values'},
-                {'name':'data_2', 'label':'Connectivity Measures 3','type': ConnectivityMeasure,
-                 'conditions': FilterChain(fields = [FilterChain.datatype + '._nr_dimensions'], operations = ["=="], values = [1]),
+                {'name': 'data_2', 'label': 'Connectivity Measures 3', 'type': ConnectivityMeasure,
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
+                                           operations=["=="], values=[1]),
                  'description': 'Comparative values'},
                 {'name': 'display_contours', 'label': 'Display Contours', 'type': 'bool'}]
 
 
-    def plot(self, figure, data_0, data_1 = None, data_2 = None, display_contours=True):
+    def plot(self, figure, data_0, data_1=None, data_2=None, display_contours=True):
         """
         Actual drawing method.
         """
@@ -235,7 +246,7 @@ class TopographicViewer(ABCMPLH5Displayer, BaseTopography):
         sensor_locations = BaseTopography._normalize(connectivity.centres)
         self.plot_contours = display_contours
         sensor_number = len(sensor_locations)
-        
+
         arrays = []
         titles = []
         for measure in [data_0, data_1, data_2]:

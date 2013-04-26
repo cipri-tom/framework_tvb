@@ -19,39 +19,47 @@
 #
 #
 
-'''
-A Javascript displayer for time series.
+"""
+A Javascript displayer for time series, using SVG.
 
 .. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
 
-'''
+"""
 
 import json
 import tvb.datatypes.time_series as tsdata
+from tvb.basic.filters.chain import FilterChain
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 
-class TimeSeries(ABCDisplayer):
 
+
+class TimeSeries(ABCDisplayer):
     _ui_name = "Time Series Viewer (SVG/d3)"
     _ui_subsection = "timeseries"
-    
+
     MAX_PREVIEW_DATA_LENGTH = 200
 
-    def get_input_tree(self):
-        "Inform caller of the data we need"
 
-        return [{"name"     : "time_series", 
-                 "type"     : tsdata.TimeSeries,
-                 "label"    : "Time series to be viewed",
-                 "required" : True
+    def get_input_tree(self):
+        """
+        Inform caller of the data we need as input.
+        """
+        return [{"name": "time_series",
+                 "type": tsdata.TimeSeries,
+                 "label": "Time series to be viewed",
+                 "required": True,
+                 "conditions": FilterChain(fields=[FilterChain.datatype + '.type'],
+                                           operations=["!="], values=["TimeSeriesVolume"])
                  }]
 
+
     def get_required_memory_size(self, **kwargs):
-        "Return required memory."
+        """Return required memory."""
         return -1
 
+
     def launch(self, time_series, preview=False, figsize=None):
-        "Construct data for visualization and launch it."
+        """Construct data for visualization and launch it."""
 
         ts = time_series.get_data('time')
         shape = time_series.read_data_shape1()
@@ -63,12 +71,12 @@ class TimeSeries(ABCDisplayer):
             labels = time_series.sensors.labels.tolist()
         else:
             labels = [str(i) for i in range(shape[-2])]
-        
+
         ## Assume that the first dimension is the time since that is the case so far 
         ## NOTE: maybe doing a max(shape) and assuming that is the time dimension would be better?
         if preview and shape[0] > self.MAX_PREVIEW_DATA_LENGTH:
             shape[0] = self.MAX_PREVIEW_DATA_LENGTH
-            
+
         if time_series.labels_ordering and len(time_series.labels_dimensions) >= 1:
             state_variables = time_series.labels_dimensions.get(time_series.labels_ordering[1], [])
             if state_variables <= 1:
@@ -85,13 +93,14 @@ class TimeSeries(ABCDisplayer):
                 'dt': ts[1] - ts[0] if len(ts) > 1 else 1,
                 # The channels component used by the EEG monitor expects a dictionary where
                 # the keys are the name of the timeseries, and the values a tuple list 
-                'labels_array' : {str(time_series.title) : [(value, idx) for idx, value in enumerate(labels)]},
-                'channelsPage' : '../commons/channel_selector.html' if not preview else None,
-                'nrOfStateVar' : state_variables,
-                'nrOfModes' : range(shape[3]),
+                'labels_array': {str(time_series.title): [(value, idx) for idx, value in enumerate(labels)]},
+                'channelsPage': '../commons/channel_selector.html' if not preview else None,
+                'nrOfStateVar': state_variables,
+                'nrOfModes': range(shape[3]),
                 }
 
-        return self.build_display_result("time_series/view", pars, pages = dict(controlPage="time_series/control"))
+        return self.build_display_result("time_series/view", pars, pages=dict(controlPage="time_series/control"))
+
 
     def generate_preview(self, time_series, figure_size):
         return self.launch(time_series, preview=True, figsize=figure_size)

@@ -18,6 +18,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
+
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
@@ -31,18 +32,21 @@ from tvb.basic.filters.chain import FilterChain
 from tvb.datatypes.graph import ConnectivityMeasure
 
 
+
 class HistogramViewer(ABCDisplayer):
     """
     The viewer takes as input a result DataType as computed by BCT analyzers.
     """
     _ui_name = "Connectivity Measure Viewer"
-    
+
+
     def get_input_tree(self):
-        return [{'name':'input_data', 'type': ConnectivityMeasure, 
-                 'label':'Connectivity Measure', 'required': True, 
-                 'conditions': FilterChain(fields = [FilterChain.datatype + '._nr_dimensions'], operations = ["=="], values = [1]),
+        return [{'name': 'input_data', 'type': ConnectivityMeasure,
+                 'label': 'Connectivity Measure', 'required': True,
+                 'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
+                                           operations=["=="], values=[1]),
                  'description': 'A BCT computed measure for a Connectivity'}]
-    
+
 
     def launch(self, input_data):
         """
@@ -50,21 +54,24 @@ class HistogramViewer(ABCDisplayer):
         """
         params = self.prepare_parameters(input_data)
         return self.build_display_result("histogram/view", params,
-                            pages = dict(controlPage="histogram/controls"))
-        
+                                         pages=dict(controlPage="histogram/controls"))
+
+
     def get_required_memory_size(self, input_data, figure_size):
         """
         Return the required memory to run this algorithm.
         """
         return numpy.prod(input_data.shape) * 2
-        
+
+
     def generate_preview(self, input_data, figure_size):
         """
         The preview for the burst page.
         """
         params = self.prepare_parameters(input_data)
         return self.build_display_result("histogram/view", params, {})
-        
+
+
     def prepare_parameters(self, input_data):
         """
         Prepare all required parameters for a launch.
@@ -73,12 +80,11 @@ class HistogramViewer(ABCDisplayer):
         values_list = input_data.array_data.tolist()
         # A gradient of colors will be used for each node
         colors_list = values_list
-        
-        params = dict(title = "Connectivity Measure - " + input_data.title, 
-                      labels = json.dumps(labels_list),
+
+        params = dict(title="Connectivity Measure - " + input_data.title, labels=json.dumps(labels_list),
                       data=json.dumps(values_list), colors=json.dumps(colors_list),
-                      xposition = 'center' if min(values_list)<0 else 'bottom',
-                      minColor = min(colors_list), maxColor = max(colors_list))
+                      xposition='center' if min(values_list) < 0 else 'bottom',
+                      minColor=min(colors_list), maxColor=max(colors_list))
         params[self.EXPORTABLE_FIGURE] = True
         return params
     

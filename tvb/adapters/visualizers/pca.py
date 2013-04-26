@@ -19,44 +19,50 @@
 #
 #
 
-'''
+"""
 A displayer for the principal components analysis.
 
 .. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
 
-'''
+"""
 
 from tvb.datatypes.mode_decompositions import PrincipalComponents
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 
-class PCA(ABCDisplayer):
 
+
+class PCA(ABCDisplayer):
     _ui_name = "Principal Components Analysis"
 
-    def get_input_tree(self):
-        "Inform caller of the data we need"
 
-        return [{"name"     : "pca", 
-                 "type"     : PrincipalComponents,
-                 "label"    : "Principal component analysis:",
-                 "required" : True
+    def get_input_tree(self):
+        """Inform caller of the data we need"""
+
+        return [{"name": "pca",
+                 "type": PrincipalComponents,
+                 "label": "Principal component analysis:",
+                 "required": True
                  }]
 
+
     def get_required_memory_size(self, **kwargs):
-        "Return required memory. Here, it's unknown/insignificant."
+        """Return required memory. Here, it's unknown/insignificant."""
         return -1
 
+
     def launch(self, pca):
-        "Construct data for visualization and launch it."
+        """Construct data for visualization and launch it."""
 
         # get data from pca datatype, convert to json
-        u  = self.dump_prec(pca.get_data('fractions').flat)
+        u = self.dump_prec(pca.get_data('fractions').flat)
         vt = self.dump_prec(pca.get_data('weights').flat)
 
         return self.build_display_result("pca/view", dict(u=u, vt=vt))
 
+
     def generate_preview(self, pca, figure_size):
         return self.launch(pca)
+
 
     def dump_prec(self, xs, prec=3):
         """

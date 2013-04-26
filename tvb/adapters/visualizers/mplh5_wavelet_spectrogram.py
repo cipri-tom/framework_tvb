@@ -36,52 +36,55 @@ class WaveletSpectrogramViewer(ABCMPLH5Displayer):
     """
     _ui_name = "Spectrogram of Wavelet Power"
     _ui_subsection = "wavelet"
-    
-    
+
+
     def get_input_tree(self):
         """
         Accept as input result from Continuous wavelet transform analysis.
         """
-        
-        return [{'name': 'input_data', 'label': 'Wavelet transform Result', 
+
+        return [{'name': 'input_data', 'label': 'Wavelet transform Result',
                  'type': WaveletCoefficients, 'required': True,
-                 'description': 'Wavelet spectrogram to display' }]
-    
+                 'description': 'Wavelet spectrogram to display'}]
+
+
     def get_required_memory_size(self, **kwargs):
         """
         Return the required memory to run this algorithm.
         """
         input_data = kwargs['input_data']
         return input_data[0] * input_data[1] * 8
-     
+
+
     def plot(self, figure, **kwargs):
         input_data = kwargs['input_data']
         shape = input_data.read_data_shape()
         start_time = input_data.source.start_time
-        wavelet_sample_period = input_data.source.sample_period * max((1, int(input_data.sample_period / input_data.source.sample_period))) #
+        wavelet_sample_period = input_data.source.sample_period * \
+                                    max((1, int(input_data.sample_period / input_data.source.sample_period)))
         end_time = input_data.source.start_time + (wavelet_sample_period * shape[1])
         if len(input_data.frequencies):
             freq_lo = input_data.frequencies[0]
-            freq_hi =  input_data.frequencies[-1]
+            freq_hi = input_data.frequencies[-1]
         else:
             freq_lo = 0
             freq_hi = 1
-        #TODO: This is a dummy, just showing first var, mode, and average over nodes
-        slices = (slice(shape[0]), 
+            #TODO: This is a dummy, just showing first var, mode, and average over nodes
+        slices = (slice(shape[0]),
                   slice(shape[1]),
                   slice(0, 1, None),
                   slice(0, shape[3], None),
                   slice(0, 1, None))
-        
+
         data_matrix = input_data.get_data('power', slices)
-        
+
         data_matrix = data_matrix.sum(axis=3)
-        
+
         scale_range_start = max(1, int(0.25 * shape[1]))
         scale_range_end = max(1, int(0.75 * shape[1]))
         scale_min = data_matrix[:, scale_range_start:scale_range_end, :].min()
         scale_max = data_matrix[:, scale_range_start:scale_range_end, :].max()
-        
+
         axes = figure.gca()
         ## todo is squeeze ok here?
         img = axes.imshow(data_matrix.squeeze(), aspect="auto", origin="lower",

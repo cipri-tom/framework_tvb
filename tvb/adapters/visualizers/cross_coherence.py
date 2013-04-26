@@ -30,41 +30,47 @@ import json
 from tvb.datatypes.spectral import CoherenceSpectrum
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 
-class CrossCoherenceVisualizer(ABCDisplayer):
 
+
+class CrossCoherenceVisualizer(ABCDisplayer):
     _ui_name = "Cross coherence visualizer"
     _ui_subsection = "coherence"
 
-    def get_input_tree(self):
-        "Inform caller of the data we need"
 
-        return [{"name"     : "coherence_spectrum", 
-                 "type"     : CoherenceSpectrum,
-                 "label"    : "Coherence spectrum:",
-                 "required" : True
+    def get_input_tree(self):
+        """Inform caller of the data we need"""
+
+        return [{"name": "coherence_spectrum",
+                 "type": CoherenceSpectrum,
+                 "label": "Coherence spectrum:",
+                 "required": True
                  }]
 
+
     def get_required_memory_size(self, **kwargs):
-        "Return required memory. Here, it's unknown/insignificant."
+        """Return required memory. Here, it's unknown/insignificant."""
         return -1
 
+
     def launch(self, coherence_spectrum):
-        "Construct data for visualization and launch it."
+        """Construct data for visualization and launch it."""
 
         # get data from coher datatype, convert to json
         frequency = self.dump_prec(coherence_spectrum.get_data('frequency').flat)
 
         # js needs to know shape and stride, not just elements
         array_data = coherence_spectrum.get_data('array_data')
-        coherence = self.dump_prec(coherence_spectrum.get_data('array_data').flat) # may be a long string
+        coherence = self.dump_prec(coherence_spectrum.get_data('array_data').flat)  # may be a long string
         shape = json.dumps(array_data.shape)
-        strides = json.dumps(map(lambda x: x/array_data.itemsize, array_data.strides))
+        strides = json.dumps(map(lambda x: x / array_data.itemsize, array_data.strides))
 
-        return self.build_display_result("cross_coherence/view", 
-                dict(frequency=frequency, coherence=coherence, shape=shape, strides=strides))
+        return self.build_display_result("cross_coherence/view",
+                                         dict(frequency=frequency, coherence=coherence, shape=shape, strides=strides))
+
 
     def generate_preview(self, coherence_spectrum, figure_size):
         return self.launch(coherence_spectrum)
+
 
     def dump_prec(self, xs, prec=3):
         """

@@ -30,39 +30,44 @@ import json
 from tvb.datatypes.graph import Covariance
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 
-class CovarianceVisualizer(ABCDisplayer):
 
+
+class CovarianceVisualizer(ABCDisplayer):
     _ui_name = "Covariance visualizer"
 
-    def get_input_tree(self):
-        "Inform caller of the data we need"
 
-        return [{"name"     : "covariance", 
-                 "type"     : Covariance,
-                 "label"    : "Covariance",
-                 "required" : True
+    def get_input_tree(self):
+        """Inform caller of the data we need"""
+
+        return [{"name": "covariance",
+                 "type": Covariance,
+                 "label": "Covariance",
+                 "required": True
                  }]
 
+
     def get_required_memory_size(self, **kwargs):
-        "Return required memory. Here, it's unknown/insignificant."
+        """Return required memory. Here, it's unknown/insignificant."""
         return -1
 
+
     def launch(self, covariance):
-        "Construct data for visualization and launch it."
+        """Construct data for visualization and launch it."""
 
         # get data from corr datatype, convert to json
         matrix = covariance.get_data('array_data')
 
         matrix_data = self.dump_prec(matrix.flat)
         matrix_shape = json.dumps(matrix.shape)
-        matrix_strides = json.dumps(map(lambda x: x/matrix.itemsize, matrix.strides))
+        matrix_strides = json.dumps(map(lambda x: x / matrix.itemsize, matrix.strides))
 
         view_pars = dict(matrix_data=matrix_data, matrix_shape=matrix_shape, matrix_strides=matrix_strides)
-
         return self.build_display_result("covariance/view", view_pars)
+
 
     def generate_preview(self, covariance, figure_size):
         return self.launch(covariance)
+
 
     def dump_prec(self, xs, prec=3):
         """

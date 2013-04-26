@@ -27,11 +27,12 @@ Entities for Generic DataTypes, Links and Groups of DataTypes are defined here.
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 
-from datetime import datetime
 from copy import copy
+from datetime import datetime
 from sqlalchemy.orm import relationship, backref
-from tvb.core.utils import generate_guid
 from sqlalchemy import Boolean, Integer, String, Column, ForeignKey, DateTime
+
+from tvb.core.utils import generate_guid
 from tvb.core.entities.model.model_base import Base
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
@@ -41,29 +42,29 @@ from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
 
-
 FILTER_CATEGORIES = {'model.DataType.subject': {'display': 'Subject', 'type': 'string',
-                                                'operations': ['!=', '==', 'like', 'in', 'not in'] },
+                                                'operations': ['!=', '==', 'like', 'in', 'not in']},
                      'model.DataType.state': {'display': 'State', 'type': 'string',
-                                              'operations': ['!=', '==', 'in', 'not in'] },
+                                              'operations': ['!=', '==', 'in', 'not in']},
                      'model.DataType.disk_size': {'display': 'Disk Size (KB)', 'type': 'int',
-                                                  'operations': ['<', '==', '>'] },
+                                                  'operations': ['<', '==', '>']},
                      'model.DataType.user_tag_1': {'display': 'Tag 1', 'type': 'string',
-                                                   'operations': ['!=', '==', 'like'] },
+                                                   'operations': ['!=', '==', 'like']},
                      'model.DataType.user_tag_2': {'display': 'Tag 2', 'type': 'string',
-                                                   'operations': ['!=', '==', 'like'] },
+                                                   'operations': ['!=', '==', 'like']},
                      'model.DataType.user_tag_3': {'display': 'Tag 3', 'type': 'string',
-                                                   'operations': ['!=', '==', 'like'] },
+                                                   'operations': ['!=', '==', 'like']},
                      'model.DataType.user_tag_4': {'display': 'Tag 4', 'type': 'string',
-                                                   'operations': ['!=', '==', 'like'] },
+                                                   'operations': ['!=', '==', 'like']},
                      'model.DataType.user_tag_5': {'display': 'Tag 5', 'type': 'string',
-                                                   'operations': ['!=', '==', 'like'] },
+                                                   'operations': ['!=', '==', 'like']},
                      'model.Operation.start_date': {'display': 'Start date', 'type': 'date',
-                                                    'operations':['==', '!=', '<', '>']},
+                                                    'operations': ['==', '!=', '<', '>']},
                      'model.BurstConfiguration.name': {'display': 'Burst Name', 'type': 'string',
-                                                       'operations':['==', '!=', 'like']},
+                                                       'operations': ['==', '!=', 'like']},
                      'model.Operation.completion_date': {'display': 'Completion date', 'type': 'date',
-                                                         'operations':['==', '!=', '<', '>']}}
+                                                         'operations': ['==', '!=', '<', '>']}}
+
 
 
 class DataType(Base):
@@ -149,10 +150,12 @@ class DataType(Base):
                 name = name + " - " + str(tag)
         return name
 
+
     def __repr__(self):
-        return "<DataType(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)>" % ( str(self.id), 
-                        self.gid, self.type, self.module, self.subject, self.state, str(self.fk_parent_burst), 
-                        self.user_tag_1, self.user_tag_2, self.user_tag_3, self.user_tag_4, self.user_tag_5)
+        msg = "<DataType(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)>"
+        return msg % (str(self.id), self.gid, self.type, self.module,
+                      self.subject, self.state, str(self.fk_parent_burst),
+                      self.user_tag_1, self.user_tag_2, self.user_tag_3, self.user_tag_4, self.user_tag_5)
 
 
     @staticmethod
@@ -172,8 +175,8 @@ class DataType(Base):
 
 class DataTypeGroup(DataType):
     """
-    All the datatypes resulted from an operation group 
-    will be part from a datatype group.
+    All the DataTypes resulted from an operation group
+    will be part from a DataType group.
     """
     __tablename__ = 'DATA_TYPES_GROUPS'
 
@@ -189,26 +192,30 @@ class DataTypeGroup(DataType):
         self.fk_operation_group = operation_group_id
 
 
+
 class Links(Base):
     """
-    Class used to handle shortcuts from one datatype to another project.
+    Class used to handle shortcuts from one DataType to another project.
     """
     __tablename__ = 'LINKS'
 
     id = Column(Integer, primary_key=True)
     fk_to_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
     fk_from_datatype = Column(Integer, ForeignKey('DATA_TYPES.id', ondelete="CASCADE"))
-    
-    referenced_project = relationship(Project, backref=backref('LINKS', order_by=id, cascade = "delete, all"))
-    referenced_datatype = relationship(DataType, backref=backref('LINKS', order_by=id, cascade = "delete, all"))
+
+    referenced_project = relationship(Project, backref=backref('LINKS', order_by=id, cascade="delete, all"))
+    referenced_datatype = relationship(DataType, backref=backref('LINKS', order_by=id, cascade="delete, all"))
+
 
     def __init__(self, from_datatype, to_project):
         self.fk_from_datatype = from_datatype
         self.fk_to_project = to_project
 
+
     def __repr__(self):
         return '<Link(%d, %d)>' % (self.fk_from_datatype, self.fk_to_project)
-    
+
+
 
 class ConnectivitySelection(Base):
     """
