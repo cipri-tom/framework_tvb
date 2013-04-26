@@ -48,12 +48,12 @@ import tvb.core.adapters.xml_reader as xml_reader
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.basic.logger.builder import get_logger
+
 try:
     from cherrypy._cpreqbody import Part
     # cover cases when the web interface is not available.
-except Exception, _:
+except Exception:
     Part = FieldStorage
-
 
 TEMPORARY_PREFIX = ".tmp"
 PARAM_RANGE_1 = 'first_range'
@@ -63,6 +63,7 @@ UIKEY_SUBJECT = "RESERVEDsubject"
 UIKEY_USERGROUP = "RESERVEDusergroup"
 
 
+
 class OperationService:
     """
     Class responsible for preparing an operation launch. 
@@ -70,18 +71,19 @@ class OperationService:
     immediately, or to be sent on the cluster.
     """
     ATT_UID = "uid"
-    
-    
+
+
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
         self.workflow_service = WorkflowService()
         self.file_helper = FilesHelper()
-    
+
+
     ##########################################################################################
     ######## Methods related to launching operations start here ##############################
     ##########################################################################################
-    
-    def initiate_operation(self, current_user, project_id, adapter_instance, 
+
+    def initiate_operation(self, current_user, project_id, adapter_instance,
                            temporary_storage, method_name=ABCAdapter.LAUNCH_METHOD, visible=True, **kwargs):
         """
         Gets the parameters of the computation from the previous inputs form,
@@ -90,10 +92,10 @@ class OperationService:
         Invoke custom method on an Adapter Instance. Make sure when the  
         operation has finished that the correct results are stored into DB. 
         """
-        if not isinstance(adapter_instance, ABCAdapter): 
+        if not isinstance(adapter_instance, ABCAdapter):
             self.logger.warning("Inconsistent Adapter Class:" + str(adapter_instance.__class__))
             raise LaunchException("Developer Exception!!")
-        
+
         # Prepare Files parameters
         files = {}
         kw2 = copy(kwargs)
@@ -101,7 +103,7 @@ class OperationService:
             if isinstance(j, FieldStorage) or isinstance(j, Part):
                 files[i] = j
                 del kw2[i]
-        
+
         temp_files = {}
         try:
             for i, j in files.iteritems():
@@ -122,17 +124,18 @@ class OperationService:
             kwargs = kw2
         except Exception, excep:
             self._handle_exception(excep, temp_files, "Could not launch operation: invalid input files!")
-         
+
         ### Store Operation entity. 
         algo_group = adapter_instance.algorithm_group
         algo_category = dao.get_category_by_id(algo_group.fk_category)
         if algo_group.algorithm_param_name in kwargs:
             algo = dao.get_algorithm_by_group(algo_group.id, kwargs[algo_group.algorithm_param_name])
         else:
-            algo = dao.get_algorithm_by_group(algo_group.id)  
-        operations = self.prepare_operations(current_user.id, project_id, algo, algo_category, 
+            algo = dao.get_algorithm_by_group(algo_group.id)
+
+        operations = self.prepare_operations(current_user.id, project_id, algo, algo_category,
                                              {}, method_name, visible, **kwargs)[0]
-            
+
         if isinstance(adapter_instance, ABCSynchronous):
             if len(operations) > 1:
                 raise LaunchException("Synchronous operations are not supporting ranges!")
@@ -140,7 +143,7 @@ class OperationService:
                 self.logger.warning("No operation was defined")
                 raise LaunchException("Invalid empty Operation!!!")
             return self.initiate_prelaunch(operations[0], adapter_instance, temp_files, **kwargs)
-        else:   
+        else:
             return self._send_to_cluster(operations, adapter_instance)
 
 
@@ -150,22 +153,22 @@ class OperationService:
         Will populate STATE, GROUP in metadata
         """
         metadata = copy(initial_metadata)
-                
+
         user_group = None
         if DataTypeMetaData.KEY_OPERATION_TAG in submit_data:
             user_group = submit_data[DataTypeMetaData.KEY_OPERATION_TAG]
-            
+
         if operation_group is not None:
             metadata[DataTypeMetaData.KEY_OPERATION_TAG] = operation_group.name
-            
+
         if DataTypeMetaData.KEY_TAG_1 in submit_data:
             metadata[DataTypeMetaData.KEY_TAG_1] = submit_data[DataTypeMetaData.KEY_TAG_1]
-       
+
         metadata[DataTypeMetaData.KEY_STATE] = algo_category.defaultdatastate
-        
+
         return metadata, user_group
-    
-    
+
+
     @staticmethod
     def _read_set(values):
         """ Parse a committed UI possible list of values, into a set converted into string."""
@@ -175,12 +178,12 @@ class OperationService:
             for val in values:
                 if val not in set_values:
                     set_values.append(val)
-                    values_str = values_str + " "+ str(val)
+                    values_str = values_str + " " + str(val)
             values = values_str
         return str(values).lstrip().rstrip()
-    
-    
-    def prepare_operations(self, user_id, project_id, algorithm, category, metadata, 
+
+
+    def prepare_operations(self, user_id, project_id, algorithm, category, metadata,
                            method_name=ABCAdapter.LAUNCH_METHOD, visible=True, **kwargs):
         """
         Do all the necessary preparations for storing an operation. If it's the case of a 
@@ -189,44 +192,44 @@ class OperationService:
         :param metadata: Initial MetaData with potential Burst identification inside.
         """
         operations = []
-        
+
         available_args, group = self._prepare_group(project_id, kwargs)
         if len(available_args) > cfg.MAX_RANGE_NUMBER:
             raise LaunchException("Too big range specified. You should limit the"
-                                  " resulting operations to %d"%cfg.MAX_RANGE_NUMBER)
+                                  " resulting operations to %d" % cfg.MAX_RANGE_NUMBER)
         else:
-            self.logger.debug("Launching a range with %d operations..."%len(available_args))
+            self.logger.debug("Launching a range with %d operations..." % len(available_args))
         group_id = None
         if group is not None:
             group_id = group.id
         metadata, user_group = self._prepare_metadata(metadata, category, group, kwargs)
-        
-        self.logger.debug("Saving Operation(userId="+str(user_id) +",projectId="+str(project_id)+ ","+ str(metadata)
-                          +",algorithmId="+ str(algorithm.id)+ ", ops_group= " +str(group_id)+")")
 
-        visible_operation = visible and not (category.display == True and method_name == ABCAdapter.LAUNCH_METHOD)
+        self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project_id) + "," +
+                          str(metadata) + ",algorithmId=" + str(algorithm.id) + ", ops_group= " + str(group_id) + ")")
+
+        visible_operation = visible and not (category.display is True and method_name == ABCAdapter.LAUNCH_METHOD)
         meta_str = json.dumps(metadata)
         for (one_set_of_args, range_vals) in available_args:
             range_values = json.dumps(range_vals) if range_vals else None
-            operation = model.Operation(user_id, project_id, algorithm.id, 
-                                        json.dumps(one_set_of_args, cls=MapAsJson.MapAsJsonEncoder), 
-                                        meta_str, method_name, op_group_id=group_id, user_group=user_group, 
+            operation = model.Operation(user_id, project_id, algorithm.id,
+                                        json.dumps(one_set_of_args, cls=MapAsJson.MapAsJsonEncoder),
+                                        meta_str, method_name, op_group_id=group_id, user_group=user_group,
                                         range_values=range_values)
             operation.visible = visible_operation
             operations.append(operation)
-        operations = dao.store_entities(operations) 
-        
+        operations = dao.store_entities(operations)
+
         if group is not None:
             burst_id = None
             if DataTypeMetaData.KEY_BURST in metadata:
                 burst_id = metadata[DataTypeMetaData.KEY_BURST]
             datatype_group = model.DataTypeGroup(group.id, operation_id=operations[0].id, fk_parent_burst=burst_id,
                                                  state=metadata[DataTypeMetaData.KEY_STATE])
-            datatype_group = dao.store_entity(datatype_group)
-                
+            dao.store_entity(datatype_group)
+
         return operations, group
-    
-    
+
+
     def prepare_operations_for_workflowsteps(self, workflow_step_list, workflows, user_id, burst_id,
                                              project_id, group, sim_operations):
         """
@@ -235,19 +238,19 @@ class OperationService:
         For every step in workflow_step_list one OperationGroup and one DataTypeGroup will be created 
         (in case of PSE).
         """
-        
+
         for step in workflow_step_list:
             operation_group = None
             if (group is not None) and not isinstance(step, model.WorkflowStepView):
-                operation_group = model.OperationGroup(project_id = project_id, ranges = group.range_references)
+                operation_group = model.OperationGroup(project_id=project_id, ranges=group.range_references)
                 operation_group = dao.store_entity(operation_group)
-                
+
             operation = None
             metadata = {DataTypeMetaData.KEY_BURST: burst_id}
             algo_category = dao.get_algorithm_by_id(step.fk_algorithm)
             if algo_category is not None:
                 algo_category = algo_category.algo_group.group_category
-                
+
             for wf_idx in range(len(workflows)):
                 workflow = workflows[wf_idx]
                 cloned_w_step = step.clone()
@@ -260,24 +263,25 @@ class OperationService:
                 if operation_group is not None:
                     group_id = operation_group.id
                     range_values = sim_operations[wf_idx].range_values
-                    
+
                 if not isinstance(step, model.WorkflowStepView):
                     ## For visualization steps, do not create operations, as those are not really needed.
                     metadata, user_group = self._prepare_metadata(metadata, algo_category, operation_group, op_params)
                     operation = model.Operation(user_id, project_id, step.fk_algorithm,
-                                                json.dumps(op_params, cls=MapAsJson.MapAsJsonEncoder), 
-                                                meta=json.dumps(metadata), method_name= ABCAdapter.LAUNCH_METHOD,
+                                                json.dumps(op_params, cls=MapAsJson.MapAsJsonEncoder),
+                                                meta=json.dumps(metadata), method_name=ABCAdapter.LAUNCH_METHOD,
                                                 op_group_id=group_id, range_values=range_values, user_group=user_group)
                     operation.visible = step.step_visible
                     operation = dao.store_entity(operation)
                     cloned_w_step.fk_operation = operation.id
-                
+
                 dao.store_entity(cloned_w_step)
-                
+
             if operation_group is not None and operation is not None:
-                datatype_group = model.DataTypeGroup(operation_group.id, operation_id=operation.id, 
-                                                fk_parent_burst=burst_id, state=metadata[DataTypeMetaData.KEY_STATE])
-                datatype_group = dao.store_entity(datatype_group) 
+                datatype_group = model.DataTypeGroup(operation_group.id, operation_id=operation.id,
+                                                     fk_parent_burst=burst_id,
+                                                     state=metadata[DataTypeMetaData.KEY_STATE])
+                dao.store_entity(datatype_group)
 
 
     def initiate_prelaunch(self, operation, adapter_instance, temp_files, **kwargs):
@@ -290,24 +294,24 @@ class OperationService:
             unique_id = None
             if self.ATT_UID in kwargs:
                 unique_id = kwargs[self.ATT_UID]
-            if (operation.method_name == ABCAdapter.LAUNCH_METHOD):
+            if operation.method_name == ABCAdapter.LAUNCH_METHOD:
                 filtered_kwargs = adapter_instance.prepare_ui_inputs(kwargs)
             else:
                 filtered_kwargs = kwargs
-        
-            self.logger.debug("Launching operation "+ str(operation.id) + "." +
-                               operation.method_name + " with " + str(filtered_kwargs))
-            operation = dao.get_operation_by_id(operation.id)  #Load Lazy fields
+
+            self.logger.debug("Launching operation " + str(operation.id) + "." +
+                              operation.method_name + " with " + str(filtered_kwargs))
+            operation = dao.get_operation_by_id(operation.id)   # Load Lazy fields
 
             params = dict()
             for k, value_ in filtered_kwargs.items():
                 params[str(k)] = value_
-            
+
             disk_space_per_user = cfg.MAX_DISK_SPACE
             pending_op_disk_space = dao.compute_disk_size_for_started_ops(operation.fk_launched_by)
-            user_disk_space = dao.get_user_by_id(operation.fk_launched_by).used_disk_space #Transform from kB to Bytes
+            user_disk_space = dao.get_user_by_id(operation.fk_launched_by).used_disk_space  # Transform from kB to Bytes
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
-            
+
             result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, **params)
             operation = dao.get_operation_by_id(operation.id)
             ## Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
@@ -318,7 +322,7 @@ class OperationService:
                 self.file_helper.write_operation_metadata(operation)
             dao.store_entity(operation)
             self._remove_files(temp_files)
-        
+
         except zipfile.BadZipfile, excep:
             msg = "The uploaded file is not a valid ZIP!"
             self._handle_exception(excep, temp_files, msg, operation)
@@ -327,31 +331,30 @@ class OperationService:
         except MemoryError:
             msg = ("Could not execute operation because there is not enough free memory." +
                    " Please adjust operation parameters and re-launch it.")
-            self._handle_exception(Exception(msg), temp_files, msg, operation)            
+            self._handle_exception(Exception(msg), temp_files, msg, operation)
         except Exception, excep1:
             msg = "Could not launch Operation with the given input data!"
             self._handle_exception(excep1, temp_files, msg, operation)
-            
+
         ### Try to find next workflow Step. It might throw WorkflowException
         next_op_id = self.workflow_service.prepare_next_step(operation.id)
         self.launch_operation(next_op_id)
         return result_msg
-        
-        
+
+
     def _send_to_cluster(self, operations, adapter_instance):
         """ Initiate operation on cluster"""
         for operation in operations:
             try:
-                BACKEND_CLIENT.execute(str(operation.id), operation.user.username) 
+                BACKEND_CLIENT.execute(str(operation.id), operation.user.username)
             except Exception, excep:
                 excep_msg = "Could not connect to the back-end cluster!"
                 self._handle_exception(excep, {}, excep_msg, operation)
         if cfg.DEPLOY_CLUSTER:
             msg = "Sent to cluster "
         else:
-            msg = "Launched " 
-        msg = msg + str(len(operations)) + " operation(s): " 
-        msg = msg + str(adapter_instance.__class__.__name__)
+            msg = "Launched "
+        msg += str(len(operations)) + " operation(s): " + str(adapter_instance.__class__.__name__)
         return msg
 
 
@@ -367,13 +370,13 @@ class OperationService:
                 group = dao.get_algo_group_by_id(algorithm.fk_algo_group)
                 adapter_instance = ABCAdapter.build_adapter(group)
             PARAMS = parse_json_parameters(operation.parameters)
-            
+
             if send_to_cluster:
                 self._send_to_cluster([operation], adapter_instance)
             else:
                 self.initiate_prelaunch(operation, adapter_instance, {}, **PARAMS)
-        
-    
+
+
     def _handle_exception(self, exception, temp_files, message, operation=None):
         """
         Common way to treat exceptions:
@@ -390,8 +393,8 @@ class OperationService:
         self._remove_files(temp_files)
         exception.message = message
         raise exception
-        
-        
+
+
     def _remove_files(self, file_dictionary):
         """
         Remove any files that exist in the file_dictionary. 
@@ -399,8 +402,7 @@ class OperationService:
         """
         for i in file_dictionary:
             try:
-                if (os.path.exists(str(file_dictionary[i])) 
-                    and os.path.isfile(str(file_dictionary[i]))):
+                if os.path.exists(str(file_dictionary[i])) and os.path.isfile(str(file_dictionary[i])):
                     os.remove(file_dictionary[i])
                     self.logger.debug("We no longer need file:" + str(file_dictionary[i]) + " => deleted")
                 else:
@@ -429,11 +431,11 @@ class OperationService:
         if not is_group:
             group = None
         else:
-            group = model.OperationGroup(project_id = project_id, ranges= ranges)
+            group = model.OperationGroup(project_id=project_id, ranges=ranges)
             group = dao.store_entity(group)
         return available_args, group
-        
-        
+
+
     def __get_range_values(self, kwargs, ranger_name):
         """
         For the ranger given by ranger_name look in kwargs and return
@@ -443,11 +445,11 @@ class OperationService:
             return None
         if str(kwargs[ranger_name]) not in kwargs:
             return None
-        
+
         range_values = []
         try:
             range_data = json.loads(str(kwargs[str(kwargs[ranger_name])]))
-        except Exception, excep:
+        except Exception:
             try:
                 range_data = [x.strip() for x in str(kwargs[str(kwargs[ranger_name])]).split(',') if len(x.strip()) > 0]
                 return range_data
@@ -457,22 +459,22 @@ class OperationService:
                 raise LaunchException("Could not launch with no data from:" + str(ranger_name))
         if type(range_data) in (list, tuple):
             return range_data
-        if ((xml_reader.ATT_MINVALUE in range_data) and (xml_reader.ATT_MAXVALUE in range_data)):
+        if (xml_reader.ATT_MINVALUE in range_data) and (xml_reader.ATT_MAXVALUE in range_data):
             min_val = float(range_data[xml_reader.ATT_MINVALUE])
             max_val = float(range_data[xml_reader.ATT_MAXVALUE])
             step = float(range_data[xml_reader.ATT_STEP])
             no_of_decimals = max(len(str(step).split('.')[1]), len(str(min_val).split('.')[1]))
             i = 0
-            while min_val + i*step <= max_val:
-                range_values.append(round(min_val + i*step, no_of_decimals))
-                i = i + 1
+            while min_val + i * step <= max_val:
+                range_values.append(round(min_val + i * step, no_of_decimals))
+                i += 1
         else:
             for possible_value in range_data:
-                if range_data[possible_value] == True:
+                if range_data[possible_value]:
                     range_values.append(possible_value)
-        return range_values  
+        return range_values
 
-    
+
     @staticmethod
     def __expand_arguments(arguments_list, range_values, range_title):
         """
@@ -493,8 +495,8 @@ class OperationService:
                 del kw_new[range_title]
                 result.append((kw_new, range_new))
         return result
-    
-    
+
+
     ##########################################################################################
     ######## Methods related to stopping and restarting operations start here ################
     ##########################################################################################
@@ -527,16 +529,17 @@ class OperationService:
                 dao.store_entity(operation)
                 return True
         return False
-    
-    
+
+
     def stop_operations(self, operation_ids):
         """
         Used in case of group launch. Aquire operation thread list lock before beginning stop
         to make sure no synchronization problems occur.
         """
+        any_stopped = False
         if cfg.DEPLOY_CLUSTER:
             for op_id in operation_ids:
-                return self.stop_operation(op_id)
+                any_stopped = any_stopped or self.stop_operation(op_id)
         else:
             any_stopped = BACKEND_CLIENT.stop_operations(operation_ids)
             for op_id in operation_ids:

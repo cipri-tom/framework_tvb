@@ -34,12 +34,15 @@ from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb_test.core.base_testcase import TransactionalTestCase
 import tvb_test.adapters as adapters_init
-        
-class xml_readerTest(TransactionalTestCase):
+
+
+
+class XML_Reader_Test(TransactionalTestCase):
     """
     This is a test class for the tvb.core.adapters.xml_reader module.
-    """    
-    
+    """
+
+
     def setUp(self):
         """
         This method sets up the necessary paths for testing.
@@ -56,7 +59,8 @@ class xml_readerTest(TransactionalTestCase):
         algo_group = dao.find_group('tvb_test.adapters.testgroupadapter', 'TestGroupAdapter', xml_group_path)
         self.xml_group_adapter = ABCAdapter.build_adapter(algo_group)
         self.xml_group_reader = self.xml_group_adapter.xml_reader
-        
+
+
     def tearDown(self):
         cfg.CURRENT_DIR = self.old_path
         if hasattr(adapters_init, '__xml_folders__'):
@@ -64,20 +68,16 @@ class xml_readerTest(TransactionalTestCase):
             # to check if this was really added.
             del adapters_init.__xml_folders__
 
+
     def test_algorithm_group_attributes(self):
         """
         Tests the attributes of an algorithm group
         """
-        self.assertEqual(self.xml_group_adapter.xml_reader.root_name, "simple",
-                         "The name of the algorithm_group is incorrect.")
+        self.assertEqual(self.xml_group_adapter.xml_reader.root_name, "simple")
         self.assertEqual(self.xml_group_adapter.xml_reader.get_type(),
-                         "tvb_test.adapters.testgroupadapter.TestGroupAdapter",
-                         "type of the algorithm_group is incorrect.")
-        self.assertEqual(self.xml_group_adapter.xml_reader.get_ui_name(), 
-                         "Simple Python Analyzers",
-                         "ui_name of the algorithm_group is incorrect.")
-        self.assertTrue("externals/BCT" in self.xml_group_adapter.xml_reader.get_additional_path(), 
-                         "additional_path of  algorithm_group is incorrect.")
+                         "tvb_test.adapters.testgroupadapter.TestGroupAdapter")
+        self.assertEqual(self.xml_group_adapter.xml_reader.get_ui_name(), "Simple Python Analyzers")
+        self.assertTrue("externals/BCT" in self.xml_group_adapter.xml_reader.get_additional_path())
 
 
     def test_code_for_algorithm(self):
@@ -85,17 +85,14 @@ class xml_readerTest(TransactionalTestCase):
         Tests the code that has to be executed for an algorithm
         """
         self.assertEqual(self.xml_group_adapter.get_call_code("CC"),
-                         "cross_correlation(data1, data2, chan1, chan2, mode)",
-                         "Algorithm.code is incorrect!")
+                         "cross_correlation(data1, data2, chan1, chan2, mode)")
 
 
     def test_import_for_algorithm(self):
         """
         Tests the code that has to be imported for an algorithm
         """
-        self.assertEqual(self.xml_group_adapter.get_import_code("CC"),
-                         "tvb.analyzers.simple_analyzers",
-                         "Algorithms.import_code is incorrect!")
+        self.assertEqual(self.xml_group_adapter.get_import_code("CC"), "tvb.analyzers.simple_analyzers")
 
 
     def test_inputs_for_algorithm(self):
@@ -118,7 +115,7 @@ class xml_readerTest(TransactionalTestCase):
         """
         Tests the interface for an algorithm group
         """
-        interface =  self.xml_group_adapter.get_input_tree()
+        interface = self.xml_group_adapter.get_input_tree()
         self.assertEqual(len(interface), 1, "Didnt parse correctly.")
         tree_root = interface[0]
         self.assertEqual(tree_root[xml_reader.ATT_NAME], "simple")
@@ -145,11 +142,8 @@ class xml_readerTest(TransactionalTestCase):
         self.assertEqual(len(algorithms), 1, "Didn't parse correctly.")
         algorithm = algorithms["CC"]
         self.assertEqual(algorithm[xml_reader.ATT_IDENTIFIER], "CC")
-        self.assertEqual(algorithm[xml_reader.ATT_CODE], 
-                         "cross_correlation(data1, data2, chan1, chan2, mode)",
-                         "Didn't parse correctly.")
-        self.assertEqual(algorithm[xml_reader.ATT_IMPORT], 
-                         "tvb.analyzers.simple_analyzers")
+        self.assertEqual(algorithm[xml_reader.ATT_CODE], "cross_correlation(data1, data2, chan1, chan2, mode)")
+        self.assertEqual(algorithm[xml_reader.ATT_IMPORT], "tvb.analyzers.simple_analyzers")
         self.assertEqual(algorithm[xml_reader.ATT_NAME], "Cross Correlation")
         #check inputs
         inputs = algorithms["CC"][xml_reader.INPUTS_KEY]
@@ -177,11 +171,10 @@ class xml_readerTest(TransactionalTestCase):
         algorithm node.
         """
         try:
-            xml_group_path = os.path.join(self.folder_path, 
-                                          "no_algorithm_node.xml")
+            xml_group_path = os.path.join(self.folder_path, "no_algorithm_node.xml")
             xml_reader.XMLGroupReader.get_instance(xml_group_path)
             self.fail("Test should fail. The xml doesn't contain algorithms")
-        except XmlParserException, _:
+        except XmlParserException:
             #OK, do nothing
             pass
 
@@ -192,11 +185,9 @@ class xml_readerTest(TransactionalTestCase):
         the required nodes. The missing node is code from one of the algorithms.
         """
         xml_group_path = os.path.join(self.folder_path, "no_code_node.xml")
-        self.assertRaises(XmlParserException, 
-                          xml_reader.XMLGroupReader, xml_group_path)
+        self.assertRaises(XmlParserException, xml_reader.XMLGroupReader, xml_group_path)
         #The call should fail. 
         #One of the algorithms doesn't contain required attribute 'code'
-        
 
 
     def test_missing_required_attribute(self):
@@ -205,27 +196,24 @@ class xml_readerTest(TransactionalTestCase):
         the required attributes. The missing attribute is 'name' from one of the algorithms.
         """
         try:
-            xml_group_path = os.path.join(self.folder_path, 
-                                          "missing_required_attribute.xml")
+            xml_group_path = os.path.join(self.folder_path, "missing_required_attribute.xml")
             xml_reader.XMLGroupReader.get_instance(xml_group_path)
-            self.fail("Test should fail. "
-                      "One of the algorithms doesn't have required 'name' att")
-        except XmlParserException, _:
+            self.fail("Test should fail. One of the algorithms doesn't have required 'name' att")
+        except XmlParserException:
             #OK, do nothing
             pass
-        
-        
+
+
     def test_invalid_schema_url(self):
         """
         Test that when XML schema can not be found (e.g. due to no internet connection, 
         or server down) the XML is still read.
         """
-        xml_group_path = os.path.join(self.folder_path, 
-                                      "test_invalid_schema_url.xml")
+        xml_group_path = os.path.join(self.folder_path, "test_invalid_schema_url.xml")
         self.xml_group_reader = xml_reader.XMLGroupReader.get_instance(xml_group_path)
         self.test_inputs_for_algorithm()
         self.test_outputs_for_algorithm()
-        
+
 
     def check_inputs(self, inputs_list):
         """
@@ -235,69 +223,63 @@ class xml_readerTest(TransactionalTestCase):
         for input_ in inputs_list:
             inputs_dict[input_[xml_reader.ATT_NAME]] = input_
 
-        expected_conditions = {'fields': ['datatype_class._nr_dimensions'], 
+        expected_conditions = {'fields': ['datatype_class._nr_dimensions'],
                                'values': ['2'], 'operations': ['==']}
-        self._check_input(inputs_dict, "data1", True, 
-                          "tvb.datatypes.arrays.MappedArray", "First dataset:", 
-                          "First set of signals", "data", "default_data", 
-                          None, expected_conditions)
+        self._check_input(inputs_dict, "data1", True, "tvb.datatypes.arrays.MappedArray", "First dataset:",
+                          "First set of signals", "data", "default_data", None, expected_conditions)
 
-        self._check_input(inputs_dict, "chan1", False, "int", 
-                          "First channel index:", None, None, None, None, None)
+        self._check_input(inputs_dict, "chan1", False, "int", "First channel index:", None, None, None, None, None)
 
         expected_options = {'valid': 'Valid', 'same': 'Same', 'full': 'Full'}
-        self._check_input(inputs_dict, "mode", True, "select", "Mode:", 
-                          "Flag that indicates the size of the output", 
+        self._check_input(inputs_dict, "mode", True, "select", "Mode:", "Flag that indicates the size of the output",
                           None, "full", expected_options, None)
 
-    
-    def _check_input(self, all_inputs, input_name, is_required, expected_type, 
-                     expected_label, expected_description, expected_field, 
-                     expected_default, expected_options, expected_conditions):
+
+    def _check_input(self, all_inputs, input_name, is_required, expected_type, expected_label, expected_description,
+                     expected_field, expected_default, expected_options, expected_conditions):
         """Validate one input"""
+
         input_ = all_inputs[input_name]
+
+        self.assertEqual(input_[xml_reader.ATT_NAME], input_name)
+        self.assertEqual(input_[xml_reader.ATT_LABEL], expected_label)
+        self.assertEqual(input_[xml_reader.ATT_TYPE], expected_type)
+
         if is_required:
             self.assertTrue(input_[xml_reader.ATT_REQUIRED])
         else:
             self.assertFalse(input_[xml_reader.ATT_REQUIRED])
-        self.assertEqual(input_[xml_reader.ATT_NAME], input_name, 
-                         "Invalid attribute 'name'")
-        self.assertEqual(input_[xml_reader.ATT_LABEL], expected_label, 
-                         "Invalid attribute 'label'")
+
         if expected_description is None:
             self.assertFalse(xml_reader.ATT_DESCRIPTION in input_.keys())
         else:
-            self.assertEqual(input_[xml_reader.ATT_DESCRIPTION], 
-                             expected_description, "Invalid description")
-        self.assertEqual(input_[xml_reader.ATT_TYPE], expected_type, 
-                         "Invalid Type")
+            self.assertEqual(input_[xml_reader.ATT_DESCRIPTION], expected_description)
+
         if expected_field is None:
             self.assertFalse(xml_reader.ATT_FIELD in input_.keys())
         else:
-            self.assertEqual(input_[xml_reader.ATT_FIELD], expected_field, 
-                             "Invalid attribute 'field'")
+            self.assertEqual(input_[xml_reader.ATT_FIELD], expected_field)
+
         if expected_default is None:
             self.assertFalse(xml_reader.ATT_DEFAULT in input_.keys())
         else:
-            self.assertEqual(input_[xml_reader.ATT_DEFAULT], expected_default, 
-                             "Invalid default value")
+            self.assertEqual(input_[xml_reader.ATT_DEFAULT], expected_default)
+
         if expected_options is None:
             self.assertFalse(xml_reader.ELEM_OPTIONS in input_.keys())
         else:
             options = input_[xml_reader.ELEM_OPTIONS]
             for opt in options:
                 self.assertTrue(opt[xml_reader.ATT_VALUE] in expected_options)
-                self.assertEquals(opt[xml_reader.ATT_NAME], 
-                                  expected_options[opt[xml_reader.ATT_VALUE]])
+                self.assertEquals(opt[xml_reader.ATT_NAME], expected_options[opt[xml_reader.ATT_VALUE]])
+
         if expected_conditions is None:
             self.assertFalse(xml_reader.ELEM_CONDITIONS in input_.keys())
         else:
             ops_filter = input_[xml_reader.ELEM_CONDITIONS]
             for key_attr in expected_conditions.keys():
                 actual_values = getattr(ops_filter, key_attr)
-                self.assertEqual(len(actual_values), 
-                                 len(expected_conditions[key_attr]), 
-                                 "Invalid condition." + str(key_attr))
+                self.assertEqual(len(actual_values), len(expected_conditions[key_attr]))
                 for att in actual_values:
                     self.assertTrue(att in expected_conditions[key_attr])
 
@@ -308,40 +290,35 @@ class xml_readerTest(TransactionalTestCase):
         """
         self.assertEqual(len(outputs), 2, "Didnt parse correctly.")
         #first output
-        self.assertEqual(outputs[0][xml_reader.ATT_TYPE], 
-                         "tvb.datatypes.arrays.MappedArray", "Invalid Type!")
+        self.assertEqual(outputs[0][xml_reader.ATT_TYPE], "tvb.datatypes.arrays.MappedArray")
         fields = outputs[0][xml_reader.ELEM_FIELD]
         self.assertEqual(len(fields), 3, "Expected 3 fields.")
         fields_dict = {}
         for field_ in fields:
             fields_dict[field_[xml_reader.ATT_NAME]] = field_
-        self.assertEqual(fields_dict["data"][xml_reader.ATT_REFERENCE], 
-                         "$0#", "Didnt parse correctly.")
-        self.assertEqual(fields_dict["data_name"][xml_reader.ATT_VALUE], 
-                         "Covariance matrix", "Didnt parse correctly.")
-        self.assertEqual(fields_dict["label_x"][xml_reader.ATT_VALUE], 
-                         "Nodes", "Didnt parse correctly.")
+        self.assertEqual(fields_dict["data"][xml_reader.ATT_REFERENCE], "$0#")
+        self.assertEqual(fields_dict["data_name"][xml_reader.ATT_VALUE], "Covariance matrix")
+        self.assertEqual(fields_dict["label_x"][xml_reader.ATT_VALUE], "Nodes")
         #second output
-        self.assertEqual(outputs[1][xml_reader.ATT_TYPE], 
-                         "tvb.datatypes.arrays.MappedArray", "Invalid Type!")
+        self.assertEqual(outputs[1][xml_reader.ATT_TYPE], "tvb.datatypes.arrays.MappedArray")
         fields = outputs[1][xml_reader.ELEM_FIELD]
-        self.assertEqual(len(fields), 2, "Expected 2 fields.")
+        self.assertEqual(len(fields), 2)
         fields_dict = {}
         for field_ in fields:
             fields_dict[field_[xml_reader.ATT_NAME]] = field_
-        self.assertEqual(fields_dict["data"][xml_reader.ATT_REFERENCE], 
-                         "$0#", "Didnt parse correctly.")
-        self.assertEqual(fields_dict["data_name"][xml_reader.ATT_VALUE], 
-                         "Cross correlation", "Didnt parse correctly.")
+        self.assertEqual(fields_dict["data"][xml_reader.ATT_REFERENCE], "$0#")
+        self.assertEqual(fields_dict["data_name"][xml_reader.ATT_VALUE], "Cross correlation")
 
-    
+
+
 def suite():
     """
     Gather all the tests in a test suite.
     """
     test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(xml_readerTest))
+    test_suite.addTest(unittest.makeSuite(XML_Reader_Test))
     return test_suite
+
 
 
 if __name__ == "__main__":

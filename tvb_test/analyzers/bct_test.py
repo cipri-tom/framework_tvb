@@ -22,11 +22,10 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import os
 ### Try to import extra module when running with Python 2.6 (where unittest2 is not default)
 try:
     import unittest2 as unittest
-except Exception, _:
+except Exception:
     import unittest
 from tvb.core.utils import get_matlab_executable
 from tvb.core.entities import model
@@ -45,27 +44,29 @@ class BCTTest(TransactionalTestCase):
     We do not verify that the algorithms are correct, because that is outside the purpose of TVB framework.
     """
     EXPECTED_TO_FAIL_VALIDATION = ["CCBU", "CCWU", "TBU", "TWU"]
-    
+
+
     @unittest.skipIf(get_matlab_executable() is None, "Matlab or Octave not installed!")
     def setUp(self):
         self.test_user = TestFactory.create_user("BCT_User")
         self.test_project = TestFactory.create_project(self.test_user, "BCT-Project")
         ### Make sure Connectivity is in DB
-        TestFactory.import_cff(test_user = self.test_user, test_project=self.test_project)
+        TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.connectivity = dao.get_generic_entity(Connectivity, 'John Doe', 'subject')[0]
-        
+
         self.algo_groups = dao.get_generic_entity(model.AlgorithmGroup, 'bct', 'algorithm_param_name')
-  
+
         self.assertTrue(self.algo_groups is not None)
         self.assertEquals(6, len(self.algo_groups))
-        self.bct_adapters = [] 
+        self.bct_adapters = []
         for group in self.algo_groups:
             self.bct_adapters.append(TestFactory.create_adapter(group, self.test_project))
-            
+
+
     def tearDown(self):
         self.clean_database(True)
-        
-    
+
+
     @unittest.skipIf(get_matlab_executable() is None, "Matlab or Octave not installed!")
     def test_bct_all(self):
         """
@@ -75,31 +76,31 @@ class BCTTest(TransactionalTestCase):
             for bct_identifier in self.bct_adapters[i].get_algorithms_dictionary():
                 ### Prepare Operation and parameters
                 algorithm = dao.get_algorithm_by_group(self.algo_groups[i].id, bct_identifier)
-                operation = TestFactory.create_operation(algorithm=algorithm, test_user=self.test_user, 
+                operation = TestFactory.create_operation(algorithm=algorithm, test_user=self.test_user,
                                                          test_project=self.test_project, operation_status="STARTED")
                 self.assertEqual("STARTED", operation.status)
                 ### Launch BCT algorithm
                 submit_data = {self.algo_groups[i].algorithm_param_name: bct_identifier,
-                               algorithm.parameter_name :self.connectivity.gid}
+                               algorithm.parameter_name: self.connectivity.gid}
                 try:
                     OperationService().initiate_prelaunch(operation, self.bct_adapters[i], {}, **submit_data)
                     if bct_identifier in BCTTest.EXPECTED_TO_FAIL_VALIDATION:
                         raise Exception("Algorithm %s was expected to throw input validation "
-                                        "exception, but did not!"%(bct_identifier,))
-                    
+                                        "exception, but did not!" % (bct_identifier,))
+
                     operation = dao.get_operation_by_id(operation.id)
                     ### Check that operation status after execution is success.
                     self.assertEqual("FINISHED", operation.status)
                     ### Make sure at least one result exists for each BCT algorithm
                     results = dao.get_generic_entity(model.DataType, operation.id, 'fk_from_operation')
                     self.assertTrue(len(results) > 0)
-                
+
                 except InvalidParameterException, excep:
                     ## Some algorithms are expected to throw validation exception.
                     if bct_identifier not in BCTTest.EXPECTED_TO_FAIL_VALIDATION:
                         raise excep
-                    
-                
+
+
     @unittest.skipIf(get_matlab_executable() is None, "Matlab or Octave not installed!")
     def test_bct_descriptions(self):
         """
@@ -109,9 +110,11 @@ class BCTTest(TransactionalTestCase):
             for bct_identifier in self.bct_adapters[i].get_algorithms_dictionary():
                 ### Prepare Operation and parameters
                 algorithm = dao.get_algorithm_by_group(self.algo_groups[i].id, bct_identifier)
-                self.assertTrue(len(algorithm.description) > 0, "Description was not loaded properly for algorithm %s"%(str(algorithm,)))
-        
-        
+                self.assertTrue(len(algorithm.description) > 0,
+                                "Description was not loaded properly for algorithm %s" % (str(algorithm, )))
+
+
+
 def suite():
     """
     Gather all the tests in a test suite.
@@ -119,6 +122,7 @@ def suite():
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(BCTTest))
     return test_suite
+
 
 
 if __name__ == "__main__":

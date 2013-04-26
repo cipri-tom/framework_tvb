@@ -44,28 +44,27 @@ from tvb.core.entities.file.fileshelper import FilesHelper
 class RemoveTest(TransactionalTestCase):
     """
     This class contains tests for the tvb.core.services.flowservice module.
-    """  
-    
-    
+    """
+
+
     def setUp(self):
         """
-        Reset the database before each test.
+        Prepare the database before each test.
         """
-#        self.clean_database()
         self.import_service = ImportService()
         self.flow_service = FlowService()
         self.project_service = ProjectService()
-        
+
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
         self.operation = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
         self.adapter_instance = TestFactory.create_adapter(test_project=self.test_project)
-        
+
         result = self.get_all_datatypes()
         self.assertEqual(len(result), 0, "There should be no data type in DB")
         TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
-        
-    
+
+
     def tearDown(self):
         """
         Reset the database when test is done.
@@ -84,7 +83,7 @@ class RemoveTest(TransactionalTestCase):
         try:
             self.project_service.remove_datatype(self.test_project.id, gid)
             self.fail("The connectivity is still used. It should not be possible to remove it.")
-        except RemoveDataTypeException, _:
+        except RemoveDataTypeException:
             #OK, do nothing
             pass
         res = dao.get_datatype_by_gid(gid)
@@ -101,7 +100,7 @@ class RemoveTest(TransactionalTestCase):
         mapping_gid = mapping[0][2]
         mapping = ABCAdapter.load_entity_by_gid(mapping_gid)
         #delete surface
-        surfaces = self.flow_service.get_available_datatypes(self.test_project.id, 
+        surfaces = self.flow_service.get_available_datatypes(self.test_project.id,
                                                              "tvb.datatypes.surfaces.CorticalSurface")
         self.assertTrue(len(surfaces) > 0, "At least one Cortex expected")
         surface = dao.get_datatype_by_gid(mapping.surface.gid)
@@ -109,7 +108,7 @@ class RemoveTest(TransactionalTestCase):
         try:
             self.project_service.remove_datatype(self.test_project.id, surface.gid)
             self.fail("The surface is still used by a RegionMapping. It should not be possible to remove it.")
-        except RemoveDataTypeException, _:
+        except RemoveDataTypeException:
             #OK, do nothing
             pass
         res = dao.get_datatype_by_gid(surface.gid)
@@ -135,11 +134,10 @@ class RemoveTest(TransactionalTestCase):
         They are tested together because they depend on each other and they
         have to be removed in a certain order.
         """
-        #TODO: add code for deleting TimeSeries
         self._remove_entity("tvb.datatypes.surfaces.LocalConnectivity", 1)
         self._remove_entity("tvb.datatypes.surfaces.RegionMapping", 1)
         ### Remove Surfaces
-        # SqlAlchemy has no uniform way to retrieve Surface as base (wild-character for polymorhic_identity)
+        # SqlAlchemy has no uniform way to retrieve Surface as base (wild-character for polymorphic_identity)
         self._remove_entity("tvb.datatypes.surfaces_data.SurfaceData", 2)
         ### Remove a Connectivity
         self._remove_entity("tvb.datatypes.connectivity.Connectivity", 1)
@@ -191,18 +189,18 @@ class RemoveTest(TransactionalTestCase):
         res = dao.get_datatype_by_gid(value_wrapper.gid)
         self.assertEqual(None, res, "The value wrapper was not deleted.")
 
-        
+
     def _create_timeseries(self):
         """Launch adapter to persist a TimeSeries entity"""
         storage_path = FilesHelper().get_project_folder(self.test_project, str(self.operation.id))
 
         time_series = TimeSeries()
-        time_series.sample_period = 10.0 
-        time_series.start_time = 0.0 
-        time_series.storage_path=storage_path
+        time_series.sample_period = 10.0
+        time_series.start_time = 0.0
+        time_series.storage_path = storage_path
         time_series.write_data_slice(numpy.array([1.0, 2.0, 3.0]))
-        time_series.close_file() 
-        time_series.sample_period_unit = 'ms' 
+        time_series.close_file()
+        time_series.sample_period_unit = 'ms'
 
         self._store_entity(time_series, "TimeSeries", "tvb.datatypes.time_series")
         timeseries = self.flow_service.get_available_datatypes(self.test_project.id,
@@ -230,7 +228,8 @@ class RemoveTest(TransactionalTestCase):
         adapter_instance = StoreAdapter([entity])
         OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
 
-    
+
+
 def suite():
     """
     Gather all the tests in a test suite.
@@ -238,6 +237,7 @@ def suite():
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(RemoveTest))
     return test_suite
+
 
 
 if __name__ == "__main__":

@@ -39,8 +39,8 @@ class OperationDAO(RootDAO):
     """
     OPERATION RELATED METHODS
     """
-    
-    
+
+
     def get_operation_by_id(self, operation_id):
         """Retrieve OPERATION entity for a given Identifier."""
         try:
@@ -52,8 +52,8 @@ class OperationDAO(RootDAO):
             self.logger.error(ex)
             operation = None
         return operation
-    
-    
+
+
     def get_operation_by_gid(self, operation_gid):
         """Retrieve OPERATION entity for a given gid."""
         try:
@@ -65,38 +65,38 @@ class OperationDAO(RootDAO):
         except Exception, excep:
             self.logger.exception(excep)
             return None
-    
-    
+
+
     def get_all_operations_for_uploaders(self, project_id):
         """
         Returns all finished upload operations.
         """
         try:
             result = self.session.query(model.Operation).join(model.Algorithm).join(
-                model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
-                model.AlgorithmCategory.rawinput==True).filter(
-                model.Operation.fk_launched_in==project_id).filter(
-                model.Operation.status==model.STATUS_FINISHED).all()
+                                        model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
+                                        model.AlgorithmCategory.rawinput == True).filter(
+                                        model.Operation.fk_launched_in == project_id).filter(
+                                        model.Operation.status == model.STATUS_FINISHED).all()
             return result
         except Exception, excep:
             self.logger.exception(excep)
             return None
-    
-    
+
+
     def is_upload_operation(self, operation_gid):
         """
         Returns True only if the operation with the given gid is an upload operation.
         """
         try:
             result = self.session.query(model.Operation).join(model.Algorithm).join(
-                model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
-                model.AlgorithmCategory.rawinput==True).filter(
-                model.Operation.gid==operation_gid).count()
+                                        model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
+                                        model.AlgorithmCategory.rawinput == True).filter(
+                                        model.Operation.gid == operation_gid).count()
             return result > 0
-        except Exception, _:
+        except Exception:
             return False
-    
-    
+
+
     def count_resulted_datatypes(self, operation_id):
         """
         Returns the number of resulted datatypes from the specified operation.
@@ -108,30 +108,31 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
-    
+
     def get_operation_process_for_operation(self, operation_id):
         """
         Get the OperationProcessIdentifier for this operation id.
         """
         try:
-            result = self.session.query(model.OperationProcessIdentifier).filter(
-                                   model.OperationProcessIdentifier.fk_from_operation==operation_id).one()
+            result = self.session.query(model.OperationProcessIdentifier
+                                        ).filter(model.OperationProcessIdentifier.fk_from_operation == operation_id
+                                                 ).one()
         except NoResultFound, _:
-            self.logger.debug("No operation process found for operation id=%s."%(str(operation_id),))
+            self.logger.debug("No operation process found for operation id=%s." % (str(operation_id),))
             result = None
         except Exception, excep:
             self.logger.exception(excep)
             result = None
         return result
-            
-    
-    def get_operations_in_group(self, operation_group_id, is_count = False, 
-                                only_first_operation = False, only_gids = False):
+
+
+    def get_operations_in_group(self, operation_group_id, is_count=False,
+                                only_first_operation=False, only_gids=False):
         """
         Retrieve OPERATION entities for a given group.
         """
+        result = None
         try:
-            result = None
             query = self.session.query(model.Operation)
             if only_gids:
                 query = self.session.query(model.Operation.gid)
@@ -145,45 +146,45 @@ class OperationDAO(RootDAO):
         except Exception, excep:
             self.logger.exception(excep)
         return result
-    
-    
+
+
     def compute_disk_size_for_started_ops(self, user_id):
         """ Get all the disk space that should be reserved for the started operations of this user. """
         try:
             expected_hdd_size = self.session.query(func.sum(model.Operation.result_disk_size)
-                                              ).filter(model.Operation.fk_launched_by == user_id
-                                              ).filter(model.Operation.status == model.STATUS_STARTED).scalar() or 0
+                                                   ).filter(model.Operation.fk_launched_by == user_id
+                                                   ).filter(model.Operation.status == model.STATUS_STARTED).scalar()
         except Exception, excep:
             self.logger.exception(excep)
             expected_hdd_size = 0
-        return expected_hdd_size
-    
-    
+        return expected_hdd_size or 0
+
+
     def get_filtered_operations(self, proj_id, filters, page_start=0, page_end=20, is_count=False):
-        """Retrieve Operations for a given project, filtered from UI.""" 
+        """Retrieve Operations for a given project, filtered from UI."""
         try:
             query = self.session.query(func.min(model.Operation.id), func.max(model.Operation.id),
-                                  func.count(model.Operation.id), func.max(model.Operation.fk_operation_group), 
-                                  func.min(model.Operation.fk_from_algo), func.max(model.Operation.method_name),
-                                  func.max(model.Operation.fk_launched_by),
-                                  func.min(model.Operation.create_date), func.min(model.Operation.start_date), 
-                                  func.max(model.Operation.completion_date),
-                                  func.min(model.Operation.status), func.max(model.Operation.additional_info),
-                                  func.min(case_([(model.Operation.visible, 1)], else_=0)),
-                                  func.min(model.Operation.user_group), 
-                                  func.min(model.Operation.gid)
-                                  ).join(model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory)   
-                                  
-            if ((filters is None) or (filters.fields is None) or len(filters.fields) == 0):
-                query = query.filter(model.Operation.fk_launched_in==proj_id)
+                                       func.count(model.Operation.id), func.max(model.Operation.fk_operation_group),
+                                       func.min(model.Operation.fk_from_algo), func.max(model.Operation.method_name),
+                                       func.max(model.Operation.fk_launched_by),
+                                       func.min(model.Operation.create_date), func.min(model.Operation.start_date),
+                                       func.max(model.Operation.completion_date),
+                                       func.min(model.Operation.status), func.max(model.Operation.additional_info),
+                                       func.min(case_([(model.Operation.visible, 1)], else_=0)),
+                                       func.min(model.Operation.user_group),
+                                       func.min(model.Operation.gid)
+                                ).join(model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory)
+
+            if (filters is None) or (filters.fields is None) or len(filters.fields) == 0:
+                query = query.filter(model.Operation.fk_launched_in == proj_id)
             else:
                 filter_string = filters.get_sql_filter_equivalent()
-                query = query.filter(model.Operation.fk_launched_in==proj_id)
-                query = query.filter(eval(filter_string))   
+                query = query.filter(model.Operation.fk_launched_in == proj_id)
+                query = query.filter(eval(filter_string))
             query = query.group_by(case_([(model.Operation.fk_operation_group > 0,
                                            - model.Operation.fk_operation_group)], else_=model.Operation.id),
                                    ).order_by(desc(func.max(model.Operation.id)))
-                                   
+
             if is_count:
                 result = query.count()
             else:
@@ -192,31 +193,31 @@ class OperationDAO(RootDAO):
             self.logger.error(excep)
             result = 0 if is_count else None
         return result
-    
-    
-    def get_results_for_operation(self, operation_id, filters = None):
+
+
+    def get_results_for_operation(self, operation_id, filters=None):
         """
         Retrieve DataTypes entities, resulted after executing an operation.
         """
         try:
             query = self.session.query(model.DataType
                                        ).filter_by(fk_from_operation=operation_id
-                                       ).filter(and_(model.DataType.type!=self.EXCEPTION_DATATYPE_GROUP, 
-                                                     model.DataType.type!=self.EXCEPTION_DATATYPE_SIMULATION))
+                                       ).filter(and_(model.DataType.type != self.EXCEPTION_DATATYPE_GROUP,
+                                                     model.DataType.type != self.EXCEPTION_DATATYPE_SIMULATION))
             if filters:
                 filter_str = filters.get_sql_filter_equivalent()
                 if filter_str is not None:
                     query = query.filter(eval(filter_str))
             query = query.order_by(model.DataType.id)
             result = query.all()
-            
+
             return result
         except Exception, excep:
             self.logger.exception(excep)
             return None
-    
-    
-    def get_operations_for_datatype(self, datatype_gid, only_relevant = True, only_in_groups = False):
+
+
+    def get_operations_for_datatype(self, datatype_gid, only_relevant=True, only_in_groups=False):
         """
         Returns all the operations which uses as an input parameter
         the dataType with the specified GID.
@@ -227,18 +228,18 @@ class OperationDAO(RootDAO):
         """
         try:
             query = self.session.query(model.Operation).filter(
-                model.Operation.parameters.like('%' + datatype_gid + '%')).join(
-                model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
-                or_(model.AlgorithmCategory.display==False, model.Operation.method_name != 'launch'))
+                                model.Operation.parameters.like('%' + datatype_gid + '%')).join(
+                                model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
+                                or_(model.AlgorithmCategory.display == False, model.Operation.method_name != 'launch'))
             query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
             result = query.all()
             return result
         except Exception, excep:
             self.logger.exception(excep)
             return None
-    
-    
-    def get_operations_for_datatype_group(self, datatype_group_id, only_relevant = True, only_in_groups = False):
+
+
+    def get_operations_for_datatype_group(self, datatype_group_id, only_relevant=True, only_in_groups=False):
         """
         Returns all the operations which uses as an input parameter a datatype from the given DataTypeGroup.
         If the flag only_relevant is True than only the relevant operations will be returned.
@@ -252,16 +253,16 @@ class OperationDAO(RootDAO):
                 model.DataType.fk_datatype_group == datatype_group_id).filter(
                 model.Operation.parameters.like('%' + model.DataType.gid + '%')).join(
                 model.Algorithm).join(model.AlgorithmGroup).join(model.AlgorithmCategory).filter(
-                or_(model.AlgorithmCategory.display==False, model.Operation.method_name != 'launch'))
+                or_(model.AlgorithmCategory.display == False, model.Operation.method_name != 'launch'))
             query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
             result = query.all()
             return result
         except Exception, excep:
             self.logger.exception(excep)
             return None
-        
-        
-    def get_operations_in_burst(self, burst_id, is_count = False):
+
+
+    def get_operations_in_burst(self, burst_id, is_count=False):
         """
         Return a list with all the operations generated by a given burst. 
         These need to be removed when the burst is deleted.
@@ -269,9 +270,9 @@ class OperationDAO(RootDAO):
         """
         try:
             result = self.session.query(model.Operation
-                                   ).join(model.WorkflowStep, model.WorkflowStep.fk_operation==model.Operation.id
-                                   ).join(model.Workflow, model.Workflow.id == model.WorkflowStep.fk_workflow
-                                   ).filter(model.Workflow.fk_burst==burst_id)
+                                    ).join(model.WorkflowStep, model.WorkflowStep.fk_operation == model.Operation.id
+                                    ).join(model.Workflow, model.Workflow.id == model.WorkflowStep.fk_workflow
+                                    ).filter(model.Workflow.fk_burst == burst_id)
             if is_count:
                 result = result.count()
             else:
@@ -282,8 +283,8 @@ class OperationDAO(RootDAO):
             if is_count:
                 return 0
             return []
-            
-    
+
+
     @staticmethod
     def _apply_visibility_and_group_filters(query, only_relevant, only_in_groups):
         """
@@ -296,8 +297,8 @@ class OperationDAO(RootDAO):
         else:
             query = query.filter(model.Operation.fk_operation_group == None)
         return query
-    
-    
+
+
     def set_operation_and_group_visibility(self, entity_gid, is_visible, is_operation_group=False):
         """
         Sets the operation visibility.
@@ -316,8 +317,8 @@ class OperationDAO(RootDAO):
             self.session.commit()
         except Exception, excep:
             self.logger.exception(excep)
-    
-    
+
+
     def get_figures_for_operation(self, operation_id):
         """Retrieve Figure entities, resulted after executing an operation."""
         try:
@@ -329,40 +330,42 @@ class OperationDAO(RootDAO):
         except Exception, excep:
             self.logger.exception(excep)
             return None
-        
-        
+
+
     def get_operationgroup_by_gid(self, gid):
         """Retrieve by GID"""
         try:
             result = self.session.query(model.OperationGroup).filter_by(gid=gid).one()
             return result
-        except Exception, _:
+        except Exception:
             return None
-    
-    
+
+
     def get_operationgroup_by_id(self, op_group_id):
         """Retrieve by ID"""
         try:
             result = self.session.query(model.OperationGroup).filter_by(id=op_group_id).one()
             return result
-        except Exception, _:
+        except Exception:
             return None
+
+
     #
     #CATEGORY RELATED METHODS
     #
-    
-    def get_algorithm_categories(self,):
+
+    def get_algorithm_categories(self):
         """Retrieve all existent categories of Algorithms."""
         try:
             categories = self.session.query(model.AlgorithmCategory).distinct().order_by(
-                                       model.AlgorithmCategory.displayname).all()
+                model.AlgorithmCategory.displayname).all()
         except Exception, excep:
             self.logger.exception(excep)
             categories = []
         return categories
-    
-    
-    def get_uploader_categories(self,):
+
+
+    def get_uploader_categories(self):
         """Retrieve categories with raw_input = true"""
         try:
             result = self.session.query(model.AlgorithmCategory).filter_by(rawinput=True).all()
@@ -370,8 +373,9 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             result = []
         return result
-    
-    def get_raw_categories(self,):
+
+
+    def get_raw_categories(self):
         """Retrieve categories with raw_input = true"""
         try:
             result = self.session.query(model.AlgorithmCategory).filter_by(defaultdatastate='RAW_DATA').all()
@@ -379,9 +383,9 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             result = []
         return result
-    
-    
-    def get_visualisers_categories(self,):
+
+
+    def get_visualisers_categories(self):
         """Retrieve categories with display = true"""
         try:
             result = self.session.query(model.AlgorithmCategory).filter_by(display=True).all()
@@ -389,8 +393,8 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             result = []
         return result
-    
-    
+
+
     def get_launchable_categories(self, elimin_viewers=False):
         """Retrieve categories with display = true"""
         try:
@@ -402,8 +406,8 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             result = []
         return result
-    
-    
+
+
     def get_category_by_id(self, categ_id):
         """Retrieve category with given id"""
         try:
@@ -412,89 +416,90 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             result = None
         return result
-    
-    
+
+
     def filter_category(self, displayname, rawinput, display, launchable, order_nr):
         """Retrieve category with given id"""
         try:
             result = self.session.query(model.AlgorithmCategory
-                    ).filter_by(displayname = displayname
-                    ).filter_by(rawinput = rawinput).filter_by(display = display
-                    ).filter_by(launchable = launchable).filter_by(order_nr=order_nr).one()
+                                        ).filter_by(displayname=displayname
+                                        ).filter_by(rawinput=rawinput).filter_by(display=display
+                                        ).filter_by(launchable=launchable).filter_by(order_nr=order_nr).one()
             return result
         except NoResultFound:
             return None
-    
-    
+
+
     #
     #GROUP RELATED METHODS
     #
-    
+
     def get_algo_group_by_id(self, group_id):
         """Retrieve GROUP entity by Identifier."""
         result = None
         try:
             result = self.session.query(model.AlgorithmGroup).filter_by(id=group_id).one()
             result.group_category
-        except Exception, _:
+        except Exception:
             pass
         return result
-    
-    
+
+
     def find_group(self, module, class_name, init_parameter=None):
         """
         Retrieve Group entity, by module and class name from DB.
         """
         try:
             if init_parameter is not None:
-                result = self.session.query(model.AlgorithmGroup).filter_by(module=module, 
-                                                                       classname=class_name,
-                                                                       init_parameter=init_parameter).one()
+                result = self.session.query(model.AlgorithmGroup).filter_by(module=module,
+                                                                            classname=class_name,
+                                                                            init_parameter=init_parameter).one()
             else:
                 result = self.session.query(model.AlgorithmGroup).filter_by(module=module, classname=class_name).one()
             return result
-        except Exception, _:
+        except Exception:
             return None
-    
-    
+
+
     def get_apliable_algo_groups(self, datatype, launch_categ):
         """
         Retrieve a list of algorithms in a given category with a given dataType
         as required input.
         """
-        try:   
+        try:
             groups_list = self.session.query(model.AlgorithmGroup
-                                        ).filter(model.AlgorithmGroup.fk_category.in_(launch_categ)).all()
+                                             ).filter(model.AlgorithmGroup.fk_category.in_(launch_categ)).all()
         except Exception, excep:
             self.logger.exception(excep)
             groups_list = []
-        result = []  
+        result = []
         for one_group in groups_list:
             algos_list = [algo for algo in one_group.algorithms if algo.required_datatype == datatype]
             if algos_list:
                 one_group.children = algos_list
-                result.append(one_group)    
-        
-        return result  
-    
-    
+                result.append(one_group)
+
+        return result
+
+
     def get_groups_by_categories(self, categories):
         """
         Retrieve a list of algorithm groups in a given category.
         """
         try:
             algos_list = self.session.query(model.AlgorithmGroup
-                                            ).filter(model.AlgorithmGroup.fk_category.in_(categories)).order_by(model.AlgorithmGroup.displayname).all()
+                                            ).filter(model.AlgorithmGroup.fk_category.in_(categories)
+                                                     ).order_by(model.AlgorithmGroup.displayname).all()
         except Exception, excep:
             self.logger.exception(excep)
             algos_list = []
         return algos_list
-    
-        
+
+
     #
     # ALGORITHM RELATED METHODS
     #
-    
+
     def get_algorithm_by_id(self, algorithm_id):
         """Retrieve ALGORITHM entity by Identifier."""
         try:
@@ -505,26 +510,26 @@ class OperationDAO(RootDAO):
             self.logger.error(ex)
             result = None
         return result
-    
-    
-    def get_algorithm_by_group(self, group_id, ident = ''):
+
+
+    def get_algorithm_by_group(self, group_id, ident=''):
         """Retrieve an algorithm for a given group_id and an identifier"""
         try:
             if ident == '':
                 algo = self.session.query(model.Algorithm).filter_by(fk_algo_group=group_id).one()
             else:
                 algo = self.session.query(model.Algorithm).filter_by(fk_algo_group=group_id
-                                                         ).filter_by(identifier=ident).one()
+                                                                     ).filter_by(identifier=ident).one()
             algo.algo_group
-            return algo  
+            return algo
         except NoResultFound, _:
             return None
-        
-        
+
+
     #
     # RESULT FIGURE RELATED CODE
     #
-    
+
     def load_figure(self, figure_id):
         """ Load a figure with all it's lazy load fields to have all required 
         info available. """
@@ -536,14 +541,15 @@ class OperationDAO(RootDAO):
         except Exception, excep:
             self.logger.exception(excep)
             return None
-    
-    
+
+
     def get_previews(self, project_id, user_id, selected_session_name='all_sessions'):
         """
         This method returns a tuple of 2 elements. The first element represents a dictionary
         of form {'$session_name': [list_of_figures]}. This dictionary contains data only for the selected self.session.
         If the selected session is 'all_sessions' than it will contain data for all the sessions.
-        The second element of the returned tuple is a dictionary of form {'$session_name': $no_of_figures_in_this_session, ...}.
+        The second element of the returned tuple is a dictionary of form
+        {'$session_name': $no_of_figures_in_this_session, ...}.
         This dictionary contains information about all the sessions.
     
         selected_session_name - represents the name of the session for which you
@@ -556,13 +562,14 @@ class OperationDAO(RootDAO):
                 session_names.sort()
             else:
                 session_names = [selected_session_name]
-    
+
             result = {}
             for session_name in session_names:
-                figures_list = self.session.query(model.ResultFigure).filter_by(fk_for_user=user_id
-                                                               ).filter_by(fk_in_project=project_id
-                                                               ).filter_by(session_name=session_name
-                                                                           ).order_by(model.ResultFigure.name).all()
+                figures_list = self.session.query(model.ResultFigure
+                                                    ).filter_by(fk_for_user=user_id
+                                                    ).filter_by(fk_in_project=project_id
+                                                    ).filter_by(session_name=session_name
+                                                    ).order_by(model.ResultFigure.name).all()
                 # Force loading of project and operation - needed to compute image path
                 for figure in figures_list:
                     figure.project
@@ -572,25 +579,24 @@ class OperationDAO(RootDAO):
         except Exception, excep:
             self.logger.exception(excep)
             return {}
-    
-    
+
+
     def _get_previews_info(self, project_id, user_id):
         """
         Returns a dictionary of form: {$session_name: $no_of_images_in_this_session, ...}.
         """
         try:
             result = {}
-            session_items = self.session.query(model.ResultFigure.session_name, 
+            session_items = self.session.query(model.ResultFigure.session_name,
                                                func.count(model.ResultFigure.session_name)
-            ).filter_by(fk_for_user=user_id
-            ).filter_by(fk_in_project=project_id
-            ).group_by(model.ResultFigure.session_name
-            ).order_by(model.ResultFigure.session_name).all()
-    
+                                               ).filter_by(fk_for_user=user_id).filter_by(fk_in_project=project_id
+                                               ).group_by(model.ResultFigure.session_name
+                                               ).order_by(model.ResultFigure.session_name).all()
+
             for item in session_items:
                 result[item[0]] = item[1]
-            
             return result
+
         except Exception, excep:
             self.logger.exception(excep)
             return {}

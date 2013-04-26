@@ -36,61 +36,62 @@ from tvb.core.services.flowservice import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
 
 
+
 class TVBImporterTest(TransactionalTestCase):
     """
     Unit-tests for TVB importer.
     """
     TVB_EXPORTER = "TVBExporter"
-        
+
+
     def setUp(self):
         export_manager = ExportManager()
-        
+
         self.datatypeFactory = DatatypesFactory()
         self.test_project = self.datatypeFactory.get_project()
-        
+
         # Generate simple data type and export it to H5 file
-        self.datatype = self.datatypeFactory.create_datatype_with_storage()        
-        _,exported_h5_file, _ = export_manager.export_data(self.datatype, self.TVB_EXPORTER, 
-                                                    self.test_project)
+        self.datatype = self.datatypeFactory.create_datatype_with_storage()
+        _, exported_h5_file, _ = export_manager.export_data(self.datatype, self.TVB_EXPORTER, self.test_project)
         # Copy H5 file to another location since the original one / exported 
         # will be deleted with the project
         _, h5_file_name = os.path.split(exported_h5_file)
         shutil.copy(exported_h5_file, cfg.TVB_TEMP_FOLDER)
         self.h5_file_path = os.path.join(cfg.TVB_TEMP_FOLDER, h5_file_name)
-        
+
         self.assertTrue(os.path.exists(self.h5_file_path), "Simple data type was not exported correct")
-        
+
         # Generate data type group and export it to ZIP file
-        self.datatype_group = self.datatypeFactory.create_datatype_group()       
-        _, self.zip_file_path, _ = export_manager.export_data(self.datatype_group, self.TVB_EXPORTER, 
-                                                    self.test_project) 
+        self.datatype_group = self.datatypeFactory.create_datatype_group()
+        _, self.zip_file_path, _ = export_manager.export_data(self.datatype_group, self.TVB_EXPORTER, self.test_project)
         self.assertTrue(os.path.exists(self.zip_file_path), "Data type group was not exported correct")
-        
+
         FilesHelper().remove_project_structure(self.test_project.name)
         self.clean_database(delete_folders=False)
-        
+
         # Recreate project, but a clean one where to import data
         self.datatypeFactory = DatatypesFactory()
         self.test_project = self.datatypeFactory.get_project()
         self.test_user = self.datatypeFactory.get_user()
-        
+
+
     def _import(self, import_file_path=None):
         """
         This method is used for importing data in TVB format
         :param import_file_path: absolute path of the file to be imported
         """
-            
         ### Retrieve Adapter instance 
         group = dao.find_group('tvb.adapters.uploaders.tvb_importer', 'TVBImporter')
         importer = ABCAdapter.build_adapter(group)
         importer.meta_data = {DataTypeMetaData.KEY_SUBJECT: "",
                               DataTypeMetaData.KEY_STATE: "RAW"}
-        
+
         args = {'data_file': import_file_path}
-        
+
         ### Launch import Operation
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
-    
+
+
     def test_zip_import(self):
         """
             This method tests import of TVB data in zip format (which imply multiple data types
@@ -98,24 +99,25 @@ class TVBImporterTest(TransactionalTestCase):
         """
         self._import(self.zip_file_path)
         data_types = FlowService().get_available_datatypes(self.test_project.id,
-                                self.datatype.module + "." + self.datatype.type)
+                                                           self.datatype.module + "." + self.datatype.type)
         self.assertEqual(3, len(data_types), "3 datatypes should have been imported from group.")
-    
+
+
     def test_h5_import(self):
         """
             This method tests import of TVB data in h5 format. Single data type / import
         """
         self._import(self.h5_file_path)
-        
+
         data_types = FlowService().get_available_datatypes(self.test_project.id,
-                                self.datatype.module + "." + self.datatype.type)
+                                                           self.datatype.module + "." + self.datatype.type)
         self.assertEqual(1, len(data_types), "Project should contain only one data type.")
-        
+
         data_type_entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
         self.assertTrue(data_type_entity is not None, "Datatype should not be none")
-        self.assertEqual(self.datatype.gid, data_type_entity.gid, 
-                         "Imported datatype should have the same gid")
-    
+        self.assertEqual(self.datatype.gid, data_type_entity.gid, "Imported datatype should have the same gid")
+
+
     def test_import_invalid_file(self):
         """
         This method tests import of a file which does not exists or does not
@@ -124,22 +126,24 @@ class TVBImporterTest(TransactionalTestCase):
         try:
             self._import("invalid_path")
             self.fail("System should throw an exception if trying to import an invalid file")
-        except OperationException, _:
+        except OperationException:
             # Expected
             pass
-        
+
         # Now try to generate a file on disk with wrong format and import that
         file_path = os.path.join(cfg.TVB_TEMP_FOLDER, "dummy_file.txt")
         with open(file_path, "w") as f:
             f.write("dummy text")
-        
+
         try:
             self._import(file_path)
             self.fail("System should throw an exception if trying to import a file with wrong format")
-        except OperationException, _:
+        except OperationException:
             # Expected
-            pass 
-        
+            pass
+
+
+
 def suite():
     """
     Gather all the tests in a test suite.
@@ -147,6 +151,7 @@ def suite():
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(TVBImporterTest))
     return test_suite
+
 
 
 if __name__ == "__main__":

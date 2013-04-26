@@ -18,34 +18,37 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
-'''
+"""
 Persistence of data in HDF5 format.
 
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
-'''
+"""
 
 import os
 import copy
-import numpy as numpy
-from datetime import datetime
-import tvb.core.utils as utils
+import threading
 import h5py as hdf5
+import numpy as numpy
+import tvb.core.utils as utils
+from datetime import datetime
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataFileException
 from tvb.core.entities.transient.structure_entities import GenericMetaData
 
-# Create logger for this module
 
+# Create logger for this module
 LOG = get_logger(__name__)
 
-import threading
 LOCK_OPEN_FILE = threading.Lock()
+
 ## The chunk block size recommended by h5py should be between 10k - 300k, larger for
 ## big files. Since performance will mostly be important for the simulator we'll just use the top range for now.
 CHUNK_BLOCK_SIZE = 300000
+
 
 class HDF5StorageManager(object):
     """
@@ -54,16 +57,15 @@ class HDF5StorageManager(object):
     __file_title_ = "TVB data file"
     __storage_full_name = None
     __hfd5_file = None
-    
+
     TVB_ATTRIBUTE_PREFIX = "TVB_"
     ROOT_NODE_PATH = "/"
     BOOL_VALUE_PREFIX = "bool:"
     DATETIME_VALUE_PREFIX = "datetime:"
     DATE_TIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
-    _BYTE_ORDER = 'little'
     LOCKS = {}
-    
-        
+
+
     def __init__(self, storage_folder, file_name, buffer_size=600000):
         """
         Creates a new storage manager instance.
@@ -77,8 +79,8 @@ class HDF5StorageManager(object):
         self.__buffer_size = buffer_size
         self.__buffer_array = None
         self.data_buffers = {}
-    
-    
+
+
     def is_valid_hdf5_file(self):
         """
         This method checks if specified file exists and if it has correct HDF5 format
@@ -86,10 +88,10 @@ class HDF5StorageManager(object):
         """
         try:
             return os.path.exists(self.__storage_full_name) and hdf5.h5f.is_hdf5(self.__storage_full_name)
-        except RuntimeError, _:
+        except RuntimeError:
             return False
-        
-            
+
+
     def store_data(self, dataset_name, data_list, where=ROOT_NODE_PATH):
         """
         This method stores provided data list into a data set in the H5 file.
@@ -111,20 +113,16 @@ class HDF5StorageManager(object):
             hdf5File[where + dataset_name] = data_to_store
         finally:
             # Now close file
-            self.close_file() 
-            
-            
-    def append_data(self, dataset_name, data_list, grow_dimension=-1, expected_rows=None, 
-                    buffer_shape=None, close_file=True, where=ROOT_NODE_PATH):
+            self.close_file()
+
+
+    def append_data(self, dataset_name, data_list, grow_dimension=-1, close_file=True, where=ROOT_NODE_PATH):
         """
         This method appends data to an existing data set. If the data set does not exists, create it first.
         
         :param dataset_name: Name of the data set where to store data
         :param data_list: Data to be stored / appended
-        :param grow_dimension: The dimension to be used to grow stored array. By default will grow on the LAST dimension 
-        :param expected_rows: Expected number of row elements that will be added to the growable dimension.
-            Providing an accurate value for this parameter improves storage performance. 
-            If not provided a default value is used.
+        :param grow_dimension: The dimension to be used to grow stored array. By default will grow on the LAST dimension
         :param close_file: Specify if the file should be closed automatically after write operation. If not, 
             you have to close file by calling method close_file()
         :param where: represents the path where to store our dataset (e.g. /data/info)
@@ -136,33 +134,33 @@ class HDF5StorageManager(object):
             where = self.ROOT_NODE_PATH
         data_to_store = self._check_data(data_list)
         data_buffer = self.data_buffers.get(where + dataset_name, None)
-        
+
         if data_buffer is None:
             chunk_shape = self.__compute_chunk_shape(data_to_store.shape, grow_dimension)
             hdf5File = self._open_h5_file(chunk_shape=chunk_shape)
             try:
                 dataset = hdf5File[where + dataset_name]
-                self.data_buffers[where + dataset_name] = HDF5StorageManager.H5pyStorageBuffer(dataset, 
-                                                                                           buffer_size=self.__buffer_size, 
-                                                                                           buffered_data=data_to_store, 
-                                                                                           grow_dimension=grow_dimension)
+                self.data_buffers[where + dataset_name] = HDF5StorageManager.H5pyStorageBuffer(dataset,
+                                                                                        buffer_size=self.__buffer_size,
+                                                                                        buffered_data=data_to_store,
+                                                                                        grow_dimension=grow_dimension)
             except KeyError:
                 data_shape_list = list(data_to_store.shape)
                 data_shape_list[grow_dimension] = None
                 data_shape = tuple(data_shape_list)
-                dataset = hdf5File.create_dataset(where + dataset_name, data=data_to_store, shape=data_to_store.shape, 
+                dataset = hdf5File.create_dataset(where + dataset_name, data=data_to_store, shape=data_to_store.shape,
                                                   dtype=data_to_store.dtype, maxshape=data_shape)
-                self.data_buffers[where + dataset_name] = HDF5StorageManager.H5pyStorageBuffer(dataset, 
-                                                                                               buffer_size=self.__buffer_size, 
-                                                                                               buffered_data=None, 
-                                                                                               grow_dimension=grow_dimension)
+                self.data_buffers[where + dataset_name] = HDF5StorageManager.H5pyStorageBuffer(dataset,
+                                                                                        buffer_size=self.__buffer_size,
+                                                                                        buffered_data=None,
+                                                                                        grow_dimension=grow_dimension)
         else:
             if not data_buffer.buffer_data(data_to_store):
                 data_buffer.flush_buffered_data()
         if close_file:
             self.close_file()
 
-                 
+
     def remove_data(self, dataset_name, where=ROOT_NODE_PATH):
         """
         Deleting a data set from H5 file.
@@ -179,14 +177,15 @@ class HDF5StorageManager(object):
         try:
             # Open file in append mode ('a') to allow data remove
             hdf5File = self._open_h5_file()
-            
             del hdf5File[where + dataset_name]
+
         except KeyError:
             LOG.warn("Trying to delete data set: %s but current file does not contain it." % dataset_name)
             raise FileStructureException("Could not locate dataset: %s" % dataset_name)
-        finally:        
-            self.close_file()  
-    
+        finally:
+            self.close_file()
+
+
     def get_data(self, dataset_name, data_slice=None, where=ROOT_NODE_PATH, ignore_errors=False):
         """
         This method reads data from the given data set based on the slice specification
@@ -202,7 +201,7 @@ class HDF5StorageManager(object):
             dataset_name = ''
         if where is None:
             where = self.ROOT_NODE_PATH
-        
+
         try:
             # Open file to read data
             hdf5File = self._open_h5_file('r')
@@ -218,9 +217,10 @@ class HDF5StorageManager(object):
                 raise MissingDataSetException("Could not locate dataset: %s" % dataset_name)
             else:
                 return numpy.ndarray(0)
-        finally:        
-            self.close_file()  
-            
+        finally:
+            self.close_file()
+
+
     def get_data_shape(self, dataset_name, where=ROOT_NODE_PATH, ignore_errors=False):
         """
         This method reads data-size from the given data set 
@@ -235,7 +235,7 @@ class HDF5StorageManager(object):
             dataset_name = ''
         if where is None:
             where = self.ROOT_NODE_PATH
-        
+
         try:
             # Open file to read data
             hdf5File = self._open_h5_file('r')
@@ -247,45 +247,47 @@ class HDF5StorageManager(object):
                 raise MissingDataSetException("Could not locate dataset: %s" % dataset_name)
             else:
                 return 0
-        finally:        
-            self.close_file() 
-        
-    def set_metadata(self, meta_dictionary, dataset_name = '', tvb_specific_metadata = True, 
-                     where=ROOT_NODE_PATH):
+        finally:
+            self.close_file()
+
+
+    def set_metadata(self, meta_dictionary, dataset_name='', tvb_specific_metadata=True, where=ROOT_NODE_PATH):
         """
         Set meta-data information for root node or for a given data set.
         
-        :param meta_dictionary: disctionary containing meta info to be stored on node
+        :param meta_dictionary: dictionary containing meta info to be stored on node
         :param dataset_name: name of the dataset where to assign metadata. If None, metadata is assigned to ROOT node.
-        :param tvb_specific_metadata: specify if the provided metadata is specific to TVB (All keys will have a TVB prefix).
+        :param tvb_specific_metadata: specify if the provided metadata is TVB specific (All keys will have a TVB prefix)
         :param where: represents the path where dataset is stored (e.g. /data/info)     
         
         """
-        LOG.debug("Setting metadata on node: %s" %dataset_name)
+        LOG.debug("Setting metadata on node: %s" % dataset_name)
         if dataset_name is None:
             dataset_name = ''
         if where is None:
             where = self.ROOT_NODE_PATH
+
+        # Open file to read data
+        hdf5File = self._open_h5_file()
         try:
-            # Open file to read data
-            hdf5File = self._open_h5_file()
-            
             node = hdf5File[where + dataset_name]
         except KeyError:
             LOG.debug("Trying to set metadata on a missing data set: %s" % dataset_name)
             node = hdf5File.create_dataset(where + dataset_name, (1,))
+
         try:
             # Now set meta-data
             for meta_key in meta_dictionary:
                 key_to_store = meta_key
                 if tvb_specific_metadata:
                     key_to_store = self.TVB_ATTRIBUTE_PREFIX + meta_key
-                
+
                 processed_value = self._serialize_value(meta_dictionary[meta_key])
                 node.attrs[key_to_store] = processed_value
-        finally:        
-            self.close_file()    
-    
+        finally:
+            self.close_file()
+
+
     def _serialize_value(self, value):
         """
         This method takes a value which will be stored as metadata and 
@@ -305,13 +307,12 @@ class HDF5StorageManager(object):
             return self.BOOL_VALUE_PREFIX + utils.bool2string(value)
         # Transform date to string and append prefix
         elif isinstance(value, datetime):
-            return self.DATETIME_VALUE_PREFIX + utils.date2string(value, 
-                                                    date_format=self.DATE_TIME_FORMAT)
+            return self.DATETIME_VALUE_PREFIX + utils.date2string(value, date_format=self.DATE_TIME_FORMAT)
         else:
-            return value 
-    
-    def remove_metadata(self, meta_key, dataset_name = '', tvb_specific_metadata = True, 
-                        where=ROOT_NODE_PATH):
+            return value
+
+
+    def remove_metadata(self, meta_key, dataset_name='', tvb_specific_metadata=True, where=ROOT_NODE_PATH):
         """
         Remove meta-data information for root node or for a given data set.
         
@@ -321,7 +322,7 @@ class HDF5StorageManager(object):
         :param tvb_specific_metadata: specify if the provided metadata is specific to TVB (keys will have a TVB prefix).
         :param where: represents the path where dataset is stored (e.g. /data/info)
              
-        """        
+        """
         LOG.debug("Deleting metadata: %s for dataset: %s" % (meta_key, dataset_name))
         if dataset_name is None:
             dataset_name = ''
@@ -330,7 +331,6 @@ class HDF5StorageManager(object):
         try:
             # Open file to read data
             hdf5File = self._open_h5_file()
-            
             node = hdf5File[where + dataset_name]
 
             # Now delete metadata
@@ -344,10 +344,11 @@ class HDF5StorageManager(object):
         except AttributeError:
             LOG.error("Trying to delete missing metadata %s" % meta_key)
             raise FileStructureException("There is no metadata named %s on this node" % meta_key)
-        finally:        
-            self.close_file()    
-            
-    def get_metadata(self, dataset_name = '', where=ROOT_NODE_PATH, ignore_errors=False):
+        finally:
+            self.close_file()
+
+
+    def get_metadata(self, dataset_name='', where=ROOT_NODE_PATH, ignore_errors=False):
         """
         Retrieve ALL meta-data information for root node or for a given data set.
         
@@ -355,39 +356,46 @@ class HDF5StorageManager(object):
         :param where: represents the path where dataset is stored (e.g. /data/info)  
         :return: a dictionary containing all metadata associated with the node   
         
-        """        
-        LOG.debug("Retrieving metadata for dataset: %s" %dataset_name)
+        """
+        LOG.debug("Retrieving metadata for dataset: %s" % dataset_name)
         if dataset_name is None:
             dataset_name = ''
         if where is None:
             where = self.ROOT_NODE_PATH
+
+        meta_key = ""
         try:
             # Open file to read data
             hdf5File = self._open_h5_file('r')
-            
             node = hdf5File[where + dataset_name]
-
             # Now retrieve metadata values
             all_meta_data = {}
-            
+
             for meta_key in node.attrs:
                 new_key = meta_key
                 if meta_key.startswith(self.TVB_ATTRIBUTE_PREFIX):
                     new_key = meta_key[len(self.TVB_ATTRIBUTE_PREFIX):]
                 value = node.attrs[meta_key]
                 all_meta_data[new_key] = self._deserialize_value(value)
-            
             return all_meta_data
+
         except KeyError:
             if not ignore_errors:
-                LOG.debug("Trying to read data from a missing data set: %s" % dataset_name)
-                raise MissingDataSetException("Could not locate dataset: %s" % dataset_name)
+                msg = "Trying to read data from a missing data set: %s" % dataset_name
+                LOG.warning(msg)
+                raise MissingDataSetException(msg)
             else:
                 return numpy.ndarray(0)
         except AttributeError:
-            LOG.error("Trying to get value for missing metadata %s" % meta_key)
-            raise FileStructureException("There is no metadata named %s on this node" % meta_key)
-        finally:        
+            msg = "Trying to get value for missing metadata %s" % meta_key
+            LOG.error(msg)
+            raise FileStructureException(msg)
+        except Exception, excep:
+            msg = "Failed to read metadata from H5 file! %s" % self.__storage_full_name
+            LOG.exception(excep)
+            LOG.error(msg)
+            raise FileStructureException(msg)
+        finally:
             self.close_file()
 
 
@@ -396,21 +404,22 @@ class HDF5StorageManager(object):
         Checks the data version for the current file.
         """
         if not os.path.exists(self.__storage_full_name):
-            raise MissingDataFileException("File storage data could not be found at path %s."%(self.__storage_full_name,))
+            raise MissingDataFileException("File storage data not found at path %s" % (self.__storage_full_name,))
+
         if self.is_valid_hdf5_file():
             metadata = self.get_metadata()
             if cfg.DATA_VERSION_ATTRIBUTE in metadata:
                 return metadata[cfg.DATA_VERSION_ATTRIBUTE]
             else:
-                raise IncompatibleFileManagerException("Could not find TVB specific data version attribute %s in "
-                                                       "input file %s."%(cfg.DATA_VERSION_ATTRIBUTE, self.__storage_full_name))
+                raise IncompatibleFileManagerException("Could not find TVB specific data version attribute %s in file: "
+                                                       "%s." % (cfg.DATA_VERSION_ATTRIBUTE, self.__storage_full_name))
         raise IncompatibleFileManagerException("File %s is not a hdf5 format file. Are you using the correct "
-                                               "manager for this file?"%(self.__storage_full_name,))
+                                               "manager for this file?" % (self.__storage_full_name,))
 
 
     def get_gid_attribute(self):
         """
-        Used for obtaining the gid of the datatype of
+        Used for obtaining the gid of the DataType of
         which data are stored in the current file.
         """
         if self.is_valid_hdf5_file():
@@ -434,18 +443,17 @@ class HDF5StorageManager(object):
                     value = None
                 else:
                     value = str(value)
-                 
+
             if isinstance(value, str):
                 if value.startswith(self.BOOL_VALUE_PREFIX):
                     # Remove bool prefix and transform to bool
                     return utils.string2bool(value[len(self.BOOL_VALUE_PREFIX):])
                 if value.startswith(self.DATETIME_VALUE_PREFIX):
                     # Remove datetime prefix and transform to datetime
-                    return utils.string2date(value[len(self.DATETIME_VALUE_PREFIX):], 
-                                             date_format = self.DATE_TIME_FORMAT)
+                    return utils.string2date(value[len(self.DATETIME_VALUE_PREFIX):], date_format=self.DATE_TIME_FORMAT)
 
         return value
-    
+
 
     def __aquire_lock(self):
         """
@@ -457,30 +465,33 @@ class HDF5StorageManager(object):
             self.LOCKS[self.__storage_full_name] = lock
         lock.acquire()
 
+
     def __release_lock(self):
         """
         Aquire a unique lock for each different file path on the system.
         """
         lock = self.LOCKS.get(self.__storage_full_name, None)
         if lock is None:
-            raise Exception("Some lock was delted without being released beforehand.")
+            raise Exception("Some lock was deleted without being released beforehand.")
         lock.release()
-        
+
+
     def close_file(self):
         """
-        The syncronization of open/close doesn't seem to be needed anymore for h5py in
-        contrast to pytables for concurrent reads. However since it shouldn't add that 
+        The synchronization of open/close doesn't seem to be needed anymore for h5py in
+        contrast to PyTables for concurrent reads. However since it shouldn't add that
         much overhead in most situation we'll leave it like this for now since in case
         of concurrent writes(metadata) this provides extra safety.
         """
         self.__aquire_lock()
         self.__close_file()
         self.__release_lock()
-        
+
+
     def _open_h5_file(self, mode='a', chunk_shape=None):
         """
-        The syncronization of open/close doesn't seem to be needed anymore for h5py in
-        contrast to pytables for concurrent reads. However since it shouldn't add that 
+        The synchronization of open/close doesn't seem to be needed anymore for h5py in
+        contrast to PyTables for concurrent reads. However since it shouldn't add that
         much overhead in most situation we'll leave it like this for now since in case
         of concurrent writes(metadata) this provides extra safety.
         """
@@ -488,7 +499,8 @@ class HDF5StorageManager(object):
         file_obj = self.__open_h5_file(mode, chunk_shape)
         self.__release_lock()
         return file_obj
-    
+
+
     def __compute_chunk_shape(self, data_shape, grow_dim=None):
         data_shape = list(data_shape)
         if not data_shape:
@@ -513,13 +525,14 @@ class HDF5StorageManager(object):
                 nr_elems_per_block = 1
             data_shape[grow_dim] = int(nr_elems_per_block)
             return tuple(data_shape)
-    
+
+
     def __close_file(self):
         """
         Close file used to store data.
         """
         hdf5_file = self.__hfd5_file
-        
+
         # Try to close file only if it was opened before
         if hdf5_file is not None and hdf5_file.fid.valid:
             LOG.debug("Closing file: %s" % self.__storage_full_name)
@@ -535,14 +548,16 @@ class HDF5StorageManager(object):
                 LOG.exception(excep)
             if not hdf5_file.fid.valid:
                 self.__hfd5_file = None
-       
+
+
     # -------------- Private methods  --------------
-    def __open_h5_file(self, mode = 'a', chunk_shape=None):
+    def __open_h5_file(self, mode='a', chunk_shape=None):
         """
         Open file for reading, writing or append. 
         
-        :param mode: Mode to open file (possible values: w / r / a). Default value = 'a' to 
-            allow adding multiple data to the same file
+        :param mode: Mode to open file (possible values are w / r / a).
+                    Default value is 'a', to allow adding multiple data to the same file.
+        :param chunk_shape: Shape for chunks at write.
         :return: returns the file which stores data in HDF5 format opened for read / write according to mode param
         
         """
@@ -552,14 +567,16 @@ class HDF5StorageManager(object):
                 file_exists = os.path.exists(self.__storage_full_name)
                 LOG.debug("Opening file: %s in mode: %s" % (self.__storage_full_name, mode))
                 self.__hfd5_file = hdf5.File(self.__storage_full_name, mode, libver='latest', chunks=chunk_shape)
-            
+
                 # If this is the first time we access file, write data version
                 if not file_exists:
                     os.chmod(self.__storage_full_name, cfg.ACCESS_MODE_TVB_FILES)
-                    self.__hfd5_file['/'].attrs[self.TVB_ATTRIBUTE_PREFIX + cfg.DATA_VERSION_ATTRIBUTE] = cfg.DATA_VERSION
-            return self.__hfd5_file    
+                    self.__hfd5_file['/'].attrs[self.TVB_ATTRIBUTE_PREFIX +
+                                                cfg.DATA_VERSION_ATTRIBUTE] = cfg.DATA_VERSION
+            return self.__hfd5_file
         else:
             raise FileStructureException("Invalid storage file. Please provide a valid path.")
+
 
     def _check_data(self, data_list):
         """
@@ -567,30 +584,32 @@ class HDF5StorageManager(object):
         """
         if data_list is None:
             raise FileStructureException("Could not store null data")
-        
+
         if not (isinstance(data_list, list) or isinstance(data_list, numpy.ndarray)):
             raise FileStructureException("Invalid data type. Could not store data of type:" + str(type(data_list)))
-        
+
         data_to_store = data_list
         if isinstance(data_to_store, list):
-            data_to_store = numpy.array(data_list) 
-          
-        return data_to_store 
-    
+            data_to_store = numpy.array(data_list)
+        return data_to_store
+
+
+
     class H5pyStorageBuffer():
         """
         Helper class in order to buffer data for append operations, to limit the number of actual
         HDD I/O operations.
         """
+
         def __init__(self, h5py_dataset, buffer_size=300, buffered_data=None, grow_dimension=-1):
             self.buffered_data = buffered_data
             self.buffer_size = buffer_size
             if h5py_dataset is None:
-                raise MissingDataSetException("A H5pyStorageBuffer instance must have a h5py dataset for which"
-                                              "the buffering is done. Please supply one to the 'h5py_dataset' parameter.")
+                raise MissingDataSetException("A H5pyStorageBuffer instance must have a h5py dataset for which the"
+                                              "buffering is done. Please supply one to the 'h5py_dataset' parameter.")
             self.h5py_dataset = h5py_dataset
             self.grow_dimension = grow_dimension
-            
+
         def buffer_data(self, data_list):
             """
             Add data_list to an internal buffer in order to improve performance for append_data type of operations.
@@ -600,13 +619,13 @@ class HDF5StorageManager(object):
             if self.buffered_data is None:
                 self.buffered_data = data_list
             else:
-#                self.buffered_data = numpy.concatenate((self.buffered_data, data_list), axis=self.grow_dimension)
                 self.buffered_data = self.__custom_numpy_append(self.buffered_data, data_list)
             if self.buffered_data.nbytes > self.buffer_size:
                 return False
             else:
                 return True
-            
+
+
         def __custom_numpy_append(self, array1, array2):
             array_1_shape = numpy.array(array1.shape)
             array_2_shape = numpy.array(array2.shape)
@@ -617,11 +636,12 @@ class HDF5StorageManager(object):
             full_index = [full_slice for _ in array_1_shape]
             full_index[self.grow_dimension] = slice(0, array_1_shape[self.grow_dimension], None)
             result_array[tuple(full_index)] = array1
-            full_index[self.grow_dimension] = slice(array_1_shape[self.grow_dimension], result_shape[self.grow_dimension], None)
+            full_index[self.grow_dimension] = slice(array_1_shape[self.grow_dimension],
+                                                    result_shape[self.grow_dimension], None)
             result_array[tuple(full_index)] = array2
             return result_array
-            
-        
+
+
         def flush_buffered_data(self):
             """
             Append the data buffered so far to the input dataset using @param grow_dimension: as the dimension that
@@ -642,4 +662,4 @@ class HDF5StorageManager(object):
                 self.h5py_dataset.resize(tuple(new_shape))
                 self.h5py_dataset[tuple(appendTo_address)] = self.buffered_data
                 self.buffered_data = None
-         
+

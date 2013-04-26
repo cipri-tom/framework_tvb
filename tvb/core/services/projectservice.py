@@ -35,7 +35,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.utils import string2date, date2string, timedelta2string
 from tvb.core.removers_factory import get_remover
-from tvb.core.entities import model 
+from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.filtering import StaticFiltersFactory
 from tvb.core.entities.transient.structure_entities import StructureNode, DataTypeMetaData
@@ -52,7 +52,6 @@ import tvb.core.entities.transient.context_overlay as context
 
 
 
-
 def initialize_storage():
     """
     Create Projects storage root folder in case it does not exist.
@@ -66,6 +65,7 @@ def initialize_storage():
         logger.error("Could not make sure the root folder exists!")
         logger.exception(excep)
 
+
 ## TODO move this page sizes into User-Settings.
 OPERATIONS_PAGE_SIZE = 20
 PROJECTS_PAGE_SIZE = 20
@@ -75,28 +75,30 @@ MONTH_YEAR_FORMAT = "%B %Y"
 DAY_MONTH_YEAR_FORMAT = "%d %B %Y"
 
 
+
 class ProjectService:
     """
     Services layer for Project entities.
     """
-    
+
+
     def __init__(self):
         self.logger = get_logger(__name__)
         self.structure_helper = FilesHelper()
-    
-    
+
+
     def store_project(self, current_user, is_create, selected_id, **data):
         """ 
         We want to create/update a project entity. 
         """
         #Validate Unique Name
-        new_name = data["name"]   
-        if len(new_name) < 1: 
+        new_name = data["name"]
+        if len(new_name) < 1:
             raise ProjectServiceException("Invalid project name!")
         projects_no = dao.count_projects_for_name(new_name, selected_id)
-        if  projects_no > 0:
+        if projects_no > 0:
             err = {'name': 'Please choose another name, this one is used!'}
-            raise formencode.Invalid("Duplicate Name Error", {}, None, error_dict = err)
+            raise formencode.Invalid("Duplicate Name Error", {}, None, error_dict=err)
         started_operations = dao.get_operation_numbers(selected_id)[1]
         if started_operations > 0:
             raise ProjectServiceException("A project can not be renamed while operations are still running!")
@@ -104,7 +106,7 @@ class ProjectService:
             current_proj = model.Project(new_name, current_user.id, data["description"])
             #Create the root folder, and remove if that folder already exists.
             self.structure_helper.remove_project_structure(new_name)
-            self.structure_helper.get_project_folder(current_proj) 
+            self.structure_helper.get_project_folder(current_proj)
         else:
             try:
                 current_proj = dao.get_project_by_id(selected_id)
@@ -119,9 +121,9 @@ class ProjectService:
         #Commit to make sure we have a valid ID
         current_proj.refresh_update_date()
         self.structure_helper.write_project_metadata(current_proj)
-        current_proj = dao.store_entity(current_proj) 
+        current_proj = dao.store_entity(current_proj)
         if is_create:
-            eventhandler.handle_event(".".join([self.__class__.__name__, stack()[0][3]]), 
+            eventhandler.handle_event(".".join([self.__class__.__name__, stack()[0][3]]),
                                       dao.get_system_user(), current_proj)
         #Retrieve, to initialize lazy attributes
         current_proj = dao.get_project_by_id(current_proj.id)
@@ -133,16 +135,15 @@ class ProjectService:
         for page in visited_pages:
             members = UserService.retrieve_all_users(prj_admin, int(page))[0]
             members = [m.id for m in members]
-            dao.delete_members_for_project(current_proj.id, members) 
+            dao.delete_members_for_project(current_proj.id, members)
         selected_user_ids = data["users"]
         for u_id in selected_user_ids:
             dao.store_entity(model.User_to_Project(u_id, current_proj.id))
         #Finish operation
-        self.logger.debug("Edit/Save OK for project:"+str(current_proj.id) + 
-                          ' by user:' + current_user.username)
-        return current_proj        
-    
-    
+        self.logger.debug("Edit/Save OK for project:" + str(current_proj.id) + ' by user:' + current_user.username)
+        return current_proj
+
+
     def find_project(self, project_id):
         """ 
         Simply retrieve Project entity from Database. 
@@ -153,28 +154,28 @@ class ProjectService:
             self.logger.error("Given Project ID was not found in DB!")
             self.logger.exception(excep)
             raise ProjectServiceException(excep.message)
-    
-    
+
+
     @staticmethod
-    def count_filtered_operations(project_id, filters = None):
+    def count_filtered_operations(project_id, filters=None):
         """Pass to DAO counters for filtered operations"""
         return dao.get_filtered_operations(project_id, filters, is_count=True)
-    
-    
-    def retrieve_project_full(self, project_id, applied_filters = None, current_page=1):
+
+
+    def retrieve_project_full(self, project_id, applied_filters=None, current_page=1):
         """
         Return a Tuple with Project entity and Operations for current Project.
         """
         selected_project = self.find_project(project_id)
         total_filtered = self.count_filtered_operations(project_id, applied_filters)
         start_idx = OPERATIONS_PAGE_SIZE * (current_page - 1)
-        
+
         if total_filtered >= start_idx + OPERATIONS_PAGE_SIZE:
             end_idx = OPERATIONS_PAGE_SIZE
         else:
             end_idx = total_filtered - start_idx
-            
-        pages_no = total_filtered//OPERATIONS_PAGE_SIZE + (1 if total_filtered % OPERATIONS_PAGE_SIZE else 0)
+
+        pages_no = total_filtered // OPERATIONS_PAGE_SIZE + (1 if total_filtered % OPERATIONS_PAGE_SIZE else 0)
         total_ops_nr = self.count_filtered_operations(project_id)
         current_ops = dao.get_filtered_operations(project_id, applied_filters, start_idx, end_idx)
         if current_ops is None:
@@ -221,9 +222,9 @@ class ProjectService:
                     result["start"] = one_op[8]
                 if type(one_op[9]) in (str, unicode):
                     result["complete"] = string2date(str(one_op[9]))
-                else: 
+                else:
                     result["complete"] = one_op[9]
-                
+
                 if result["complete"] is not None and result["start"] is not None:
                     result["duration"] = timedelta2string(result["complete"] - result["start"])
                 result["status"] = one_op[10]
@@ -233,19 +234,19 @@ class ProjectService:
                 result['figures'] = None
                 if not result['group']:
                     datatype_results = dao.get_results_for_operation(result['id'])
-                    result['results'] = [dao.get_generic_entity(dt.module + '.' + dt.type, 
+                    result['results'] = [dao.get_generic_entity(dt.module + '.' + dt.type,
                                                                 dt.gid, 'gid')[0] for dt in datatype_results]
                     operation_figures = dao.get_figures_for_operation(result['id'])
-                    
+
                     # Compute the full path to the figure / image on disk
                     for figure in operation_figures:
-                        figures_folder = self.structure_helper.get_images_folder(figure.project.name, 
+                        figures_folder = self.structure_helper.get_images_folder(figure.project.name,
                                                                                  figure.operation.id)
                         figure_full_path = os.path.join(figures_folder, figure.file_path)
                         # Compute the path available from browser 
                         figure.figure_path = utils.path2url_part(figure_full_path)
-                    
-                    result['figures'] = operation_figures 
+
+                    result['figures'] = operation_figures
                 else:
                     result['results'] = None
                 operations.append(result)
@@ -254,18 +255,17 @@ class ProjectService:
                 self.logger.error(excep)
                 self.logger.exception("Could not prepare operation for display:" + str(one_op))
         return selected_project, total_ops_nr, operations, pages_no
-    
-    
-    def retrieve_projects_for_user(self, user_id, current_page = 1):
+
+
+    def retrieve_projects_for_user(self, user_id, current_page=1):
         """
         Return a list with all Projects visible for current user.
         """
         start_idx = PROJECTS_PAGE_SIZE * (current_page - 1)
-        total = dao.get_projects_for_user(user_id, is_count= True)
-        end_idx = (PROJECTS_PAGE_SIZE if total >= start_idx + PROJECTS_PAGE_SIZE
-                                      else total - start_idx)
+        total = dao.get_projects_for_user(user_id, is_count=True)
+        end_idx = (PROJECTS_PAGE_SIZE if total >= start_idx + PROJECTS_PAGE_SIZE else total - start_idx)
         available_projects = dao.get_projects_for_user(user_id, start_idx, end_idx)
-        pages_no = total//PROJECTS_PAGE_SIZE + (1 if total % PROJECTS_PAGE_SIZE else 0)
+        pages_no = total // PROJECTS_PAGE_SIZE + (1 if total % PROJECTS_PAGE_SIZE else 0)
         for prj in available_projects:
             fns, sta, err, canceled = dao.get_operation_numbers(prj.id)
             prj.operations_finished = fns
@@ -274,15 +274,15 @@ class ProjectService:
             prj.operations_canceled = canceled
         self.logger.debug("Displaying " + str(len(available_projects)) + " projects in UI for user " + str(user_id))
         return available_projects, pages_no
-    
-    
+
+
     @staticmethod
     def get_linkable_projects_for_user(user_id, data_id):
         """
         Find projects with are visible for current user, and in which current datatype hasn't been linked yet.
         """
         return dao.get_linkable_projects_for_user(user_id, data_id)
-            
+
 
     def remove_project(self, project_id):
         """
@@ -299,7 +299,7 @@ class ProjectService:
             self.structure_helper.remove_project_structure(project2delete.name)
             name = project2delete.name
             dao.delete_project(project_id)
-            self.logger.debug("Deleted project: id=" + str(project_id) +' name='+name)
+            self.logger.debug("Deleted project: id=" + str(project_id) + ' name=' + name)
         except RemoveDataTypeError, excep:
             self.logger.error("Invalid DataType to remove!")
             self.logger.exception(excep)
@@ -311,63 +311,67 @@ class ProjectService:
         except FileStructureException, excep:
             self.logger.error("Could not delete because of rights!")
             self.logger.exception(excep)
-            raise ProjectServiceException(excep.message)     
+            raise ProjectServiceException(excep.message)
         except Exception, excep:
             self.logger.error("Given ID does not exist in DB!")
             self.logger.exception(excep)
             raise ProjectServiceException(excep.message)
-     
+
 
     #----------------- Methods for populating Data-Structure Page ---------------
-    
+
     @staticmethod
-    def get_datatype_in_group(group): 
+    def get_datatype_in_group(group):
         """
         Return all dataTypes that are the result of the same group of operations.
         """
         return dao.get_datatype_in_group(group)
-   
-    @staticmethod 
+
+
+    @staticmethod
     def get_datatypes_from_datatype_group(datatype_group_id):
         """
         Retrieve all dataType which are part from the given dataType group.
         """
         return dao.get_datatypes_from_datatype_group(datatype_group_id)
-    
+
+
     @staticmethod
     def load_operation_by_gid(operation_gid):
         """ Retrieve loaded Operation from DB"""
         return dao.get_operation_by_gid(operation_gid)
-    
-    
+
+
     @staticmethod
     def get_operation_group_by_id(operation_group_id):
         """ Loads OperationGroup from DB"""
         return dao.get_operationgroup_by_id(operation_group_id)
-    
-    
+
+
     @staticmethod
     def get_operation_group_by_gid(operation_group_gid):
         """ Loads OperationGroup from DB"""
         return dao.get_operationgroup_by_gid(operation_group_gid)
+
 
     @staticmethod
     def get_operations_in_group(operation_group):
         """ Return all the operations from an operation group. """
         return dao.get_operations_in_group(operation_group.id)
 
+
     @staticmethod
     def is_upload_operation(operation_gid):
         """ Returns True only if the operation with the given GID is an upload operation. """
         return dao.is_upload_operation(operation_gid)
-    
-    
+
+
     @staticmethod
     def get_all_operations_for_uploaders(project_id):
         """ Returns all finished upload operations. """
         return dao.get_all_operations_for_uploaders(project_id)
-    
-    
+
+
     @staticmethod
     def set_operation_and_group_visibility(entity_gid, is_visible, is_operation_group=False):
         """
@@ -400,24 +404,24 @@ class ProjectService:
             no_of_op_in_group = dao.get_operations_in_group(operation_group.id, is_count=True)
             datatype_group = self.get_datatypegroup_by_op_group_id(operation_group.id)
             count_result = dao.count_datatypes_in_group(datatype_group.id)
-            
+
         else:
             operation = dao.get_operation_by_gid(operation_gid)
             if operation is None:
                 return None
             no_of_op_in_group = 1
             count_result = dao.count_resulted_datatypes(operation.id)
-        
+
         username = dao.get_user_by_id(operation.fk_launched_by).username
         burst = dao.get_burst_for_operation_id(operation.id)
         datatypes_param, all_special_params = ProjectService._review_operation_inputs(operation.gid)
-        
-        op_details = context.OperationOverlayDetails(operation, username, len(datatypes_param), 
+
+        op_details = context.OperationOverlayDetails(operation, username, len(datatypes_param),
                                                      count_result, burst, no_of_op_in_group)
         if is_group:
             op_details.gid = operation_group.gid
             op_details.operation_id = operation_group.id
-            
+
         ## Add all parameter which are set differently by the user on this Operation.
         if all_special_params is not None:
             op_details.add_scientific_fields(all_special_params)
@@ -437,7 +441,7 @@ class ProjectService:
         """
         Find through introspection the inside structure for a given Project.
         In case of a problem, will return an empty list.
-        """ 
+        """
         datas = dao.get_datatypes_info_for_project(project.id, visibility_filter, filter_value)
         dt_ids = [row[11] for row in datas]
         groups_collapsed_data = []
@@ -460,8 +464,8 @@ class ProjectService:
         for row in groups_collapsed_data:
             metadatas.append(self.__datatype2metastructure(row, dt_ids))
         return StructureNode.metadata2tree(metadatas, first_level, second_level, project.id, project.name)
-    
-    
+
+
     @staticmethod
     def __datatype2metastructure(row, dt_ids):
         """
@@ -469,6 +473,7 @@ class ProjectService:
         """
         data = {}
         is_group = False
+        group = None
         if row[7] is not None and row[7] and row[14] in dt_ids:
             is_group = True
             group = dao.get_generic_entity(model.OperationGroup, row[7])
@@ -498,7 +503,7 @@ class ProjectService:
         date_string = row[10].strftime(MONTH_YEAR_FORMAT) if row[10] is not None else ""
         data[DataTypeMetaData.KEY_CREATE_DATA_MONTH] = date_string
         date_string = row[10].strftime(DAY_MONTH_YEAR_FORMAT) if row[10] is not None else ""
-        data[DataTypeMetaData.KEY_CREATE_DATA_DAY] = date_string 
+        data[DataTypeMetaData.KEY_CREATE_DATA_DAY] = date_string
         data[DataTypeMetaData.KEY_BURST] = row[15] if row[15] is not None else '-None-'
         data[DataTypeMetaData.KEY_TAG_1] = row[16] if row[16] else ''
         data[DataTypeMetaData.KEY_TAG_2] = row[17] if row[17] else ''
@@ -508,8 +513,8 @@ class ProjectService:
         data[DataTypeMetaData.KEY_RELEVANCY] = True if row[21] > 0 else False
         invalid = True if row[13] else False
         return DataTypeMetaData(data, invalid)
-    
-    
+
+
     @staticmethod
     def get_datatype_details(datatype_gid):
         """
@@ -522,12 +527,12 @@ class ProjectService:
             datatype_result, parent_burst = dao.get_datatype_details(datatype_gid)
             meta_atts.fill_from_datatype(datatype_result, parent_burst)
             return meta_atts, states, datatype_result
-        except Exception, _:
+        except Exception:
             ## We ignore exception here (it was logged above, and we want to return no details).
             return meta_atts, states, None
-        
-        
-    def _remove_project_node_files(self, project_id, gid, skip_validation = False):
+
+
+    def _remove_project_node_files(self, project_id, gid, skip_validation=False):
         """
         Delegate removal of a node in the structure of the project.
         In case of a problem will THROW StructureException.
@@ -540,25 +545,24 @@ class ProjectService:
                 for link in links:
                     #This means it's only a link and we need to remove it
                     was_link = False
-                    if (link.fk_from_datatype == datatype.id and 
-                        link.fk_to_project == project.id):
+                    if link.fk_from_datatype == datatype.id and link.fk_to_project == project.id:
                         dao.remove_link(link)
                         was_link = True
-                if not was_link:     
-                    # Create a clone of the operation
-                    new_op = model.Operation(dao.get_system_user().id, 
-                                    links[0].fk_to_project, 
-                                    datatype.parent_operation.fk_from_algo, 
-                                    datatype.parent_operation.parameters, 
-                                    datatype.parent_operation.meta_data, 
-                                    datatype.parent_operation.method_name,
-                                    datatype.parent_operation.status, 
-                                    datatype.parent_operation.start_date, 
-                                    datatype.parent_operation.completion_date,
-                                    datatype.parent_operation.fk_operation_group,
-                                    datatype.parent_operation.additional_info, 
-                                    datatype.parent_operation.user_group,
-                                    datatype.parent_operation.range_values)
+                if not was_link:
+                # Create a clone of the operation
+                    new_op = model.Operation(dao.get_system_user().id,
+                                             links[0].fk_to_project,
+                                             datatype.parent_operation.fk_from_algo,
+                                             datatype.parent_operation.parameters,
+                                             datatype.parent_operation.meta_data,
+                                             datatype.parent_operation.method_name,
+                                             datatype.parent_operation.status,
+                                             datatype.parent_operation.start_date,
+                                             datatype.parent_operation.completion_date,
+                                             datatype.parent_operation.fk_operation_group,
+                                             datatype.parent_operation.additional_info,
+                                             datatype.parent_operation.user_group,
+                                             datatype.parent_operation.range_values)
                     new_op = dao.store_entity(new_op)
                     to_project = self.find_project(links[0].fk_to_project).name
                     self.structure_helper.move_datatype(datatype, to_project, str(new_op.id))
@@ -570,7 +574,7 @@ class ProjectService:
                 specific_remover = get_remover(datatype.type)(datatype)
                 specific_remover.remove_datatype(skip_validation)
                 self.structure_helper.remove_datatype(datatype)
-                
+
         except RemoveDataTypeException, excep:
             self.logger.error("Could not execute operation Node Remove!")
             self.logger.exception(excep)
@@ -584,7 +588,7 @@ class ProjectService:
             raise StructureException("Remove operation failed for unknown reasons.Please contact system administrator.")
 
 
-    def remove_datatype(self, project_id, datatype_gid, skip_validation = False):
+    def remove_datatype(self, project_id, datatype_gid, skip_validation=False):
         """
         Method used for removing a dataType. If the given dataType is a DatatypeGroup
         or a dataType from a DataTypeGroup than this method will remove the entire group.
@@ -592,7 +596,7 @@ class ProjectService:
         """
         datatype = dao.get_datatype_by_gid(datatype_gid)
         if datatype is None:
-            return 
+            return
         user = dao.get_user_for_datatype(datatype.id)
         freed_space = datatype.disk_size or 0
         is_datatype_group = False
@@ -605,9 +609,9 @@ class ProjectService:
             freed_space = dao.get_datatype_group_disk_size(datatype.id)
 
         operations_set = [datatype.fk_from_operation]
-        
+
         correct = True
-        
+
         if is_datatype_group:
             data_list = dao.get_datatypes_from_datatype_group(datatype.id)
             for adata in data_list:
@@ -621,27 +625,27 @@ class ProjectService:
 
         else:
             self._remove_project_node_files(project_id, datatype.gid, skip_validation)
-        
+
         ## Remove Operation entity in case no other DataType needs them.
         project = dao.get_project_by_id(project_id)
         for operation_id in operations_set:
             dependent_dt = dao.get_generic_entity(model.DataType, operation_id, "fk_from_operation")
-            if len(dependent_dt) > 0 :
+            if len(dependent_dt) > 0:
                 ### Do not remove Operation in case DataType still exist referring it.
                 continue
             correct = correct and dao.remove_entity(model.Operation, operation_id)
             ## Make sure Operation folder is removed
             self.structure_helper.remove_operation_data(project.name, datatype.fk_from_operation)
-        
+
         if not correct:
-            raise RemoveDataTypeException("Could not remove DataType "+ str(datatype_gid))
+            raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
         else:
             user.used_disk_space = user.used_disk_space - freed_space
             dao.store_entity(user)
-        
-    
+
+
     @staticmethod
-    def retrieve_launchers(dataname, datatype_gid= None):
+    def retrieve_launchers(dataname, datatype_gid=None):
         """
         Returns all the available launch-able algorithms from the database.
         Filter the ones accepting as required input a specific DataType.
@@ -667,39 +671,39 @@ class ProjectService:
                 if len(valid_algorithms) > 0:
                     one_group.children = copy.deepcopy(valid_algorithms)
                 else:
-                    to_remove.append(one_group)             
+                    to_remove.append(one_group)
             for one_group in to_remove:
                 launch_groups.remove(one_group)
-                del one_group 
+                del one_group
             return ProjectService.__prepare_group_result(launch_groups, launch_categ)
         except Exception, excep:
             ProjectService().logger.exception(excep)
             ProjectService().logger.warning("Attempting to filter launcher  for group despite exception!")
             return ProjectService.__prepare_group_result(launch_groups, launch_categ)
-    
-    
-    @staticmethod    
-    def __prepare_group_result(launch_groups, launch_categ):  
+
+
+    @staticmethod
+    def __prepare_group_result(launch_groups, launch_categ):
         """Prepare data result format for display."""
         result = dict()
         for group in launch_groups:
             category = launch_categ[group.fk_category]
             if category not in result:
                 result[category] = dict()
-            result[category][group.id] = {'id': group.id, 
+            result[category][group.id] = {'id': group.id,
                                           'displayName': group.displayname,
                                           'category': group.fk_category,
                                           'algo_param': group.algorithm_param_name}
             childs = []
             for one_child in group.children:
-                childs.append({'ident' : one_child.identifier,
-                               'name' : one_child.name,
-                               'req_data' : one_child.required_datatype,
-                               'param_name' : one_child.parameter_name})
+                childs.append({'ident': one_child.identifier,
+                               'name': one_child.name,
+                               'req_data': one_child.required_datatype,
+                               'param_name': one_child.parameter_name})
             result[category][group.id]['children'] = childs
         return result
-       
-    
+
+
     def update_metadata(self, submit_data):
         """
         Update DataType/ DataTypeGroup metadata
@@ -709,12 +713,12 @@ class ProjectService:
         for key in context.DataTypeOverlayDetails().meta_attributes_list:
             if key in submit_data:
                 new_data[key] = submit_data[key]
-                
+
         if new_data[context.CommonDetails.CODE_OPERATION_TAG] == '':
             new_data[context.CommonDetails.CODE_OPERATION_TAG] = None
         try:
-            if (context.CommonDetails.CODE_OPERATION_GROUP_ID in new_data 
-                and new_data[context.CommonDetails.CODE_OPERATION_GROUP_ID] 
+            if (context.CommonDetails.CODE_OPERATION_GROUP_ID in new_data
+                and new_data[context.CommonDetails.CODE_OPERATION_GROUP_ID]
                 and new_data[context.CommonDetails.CODE_OPERATION_GROUP_ID] != ''):
                 # We need to edit a group
                 all_data_in_group = dao.get_datatype_in_group(new_data[context.CommonDetails.CODE_OPERATION_GROUP_ID])
@@ -733,8 +737,8 @@ class ProjectService:
         except Exception, excep:
             self.logger.exception(excep)
             raise StructureException(excep.message)
-        
-        
+
+
     def _edit_data(self, datatype, new_data, from_group=False):
         """
         Private method, used for editing a meta-data XML file and a DataType row
@@ -752,9 +756,9 @@ class ProjectService:
         if from_group:
             if empty_group_value:
                 raise StructureException("Empty group is not allowed!")
-            group = dao.get_generic_entity(model.OperationGroup, 
+            group = dao.get_generic_entity(model.OperationGroup,
                                            new_data[context.CommonDetails.CODE_OPERATION_GROUP_ID])
-            if (group and len(group) > 0 and new_group_name != group[0].name):
+            if group and len(group) > 0 and new_group_name != group[0].name:
                 group = group[0]
                 exists_group = dao.get_generic_entity(model.OperationGroup, new_group_name, 'name')
                 if exists_group:
@@ -764,8 +768,8 @@ class ProjectService:
         else:
             operation = dao.get_operation_by_id(datatype.fk_from_operation)
             operation.user_group = new_group_name
-            operation = dao.store_entity(operation)
-            
+            dao.store_entity(operation)
+
         # 2. Update dateType fields:
         datatype.subject = new_data[context.DataTypeOverlayDetails.DATA_SUBJECT]
         datatype.state = new_data[context.DataTypeOverlayDetails.DATA_STATE]
@@ -779,13 +783,13 @@ class ProjectService:
             datatype.user_tag_4 = new_data[context.DataTypeOverlayDetails.DATA_TAG_4]
         if context.DataTypeOverlayDetails.DATA_TAG_5 in new_data:
             datatype.user_tag_5 = new_data[context.DataTypeOverlayDetails.DATA_TAG_5]
-        #datatype.framework_metadata = new_data
+
         datatype = dao.store_entity(datatype)
         # 3. Update MetaData in H5 as well.
         datatype.persist_full_metadata()
         # 4. Update the group_name/user_group into the operation meta-data file
         operation = dao.get_operation_by_id(datatype.fk_from_operation)
-        self.structure_helper.update_operation_metadata(operation.project.name, new_group_name, 
+        self.structure_helper.update_operation_metadata(operation.project.name, new_group_name,
                                                         str(datatype.fk_from_operation), from_group)
 
 
@@ -856,7 +860,7 @@ class ProjectService:
 
 
     @staticmethod
-    def get_operations_for_datatype_group(datatype_group_id, visibility_filter, only_in_groups = False):
+    def get_operations_for_datatype_group(datatype_group_id, visibility_filter, only_in_groups=False):
         """
         Returns all the operations which uses as an input parameter a dataType from the given DataTypeGroup.
         visibility_filter - is a filter used for retrieving all the operations or only the relevant ones.
@@ -866,13 +870,13 @@ class ProjectService:
         are NOT part of an operation group.
         """
         if visibility_filter.display_name != StaticFiltersFactory.RELEVANT_VIEW:
-            return dao.get_operations_for_datatype_group(datatype_group_id, only_relevant=False, 
+            return dao.get_operations_for_datatype_group(datatype_group_id, only_relevant=False,
                                                          only_in_groups=only_in_groups)
         return dao.get_operations_for_datatype_group(datatype_group_id, only_in_groups=only_in_groups)
 
 
     @staticmethod
-    def get_operations_for_datatype(datatype_gid, visibility_filter, only_in_groups = False):
+    def get_operations_for_datatype(datatype_gid, visibility_filter, only_in_groups=False):
         """
         Returns all the operations which uses as an input parameter the dataType with the specified GID.
 

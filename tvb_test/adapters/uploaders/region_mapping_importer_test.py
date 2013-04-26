@@ -59,7 +59,7 @@ class RegionMappingImporterTest(TransactionalTestCase):
         self.test_project = self.datatypeFactory.get_project()
         self.test_user = self.datatypeFactory.get_user()
         
-        TestFactory.import_cff(test_user = self.test_user, test_project=self.test_project)
+        TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
         self.connectivity = self._get_entity(Connectivity())
         self.surface = self._get_entity(CorticalSurface())
                 
@@ -69,9 +69,9 @@ class RegionMappingImporterTest(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
     
-    def _get_entity(self, expected_data, filters = None):
+    def _get_entity(self, expected_data, filters=None):
         data_types = FlowService().get_available_datatypes(self.test_project.id,
-                                expected_data.module + "." + expected_data.type, filters)
+                                                           expected_data.module + "." + expected_data.type, filters)
         self.assertEqual(1, len(data_types), "Project should contain only one data type:" + str(expected_data.type))
         
         entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
@@ -91,7 +91,7 @@ class RegionMappingImporterTest(TransactionalTestCase):
         importer.meta_data = {DataTypeMetaData.KEY_SUBJECT: "test",
                               DataTypeMetaData.KEY_STATE: "RAW"}
         
-        args = {'mapping_file':import_file_path, 'surface':surface_gid, 'connectivity':connectivity_gid}
+        args = {'mapping_file': import_file_path, 'surface': surface_gid, 'connectivity': connectivity_gid}
         
         now = datetime.datetime.now() 
         
@@ -100,7 +100,7 @@ class RegionMappingImporterTest(TransactionalTestCase):
              
         # During setup we import a CFF which creates an additional RegionMapping
         # So, here we have to find our mapping (just imported)   
-        data_filter = FilterChain(fields= [FilterChain.datatype + ".create_date"], operations=[">"], values= [now])
+        data_filter = FilterChain(fields=[FilterChain.datatype + ".create_date"], operations=[">"], values=[now])
         region_mapping = self._get_entity(RegionMapping(), data_filter)
         
         return region_mapping
@@ -113,14 +113,14 @@ class RegionMappingImporterTest(TransactionalTestCase):
         try:
             self._import(self.TXT_FILE, None, self.connectivity.gid)
             self.fail("Import should fail in case Surface is missing")
-        except OperationException, _:
+        except OperationException:
             # Expected exception
             pass
 
         try:
             self._import(self.TXT_FILE, self.surface.gid, None)
             self.fail("Import should fail in case Connectivity is missing")
-        except OperationException, _:
+        except OperationException:
             # Expected exception
             pass
         
@@ -167,21 +167,21 @@ class RegionMappingImporterTest(TransactionalTestCase):
         try:
             self._import(self.WRONG_FILE_1, self.surface.gid, self.connectivity.gid)
             self.fail("Import should fail in case of invalid region number")
-        except OperationException, _:
+        except OperationException:
             # Expected exception
             pass
 
         try:
             self._import(self.WRONG_FILE_2, self.surface.gid, self.connectivity.gid)
             self.fail("Import should fail in case of invalid regions number")
-        except OperationException, _:
+        except OperationException:
             # Expected exception
             pass
         
         try:
             self._import(self.WRONG_FILE_3, self.surface.gid, self.connectivity.gid)
             self.fail("Import should fail in case of invalid region number (negative number)")
-        except OperationException, _:
+        except OperationException:
             # Expected exception
             pass
                 

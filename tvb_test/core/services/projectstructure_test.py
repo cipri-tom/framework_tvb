@@ -47,16 +47,15 @@ class ProjectStructureTest(TransactionalTestCase):
 
     def setUp(self):
         """
-        Reset the database before each test.
+        Prepare before each test.
         """
-#        self.clean_database()
         self.project_service = ProjectService()
         self.flow_service = FlowService()
         self.structure_helper = FilesHelper()
 
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user, "ProjectStructure")
-        
+
         self.relevant_filter = StaticFiltersFactory.build_datatype_filters(single_filter=StaticFiltersFactory.RELEVANT_VIEW)
         self.full_filter = StaticFiltersFactory.build_datatype_filters(single_filter=StaticFiltersFactory.FULL_VIEW)
 
@@ -146,7 +145,7 @@ class ProjectStructureTest(TransactionalTestCase):
         self.assertEqual(2, len(upload_operations), "Wrong number of upload operations.")
         upload_ids = [operation.id for operation in upload_operations]
         for i in [3, 4]:
-            self.assertTrue(operations[3].id in upload_ids, 
+            self.assertTrue(operations[i].id in upload_ids,
                             "The operation should be an upload operation.")
         for i in [0, 1, 2]:                    
             self.assertFalse(operations[i].id in upload_ids, 
@@ -259,11 +258,11 @@ class ProjectStructureTest(TransactionalTestCase):
 
     def test_get_operations_for_dt(self):
 
-        created_ops, datatype_gid =  self._create_operations_with_inputs()
+        created_ops, datatype_gid = self._create_operations_with_inputs()
         operations = self.project_service.get_operations_for_datatype(datatype_gid, self.relevant_filter)
         self.assertEqual(len(operations), 2)
-        self.assertTrue(created_ops[0].id in [operations[0].id, operations[1].id] , "Retrieved wrong operations.")
-        self.assertTrue(created_ops[2].id in [operations[0].id, operations[1].id] , "Retrieved wrong operations.")
+        self.assertTrue(created_ops[0].id in [operations[0].id, operations[1].id], "Retrieved wrong operations.")
+        self.assertTrue(created_ops[2].id in [operations[0].id, operations[1].id], "Retrieved wrong operations.")
 
         operations = self.project_service.get_operations_for_datatype(datatype_gid, self.full_filter)
         self.assertEqual(len(operations), 4)
@@ -277,24 +276,24 @@ class ProjectStructureTest(TransactionalTestCase):
 
         operations = self.project_service.get_operations_for_datatype(datatype_gid, self.full_filter, True)
         self.assertEqual(len(operations), 2)
-        self.assertTrue(created_ops[4].id in [operations[0].id, operations[1].id] , "Retrieved wrong operations.")
-        self.assertTrue(created_ops[5].id in [operations[0].id, operations[1].id] , "Retrieved wrong operations.")
+        self.assertTrue(created_ops[4].id in [operations[0].id, operations[1].id], "Retrieved wrong operations.")
+        self.assertTrue(created_ops[5].id in [operations[0].id, operations[1].id], "Retrieved wrong operations.")
 
 
     def test_get_operations_for_dt_group(self):
 
-        created_ops, dt_group_id =  self._create_operations_with_inputs(True)
+        created_ops, dt_group_id = self._create_operations_with_inputs(True)
 
         ops = self.project_service.get_operations_for_datatype_group(dt_group_id, self.relevant_filter)
         self.assertEqual(len(ops), 2)
-        self.assertTrue(created_ops[0].id in [ops[0].id, ops[1].id] , "Retrieved wrong operations.")
-        self.assertTrue(created_ops[2].id in [ops[0].id, ops[1].id] , "Retrieved wrong operations.")
+        self.assertTrue(created_ops[0].id in [ops[0].id, ops[1].id], "Retrieved wrong operations.")
+        self.assertTrue(created_ops[2].id in [ops[0].id, ops[1].id], "Retrieved wrong operations.")
 
         ops = self.project_service.get_operations_for_datatype_group(dt_group_id, self.full_filter)
         self.assertEqual(len(ops), 4, "Incorrect number of operations.")
         ids = [ops[0].id, ops[1].id, ops[2].id, ops[3].id]
         for i in range(4):
-            self.assertTrue(created_ops[i].id in ids , "Retrieved wrong operations.")
+            self.assertTrue(created_ops[i].id in ids, "Retrieved wrong operations.")
 
         ops = self.project_service.get_operations_for_datatype_group(dt_group_id, self.relevant_filter, True)
         self.assertEqual(len(ops), 1)
@@ -302,8 +301,8 @@ class ProjectStructureTest(TransactionalTestCase):
 
         ops = self.project_service.get_operations_for_datatype_group(dt_group_id, self.full_filter, True)
         self.assertEqual(len(ops), 2)
-        self.assertTrue(created_ops[4].id in [ops[0].id, ops[1].id] , "Retrieved wrong operations.")
-        self.assertTrue(created_ops[5].id in [ops[0].id, ops[1].id] , "Retrieved wrong operations.")
+        self.assertTrue(created_ops[4].id in [ops[0].id, ops[1].id], "Retrieved wrong operations.")
+        self.assertTrue(created_ops[5].id in [ops[0].id, ops[1].id], "Retrieved wrong operations.")
 
 
     def test_get_inputs_for_operation(self):
@@ -321,21 +320,23 @@ class ProjectStructureTest(TransactionalTestCase):
         dao.store_entity(datatype)
 
         parameters = json.dumps({"param_5": "1", "param_1": array_wrappers[0][2],
-                                 "param_2": array_wrappers[1][2], "param_3":array_wrappers[2][2], "param_6": "0"})
+                                 "param_2": array_wrappers[1][2], "param_3": array_wrappers[2][2], "param_6": "0"})
         operation = model.Operation(self.test_user.id, self.test_project.id, algo.id, parameters)
         operation = dao.store_entity(operation)
 
-        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid, self.relevant_filter)
+        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
+                                                                                          self.relevant_filter)
         self.assertEqual(len(inputs), 2)
-        self.assertTrue(ids[1] in [inputs[0].id, inputs[1].id] , "Retrieved wrong dataType.")
-        self.assertTrue(ids[2] in [inputs[0].id, inputs[1].id] , "Retrieved wrong dataType.")
-        self.assertFalse(ids[0] in [inputs[0].id, inputs[1].id] , "Retrieved wrong dataType.")
+        self.assertTrue(ids[1] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType.")
+        self.assertTrue(ids[2] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType.")
+        self.assertFalse(ids[0] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType.")
 
-        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid, self.full_filter)
+        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
+                                                                                          self.full_filter)
         self.assertEqual(len(inputs), 3, "Incorrect number of operations.")
-        self.assertTrue(ids[0] in [inputs[0].id, inputs[1].id, inputs[2].id] , "Retrieved wrong dataType.")
-        self.assertTrue(ids[1] in [inputs[0].id, inputs[1].id, inputs[2].id] , "Retrieved wrong dataType.")
-        self.assertTrue(ids[2] in [inputs[0].id, inputs[1].id, inputs[2].id] , "Retrieved wrong dataType.")
+        self.assertTrue(ids[0] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType.")
+        self.assertTrue(ids[1] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType.")
+        self.assertTrue(ids[2] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType.")
 
         project, dt_group_id, first_dt, _ = self._create_datatype_group()
         first_dt.visible = False
@@ -344,9 +345,11 @@ class ProjectStructureTest(TransactionalTestCase):
         operation = model.Operation(self.test_user.id, project.id, algo.id, parameters)
         operation = dao.store_entity(operation)
 
-        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid, self.relevant_filter)
+        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
+                                                                                          self.relevant_filter)
         self.assertEqual(len(inputs), 0, "Incorrect number of dataTypes.")
-        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid, self.full_filter)
+        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
+                                                                                          self.full_filter)
         self.assertEqual(len(inputs), 1, "Incorrect number of dataTypes.")
         self.assertEqual(inputs[0].id, dt_group_id, "Wrong dataType.")
         self.assertTrue(inputs[0].id != first_dt.id, "Wrong dataType.")
@@ -381,8 +384,8 @@ class ProjectStructureTest(TransactionalTestCase):
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.full_filter)
         self.assertEqual(len(inputs), 1, "Incorrect number of dataTypes.")
         self.assertFalse(first_dt.id == inputs[0].id, "Retrieved wrong dataType.")
-        self.assertFalse(second_dt.id == inputs[0].id , "Retrieved wrong dataType.")
-        self.assertTrue(dt_group_id == inputs[0].id , "Retrieved wrong dataType.")
+        self.assertFalse(second_dt.id == inputs[0].id, "Retrieved wrong dataType.")
+        self.assertTrue(dt_group_id == inputs[0].id, "Retrieved wrong dataType.")
 
         first_dt.visible = True
         dao.store_entity(first_dt)
@@ -390,14 +393,14 @@ class ProjectStructureTest(TransactionalTestCase):
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.relevant_filter)
         self.assertEqual(len(inputs), 1, "Incorrect number of dataTypes.")
         self.assertFalse(first_dt.id == inputs[0].id, "Retrieved wrong dataType.")
-        self.assertFalse(second_dt.id == inputs[0].id , "Retrieved wrong dataType.")
-        self.assertTrue(dt_group_id == inputs[0].id , "Retrieved wrong dataType.")
+        self.assertFalse(second_dt.id == inputs[0].id, "Retrieved wrong dataType.")
+        self.assertTrue(dt_group_id == inputs[0].id, "Retrieved wrong dataType.")
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.full_filter)
         self.assertEqual(len(inputs), 1, "Incorrect number of dataTypes.")
         self.assertFalse(first_dt.id == inputs[0].id, "Retrieved wrong dataType.")
-        self.assertFalse(second_dt.id == inputs[0].id , "Retrieved wrong dataType.")
-        self.assertTrue(dt_group_id == inputs[0].id , "Retrieved wrong dataType.")
+        self.assertFalse(second_dt.id == inputs[0].id, "Retrieved wrong dataType.")
+        self.assertTrue(dt_group_id == inputs[0].id, "Retrieved wrong dataType.")
 
 
     def test_get_inputs_for_op_group_simple_inputs(self):
@@ -418,9 +421,9 @@ class ProjectStructureTest(TransactionalTestCase):
         op_group = model.OperationGroup(self.test_project.id, "group", "range1[1..2]")
         op_group = dao.store_entity(op_group)
         params_1 = json.dumps({"param_5": "2", "param_1": array_wrappers[0][2],
-                    "param_2": array_wrappers[1][2], "param_6": "7"})
+                               "param_2": array_wrappers[1][2], "param_6": "7"})
         params_2 = json.dumps({"param_5": "5", "param_3": array_wrappers[2][2],
-                    "param_2": array_wrappers[1][2], "param_6": "6"})
+                               "param_2": array_wrappers[1][2], "param_6": "6"})
 
         algo_group = dao.find_group('tvb_test.adapters.testadapter3', 'TestAdapter3')
         algo = dao.get_algorithm_by_group(algo_group.id)
@@ -431,9 +434,9 @@ class ProjectStructureTest(TransactionalTestCase):
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.relevant_filter)
         self.assertEqual(len(inputs), 2)
-        self.assertFalse(array_wrapper_ids[0] in [inputs[0].id, inputs[1].id] , "Retrieved wrong dataType.")
-        self.assertTrue(array_wrapper_ids[1] in [inputs[0].id, inputs[1].id] , "Retrieved wrong dataType.")
-        self.assertTrue(array_wrapper_ids[2] in [inputs[0].id, inputs[1].id] , "Retrieved wrong dataType.")
+        self.assertFalse(array_wrapper_ids[0] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType.")
+        self.assertTrue(array_wrapper_ids[1] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType.")
+        self.assertTrue(array_wrapper_ids[2] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType.")
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.full_filter)
         self.assertEqual(len(inputs), 3, "Incorrect number of dataTypes.")
@@ -512,11 +515,11 @@ class ProjectStructureTest(TransactionalTestCase):
 
     def _create_operation(self, project_id, algorithm_id):
         algorithm = dao.get_algorithm_by_id(algorithm_id)
-        meta = {DataTypeMetaData.KEY_SUBJECT : "John Doe", 
+        meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
                 DataTypeMetaData.KEY_STATE: "RAW"}
         operation = model.Operation(self.test_user.id, project_id, algorithm.id, 'test params',
-                                    meta = json.dumps(meta), status="FINISHED",
-                                    method_name = ABCAdapter.LAUNCH_METHOD)
+                                    meta=json.dumps(meta), status="FINISHED",
+                                    method_name=ABCAdapter.LAUNCH_METHOD)
         return dao.store_entity(operation)
 
 
@@ -583,12 +586,12 @@ class ProjectStructureTest(TransactionalTestCase):
         try:
             dao.get_datatype_by_id(datatype.id)
             self.fail("The datatype was not deleted.")
-        except Exception, _:
+        except Exception:
             pass
         try:
             dao.get_operation_by_id(datatype.fk_from_operation)
             self.fail("The operation was not deleted.")
-        except Exception, _:
+        except Exception:
             pass
 
 
@@ -599,13 +602,13 @@ class ProjectStructureTest(TransactionalTestCase):
         try:
             dao.get_datatype_group_by_id(datatype_group_id)
             self.fail("The DataTypeGroup entity was not removed.")
-        except Exception, _:
+        except Exception:
             pass
 
         try:
             dao.get_operationgroup_by_id(operation_groupp_id)
             self.fail("The OperationGroup entity was not removed.")
-        except Exception, _:
+        except Exception:
             pass
 
 
@@ -617,13 +620,13 @@ class ProjectStructureTest(TransactionalTestCase):
         self.categ1 = dao.store_entity(categ1)
         algo = model.AlgorithmGroup("tvb_test.core.services.flowservice_test", "ValidTestAdapter", categ1.id)
         adapter = dao.store_entity(algo)
-        algo = model.Algorithm(adapter.id, 'ident', name = '', req_data = '', param_name = '', output = '')
+        algo = model.Algorithm(adapter.id, 'ident', name='', req_data='', param_name='', output='')
         self.algo_inst = dao.store_entity(algo)
 
     @staticmethod
     def _create_algo_for_upload():
         """ Creates a fake algorithm for an upload category. """
-        category = dao.store_entity(model.AlgorithmCategory("upload_category", rawinput = True))
+        category = dao.store_entity(model.AlgorithmCategory("upload_category", rawinput=True))
         algo_group = dao.store_entity(model.AlgorithmGroup("module", "classname", category.id))
         return dao.store_entity(model.Algorithm(algo_group.id, "algo"))
 
@@ -641,7 +644,7 @@ if __name__ == "__main__":
     #So you can run tests individually.
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
-    TEST_RUNNER.run (TEST_SUITE)
+    TEST_RUNNER.run(TEST_SUITE)
     
     
     

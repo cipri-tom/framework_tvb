@@ -47,8 +47,9 @@ if cfg.SELECTED_DB == 'postgres':
 else:
     ### SqlLite does not support pool-size
     DB_ENGINE = create_engine(cfg.DB_URL, pool_recycle=5)
-    
+
 SA_SESSIONMAKER = sessionmaker(bind=DB_ENGINE)
+
 
 
 def singleton(cls):
@@ -56,6 +57,8 @@ def singleton(cls):
     Class decorator that makes sure only one instance of that class is ever returned.
     """
     instances = {}
+
+
     def getinstance(*args, **kwargs):
         """
         Called when a new instance is about to be created.
@@ -63,39 +66,45 @@ def singleton(cls):
         if cls not in instances:
             instances[cls] = cls(*args, **kwargs)
         return instances[cls]
+
+
     return getinstance
 
 
 
-def MetaClassFactory(decorator_functions = [], new_attributes = {}):
+def MetaClassFactory(decorator_functions=[], new_attributes={}):
     """
     A metaclass factory that creates a metaclass which makes sure a list of decorators
     are applied to all it's classes and also adds a dictionary of attributes.
     
-    @param decorator_functions: a list of functions. These will be applied as decorators to
+    :param decorator_functions: a list of functions. These will be applied as decorators to
         all methods from the class that uses the returned metaclass.
-    @param new_attributes: a dictionary of attribute_name : attribute_value pairs that will
+    :param new_attributes: a dictionary of attribute_name & attribute_value pairs that will
         be added to the class that uses the returned metaclass
     """
+
     class MetaClass(type):
         """
         New MetaClass.
         """
+
         def __new__(mcs, classname, bases, class_dict):
             """
             Called when a new class gets instantiated.
             """
             new_class_dict = {}
             for attr_name, attribute in class_dict.items():
-                if (type(attribute) == FunctionType and not (attribute.__name__.startswith('__') 
+                if (type(attribute) == FunctionType and not (attribute.__name__.startswith('__')
                                                              and attribute.__name__.endswith('__'))):
                     for function in decorator_functions:
                         attribute = function(attribute)
 
                 new_class_dict[attr_name] = attribute
                 new_class_dict.update(new_attributes)
-            return  type.__new__(mcs, classname, bases, new_class_dict)
+            return type.__new__(mcs, classname, bases, new_class_dict)
+
     return MetaClass
+
 
 
 class SessionsStack(object):
@@ -103,6 +112,8 @@ class SessionsStack(object):
     Helper class that holds a stack of SqlAlchemys session object and a counter that
     keeps track of how many transactions are opened.
     """
+
+
     def __init__(self):
         """
         In the empty state just add a list that will hold all the sessions and 
@@ -110,7 +121,8 @@ class SessionsStack(object):
         """
         self.sessions_stack = []
         self.open_transactions = 0
-        
+
+
     def close_session(self):
         """
         Method called by all '`add_session` decorated methods. First check if there
@@ -127,7 +139,8 @@ class SessionsStack(object):
             # We are part of a transaction. Just expunge the objects, the transaction will handle the close.
             top_session.expunge_all()
         del top_session
-    
+
+
     def open_session(self):
         """
         Create a new session. If we are part of a transaction we bind it to the parent
@@ -138,14 +151,16 @@ class SessionsStack(object):
         else:
             new_session = SA_SESSIONMAKER(bind=self.sessions_stack[-1].connection())
         self.sessions_stack.append(new_session)
-    
+
+
     @property
     def current_session(self):
         """
         Property just for ease of access. Current session will always be top of stack.
         """
         return self.sessions_stack[-1]
-    
+
+
     def start_transaction(self):
         """
         Start a new transaction. If this is top level transaction just created new session.
@@ -163,7 +178,8 @@ class SessionsStack(object):
                 raise NestedTransactionUnsupported("We do not support nested transaction in TVB.")
         self.sessions_stack.append(transaction)
         self.open_transactions += 1
-        
+
+
     def rollback_transaction(self):
         """
         RollBack a transaction. 
@@ -174,7 +190,8 @@ class SessionsStack(object):
         for transaction_idx in range(self.open_transactions):
             transaction = self.sessions_stack[-(1 + transaction_idx)]
             transaction.rollback()
-    
+
+
     def close_transaction(self):
         """
         Close a transaction. Make sure to commit beforehand so all changes are written to database. Then
@@ -190,9 +207,9 @@ class SessionsStack(object):
         else:
             top_transaction_session.expunge_all()
         del top_transaction_session
-        
-    
-        
+
+
+
 @singleton
 class SessionMaker(object):
     """
@@ -200,13 +217,15 @@ class SessionMaker(object):
     It has the purpose of obtaining a new SessionsStack for each thread.
     When calling self.session._something_ our mechanism comes in place and checks having a new stack for every threadID.
     """
-    
+
+
     def __init__(self):
         """
         Initialize a dictionary with thread : session pairs to make sure we are thread-safe.
         """
-        self.handled_sessions = {threading.current_thread() : SessionsStack()}
-            
+        self.handled_sessions = {threading.current_thread(): SessionsStack()}
+
+
     def __getattr__(self, name):
         """
         __getattr__ is only called if `name` was not found in standard lookup (e.g. class or super-class attributes)
@@ -221,12 +240,13 @@ class SessionMaker(object):
             if not thread.isAlive():
                 try:
                     del self.handled_sessions[thread]
-                except Exception, _:
+                except Exception:
                     ### Ignore this error because a concurrent thread might have removed this meanwhile.
                     pass
         delegate_method = getattr(self.handled_sessions[current_thread].current_session, name)
         return delegate_method
-    
+
+
     def open_session(self):
         """
         Open a new session for the current thread.
@@ -236,20 +256,23 @@ class SessionMaker(object):
             self.handled_sessions[current_thread] = SessionsStack()
         self.handled_sessions[current_thread].open_session()
 
+
     def close_session(self):
         """
         Close the session for the current thread.
         """
         current_thread = threading.current_thread()
         self.handled_sessions[current_thread].close_session()
-        
+
+
     def rollback_transaction(self):
         """
         Rollback a transaction for the current thread.
         """
         current_thread = threading.current_thread()
         self.handled_sessions[current_thread].rollback_transaction()
-        
+
+
     def start_transaction(self):
         """
         Start a new transaction for the current thread.
@@ -258,14 +281,14 @@ class SessionMaker(object):
         if current_thread not in self.handled_sessions:
             self.handled_sessions[current_thread] = SessionsStack()
         self.handled_sessions[current_thread].start_transaction()
-    
+
+
     def close_transaction(self):
         """
         Close a transaction for the current thread.
         """
         current_thread = threading.current_thread()
         self.handled_sessions[current_thread].close_transaction()
- 
 
 
 ###
@@ -279,6 +302,8 @@ def transactional(func):
     unexpected exceptions appear.
     This is indended to be used on service layer methods.
     """
+
+
     def dec(*args, **kwargs):
         """
         Decorate methods.
@@ -293,7 +318,10 @@ def transactional(func):
         finally:
             session_maker.close_transaction()
         return result
+
+
     return dec
+
 
 
 def add_session(func):
@@ -302,12 +330,14 @@ def add_session(func):
     Before each new method a session is created that will later on be closed/rolled back as necessary.
     This is intended to be used on all DAO methods
     """
+
+
     def dec(*args, **kwargs):
         """
         Decorate by populating self.session
         """
         args[0].session.open_session()
-        try:    
+        try:
             result = func(*args, **kwargs)
         except NoResultFound, ex:
             raise ex
@@ -318,13 +348,15 @@ def add_session(func):
         finally:
             args[0].session.close_session()
         return result
+
+
     return dec
 
-       
+
 ### All Classes having this meta-class will have automatically populated:
 ### - Attribute self.session
 ### - Annotation add_session over every method in that class.
-SESSION_META_CLASS = MetaClassFactory([add_session], {'session' : SessionMaker()})   
+SESSION_META_CLASS = MetaClassFactory([add_session], {'session': SessionMaker()})
 
 
 

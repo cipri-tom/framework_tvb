@@ -34,7 +34,6 @@ from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS, MEASURE_METRICS_MODULE
 from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.core.utils import generate_guid
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.transient.structure_entities import StructureNode
 from tvb.core.services.burstservice import BurstService, KEY_PARAMETER_CHECKED
 from tvb.core.services.workflowservice import WorkflowService
 import tvb.interfaces.web.controllers.basecontroller as base
@@ -78,9 +77,9 @@ class BurstController(base.BaseController):
             if session_stored_burst is not None:
                 current_data = session_stored_burst.get_all_simulator_values()[0]
                 adapter_interface = ABCAdapter.fill_defaults(adapter_interface, current_data)
+                ### Add simulator tree to session to be available in filters
+                self.context.add_adapter_to_session(algo_group, adapter_interface, current_data)
             template_specification['inputList'] = adapter_interface
-            ### Add simulator tree to session to be available in filters
-            self.context.add_adapter_to_session(algo_group, adapter_interface, current_data)
 
         selected_portlets = session_stored_burst.update_selected_portlets()
         template_specification['burst_list'] = self.burst_service.get_available_bursts(base.get_current_project().id)
@@ -144,13 +143,15 @@ class BurstController(base.BaseController):
         tab_index = burst_config.selected_tab
         portlet_config = burst_config.tabs[tab_index].portlets[int(index_in_tab)]
         portlet_interface = self.burst_service.build_portlet_interface(portlet_config, base.get_current_project().id)
+
         full_portlet_input_tree = []
         for entry in portlet_interface:
             full_portlet_input_tree.extend(entry.interface)
         self.context.add_portlet_to_session(full_portlet_input_tree)
-        portlet_interface = {"adapters_list": portlet_interface}
-        portlet_interface[base.KEY_PARAMETERS_CONFIG] = False
-        portlet_interface[base.KEY_SESSION_TREE] = self.context.KEY_PORTLET_CONFIGURATION
+
+        portlet_interface = {"adapters_list": portlet_interface,
+                             base.KEY_PARAMETERS_CONFIG: False,
+                             base.KEY_SESSION_TREE: self.context.KEY_PORTLET_CONFIGURATION}
         return self.fill_default_attributes(portlet_interface)
 
 
@@ -177,7 +178,7 @@ class BurstController(base.BaseController):
             for idx_in_tab in range(len(tab_portlets_list[tab_idx])):
                 portlet_id = tab_portlets_list[tab_idx][idx_in_tab][0]
                 portlet_name = tab_portlets_list[tab_idx][idx_in_tab][1]
-                if (portlet_id >= 0):
+                if portlet_id >= 0:
                     saved_config = current_tab.portlets[idx_in_tab]
                     if saved_config is None or saved_config.portlet_id != portlet_id:
                         current_tab.portlets[idx_in_tab] = self.burst_service.new_portlet_configuration(portlet_id,
@@ -349,7 +350,7 @@ class BurstController(base.BaseController):
     def remove_burst_entity(self, burst_id):
         """
         Remove the burst entity given by burst_id.
-        :return 'reset-new': When currently selected burst was removed. UI JS will need to reset selection to a new Burst.
+        :return 'reset-new': When currently selected burst was removed. JS will need to reset selection to a new entry
         :return False: When no action is required on the client.
         """
         burst_id = int(burst_id)
@@ -390,6 +391,7 @@ class BurstController(base.BaseController):
         """
         burst_config = base.get_from_session(base.KEY_BURST_CONFIG)
         burst_config = self.burst_service.load_tab_configuration(burst_config, op_id)
+        base.add2session(base.KEY_BURST_CONFIG, burst_config)
         return self.load_configured_visualizers(width, height)
 
 
@@ -487,11 +489,11 @@ class BurstController(base.BaseController):
         ### Add simulator tree to session to be available in filters
         self.context.add_adapter_to_session(algo_group, simulator_input_tree, default_values)
 
-        template_specification = {"inputList": simulator_input_tree}
+        template_specification = {"inputList": simulator_input_tree,
+                                  base.KEY_PARAMETERS_CONFIG: True,
+                                  'none_checked': not any_checked,
+                                  'selectedParametersDictionary': burst_config.simulator_configuration}
         ## Setting this to true means check-boxes are displayed next to all inputs ##
-        template_specification[base.KEY_PARAMETERS_CONFIG] = True
-        template_specification['none_checked'] = not any_checked
-        template_specification['selectedParametersDictionary'] = burst_config.simulator_configuration
         return self.fill_default_attributes(template_specification)
 
 
@@ -516,9 +518,9 @@ class BurstController(base.BaseController):
         ### Add simulator tree to session to be available in filters
         self.context.add_adapter_to_session(algo_group, simulator_input_tree, default_values)
 
-        template_specification = {"inputList": simulator_input_tree}
-        template_specification[base.KEY_PARAMETERS_CONFIG] = False
-        template_specification['draw_hidden_ranges'] = True
+        template_specification = {"inputList": simulator_input_tree,
+                                  base.KEY_PARAMETERS_CONFIG: False,
+                                  'draw_hidden_ranges': True}
         return self.fill_default_attributes(template_specification)
 
 
@@ -625,8 +627,7 @@ class BurstController(base.BaseController):
         """
         try:
             form = BurstNameForm()
-            data = {'burst_name': burst_name}
-            data = form.to_python(data)
+            form.to_python({'burst_name': burst_name})
         except formencode.Invalid, excep:
             self.logger.error(excep)
             self.logger.exception("Invalid Burst name " + str(burst_name))

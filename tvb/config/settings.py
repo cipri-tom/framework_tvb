@@ -31,19 +31,30 @@ from subprocess import Popen, PIPE
 from tvb.basic.profile import TvbProfile as tvb_profile
 from tvb.basic.config.utils import ClassProperty, EnhancedDictionary
 
+
+
 def settings_loaded():
     """
     Annotation to check if file settings are loaded before returning attribute.
     """
+
+
     def dec(func):
         """ Allow to get the signature back"""
+
+
         def deco(*a, **b):
             """ Allow to get the doc-string back"""
             if FrameworkSettings.FILE_SETTINGS is None:
                 FrameworkSettings.read_config_file()
             return func(*a, **b)
+
+
         return deco
+
+
     return dec
+
 
 
 def find_file(target_file, root_folder):
@@ -60,7 +71,9 @@ def find_file(target_file, root_folder):
         for file_n in files:
             if file_n == target_file:
                 return root
-            
+
+
+
 def setup_tk_tcl_environ(root_folder):
     """
     Given a root folder to look in, find the required configuration files
@@ -78,6 +91,7 @@ def setup_tk_tcl_environ(root_folder):
         os.environ['TCL_LIBRARY'] = tcl_folder
 
 
+
 class BaseProfile():
     """
     Class handling correct settings to be loaded.
@@ -88,10 +102,10 @@ class BaseProfile():
     #The settings loaded from the configuration file. At first import, if this
     #variable is None, it will try to load the settings from the TVB_CONFIG_FILE
     FILE_SETTINGS = None
-    
+
     MAGIC_NUMBER = 9
-    
-    
+
+
     # II. Attributes with value not changeable from settings page:
     DB_CURRENT_VERSION = 3
     # Overwrite number of connections to the DB. 
@@ -105,22 +119,23 @@ class BaseProfile():
     # we don't support them yet. However when running tests we can use them to out advantage to rollback 
     # any database changes between tests.
     ALLOW_NESTED_TRANSACTIONS = False
-    
+
     # This is the version of the data stored in H5 and XML files
     # and should be used by next versions to know how to import
     # data in TVB format, in case data structure changes.
     # Value should be updated every time data structure is changed.
     DATA_VERSION = 2
     DATA_VERSION_ATTRIBUTE = "Data_version"
-    
+
+
     @ClassProperty
     @staticmethod
     @settings_loaded()
     def DATA_CHECKED_TO_VERSION():
         """The version up until we done the upgrade properly for the file data storage."""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_LAST_CHECKED_FILE_VERSION, 1, int)
-    
-    
+
+
     @ClassProperty
     @staticmethod
     @settings_loaded()
@@ -129,8 +144,8 @@ class BaseProfile():
         some of the datatypes upgrade failed. It's not used thus far but we might want to have it so 
         we can re-run an improved upgrade script on all datatypes that are invalid."""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_FILE_STORAGE_UPDATE_STATUS, 'valid')
-    
-      
+
+
     @ClassProperty
     @staticmethod
     def SVN_VERSION():
@@ -140,16 +155,16 @@ class BaseProfile():
             with open(os.path.join(os.path.dirname(bin.__file__), 'tvb.version'), 'r') as version_file:
                 result = version_file.read()
                 return result
-        except Exception, _:
+        except Exception:
             pass
         try:
             _proc = Popen(["svnversion", "."], stdout=PIPE)
             return _proc.communicate()[0]
-        except Exception, _:
+        except Exception:
             pass
         return -1
-    
-    
+
+
     @ClassProperty
     @staticmethod
     def CURRENT_VERSION():
@@ -158,32 +173,34 @@ class BaseProfile():
             return FrameworkSettings.BASE_VERSION
         else:
             return FrameworkSettings.BASE_VERSION + '-' + str(FrameworkSettings.SVN_VERSION)
-    
-    
+
+
     @ClassProperty
     @staticmethod
     @settings_loaded()
     def CODE_CHECKED_TO_VERSION():
         """The version up until we done the upgrade properly for the file data storage."""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_LAST_CHECKED_CODE_VERSION, -1, int)
-    
+
 
     # Access rights for TVB generated files/folders.
     ACCESS_MODE_TVB_FILES = 0744
-    
+
     LOCALHOST = "127.0.0.1"
     SYSTEM_USER_NAME = 'TVB system'
     DEFAULT_ADMIN_EMAIL = 'jira.tvb@gmail.com'
     CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     EXTERNALS_FOLDER_PARENT = os.path.dirname(os.path.dirname(CURRENT_DIR))
-    
+
     # Specify if the current process is executing an operation (via clusterLauncher)
     OPERATION_EXECUTION_PROCESS = False
-    
+
     CLUSTER_SCHEDULE_COMMAND = 'oarsub -S "/home/tvbadmin/clusterLauncher %s %s"'
     CLUSTER_STOP_COMMAND = 'oardel %s'
-        
+
     _CACHED_RUNNING_ON_CLUSTER_NODE = None
+
+
     @ClassProperty
     @staticmethod
     def RUNNING_ON_CLUSTER_NODE():
@@ -192,10 +209,13 @@ class BaseProfile():
         """
         if FrameworkSettings._CACHED_RUNNING_ON_CLUSTER_NODE is None:
             FrameworkSettings._CACHED_RUNNING_ON_CLUSTER_NODE = FrameworkSettings.CLUSTER_NODE_NAME is not None
-             
+
         return FrameworkSettings._CACHED_RUNNING_ON_CLUSTER_NODE
-    
-    _CACHED_CLUSTER_NODE_NAME = None    
+
+
+    _CACHED_CLUSTER_NODE_NAME = None
+
+
     @ClassProperty
     @staticmethod
     def CLUSTER_NODE_NAME():
@@ -203,24 +223,24 @@ class BaseProfile():
         Returns the name of the cluster on which TVB code is executed.
         If code is executed on a normal machine (not cluster node) returns None
         """
-        # Check if the name was't computed before.
+        # Check if the name wasn't computed before.
         if FrameworkSettings._CACHED_CLUSTER_NODE_NAME is None:
             # Read env variable which contains path the the file containing node name
             env_oar_nodefile = os.getenv('OAR_NODEFILE')
             if env_oar_nodefile is not None and len(env_oar_nodefile) > 0:
                 # Read node name from file
-                node_name = None
-                with open(env_oar_nodefile , 'r') as f:
+                with open(env_oar_nodefile, 'r') as f:
                     node_name = f.read()
-                    
+
                 if node_name is not None and len(node_name.strip()) > 0:
                     FrameworkSettings._CACHED_CLUSTER_NODE_NAME = node_name.strip()
                     return FrameworkSettings._CACHED_CLUSTER_NODE_NAME
-        else:               
+        else:
             return FrameworkSettings._CACHED_CLUSTER_NODE_NAME
-    
+
         return None
-    
+
+
     TVB_CONFIG_FILE = os.path.expanduser(os.path.join("~", '.tvb.configuration'))
     #the folder containing the XSD files used for validating applications XMLs
     SCHEMA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'core', 'schema')
@@ -236,6 +256,7 @@ class BaseProfile():
     #Logger specific
     LOGGER_CONFIG_FILE_NAME = "logger_config.conf"
 
+
     @classmethod
     def initialize_profile(cls):
         """
@@ -243,6 +264,7 @@ class BaseProfile():
         initializations for the profile should be placed here.
         """
         pass
+
 
     # III. Attributes that can be overwritten from config file.
     #     Will have only default values in here.
@@ -253,13 +275,15 @@ class BaseProfile():
         """Root folder for all projects and users."""
         default = os.path.expanduser(os.path.join("~", "TVB" + os.sep))
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_STORAGE, default)
-    
+
+
     @ClassProperty
     @staticmethod
     @settings_loaded()
     def MAX_DISK_SPACE():
         """ The maximum disk space that can be used by one single user, in KB. """
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_MAX_DISK_SPACE_USR, 5 * 1024 * 1024, int)
+
 
     @ClassProperty
     @staticmethod
@@ -270,6 +294,7 @@ class BaseProfile():
         if value == 'None':
             value = ''
         return value
+
 
     @ClassProperty
     @staticmethod
@@ -282,7 +307,7 @@ class BaseProfile():
         if not os.path.exists(tmp_path):
             os.makedirs(tmp_path)
         return tmp_path
-        
+
 
     @ClassProperty
     @staticmethod
@@ -294,7 +319,8 @@ class BaseProfile():
         if not os.path.exists(tmp_path):
             os.makedirs(tmp_path)
         return tmp_path
-            
+
+
     # DB related attributes:
     @ClassProperty
     @staticmethod
@@ -302,7 +328,8 @@ class BaseProfile():
         """A dictionary with accepted db's and their default URLS"""
         return {'postgres': FrameworkSettings.POSTGRES_URL,
                 'sqlite': ('sqlite:///' + os.path.join(FrameworkSettings.TVB_STORAGE, "tvb-database.db"))}
-    
+
+
     @ClassProperty
     @staticmethod
     @settings_loaded()
@@ -310,7 +337,8 @@ class BaseProfile():
         """Selected DB should be a key that exists in 
         the ACCEPTED_DBS dictionary"""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_SELECTED_DB, 'sqlite')
-    
+
+
     @ClassProperty
     @staticmethod
     def DB_URL():
@@ -318,25 +346,27 @@ class BaseProfile():
         if FrameworkSettings.SELECTED_DB in FrameworkSettings.ACEEPTED_DBS:
             return FrameworkSettings.ACEEPTED_DBS[FrameworkSettings.SELECTED_DB]
         return 'sqlite:///' + os.path.join(FrameworkSettings.TVB_STORAGE, "tvb-database.db")
-        
+
+
     @ClassProperty
     @staticmethod
     @settings_loaded()
     def POSTGRES_URL():
         """Default URL for Postgres DB"""
-        default = ('postgresql+psycopg2://postgres:root@127.0.0.1:5432/tvb?user=postgres&password=postgres')
+        default = 'postgresql+psycopg2://postgres:root@127.0.0.1:5432/tvb?user=postgres&password=postgres'
         current_url = FrameworkSettings.get_attribute(FrameworkSettings.KEY_DB_URL, default)
         if FrameworkSettings.SELECTED_DB == 'postgres' and current_url.startswith('postgresql'):
             return current_url
         return default
+
 
     @ClassProperty
     @staticmethod
     def DB_VERSIONING_REPO():
         """Upgrade/Downgrade repository"""
         return os.path.join(FrameworkSettings.TVB_STORAGE, 'db_repo')
-    
-    
+
+
     # IP and Ports
     @ClassProperty
     @staticmethod
@@ -344,7 +374,8 @@ class BaseProfile():
     def SERVER_IP():
         """Web server access IP/name"""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_IP, FrameworkSettings.LOCALHOST)
-    
+
+
     # The maximum number of threads to allocate in case TVB is ran locally instead
     # of cluster. This represents the maximum number of operations that can be executed
     # in parallel.
@@ -354,7 +385,8 @@ class BaseProfile():
     def MAX_THREADS_NUMBER():
         """Maximum number of threads in the pool of simulations range."""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_MAX_THREAD_NR, 4, int)
-    
+
+
     # The maximum number of operations that can be launched with a PSE mechanism.
     # when setting ranges with a bigger number of resulting operations, an exception will be thrown.
     # oarsub on the cluster has a maximum number of entries in the queue also set. 
@@ -365,7 +397,8 @@ class BaseProfile():
     def MAX_RANGE_NUMBER():
         """Maximum number of operations that can be scheduled from UI."""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_MAX_RANGE_NR, 2000, int)
-    
+
+
     # The maximum number of vertices that are allowed for a surface.
     # System will not allow import of surfaces with more vertices than this value.
     @ClassProperty
@@ -374,23 +407,24 @@ class BaseProfile():
     def MAX_SURFACE_VERTICES_NUMBER():
         """Maximum number of vertices acceptable o be part of a surface at import time."""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_MAX_NR_SURFACE_VERTEX, 300000, int)
-    
+
+
     @ClassProperty
     @staticmethod
     @settings_loaded()
     def WEB_SERVER_PORT():
         """CherryPy port"""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_PORT, 8080, int)
-    
-    
+
+
     @ClassProperty
     @staticmethod
     @settings_loaded()
     def MPLH5_SERVER_PORT():
         """Post for the Matplotlib HTML5 backend"""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_PORT_MPLH5, 9000, int)
-    
-    
+
+
     @ClassProperty
     @staticmethod
     @settings_loaded()
@@ -398,15 +432,15 @@ class BaseProfile():
         """
         Only when DEPLOY_CLUSTER, CLUSTER_SCHEDULE_COMMAND is used."""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_CLUSTER, False, eval)
-    
-    
+
+
     @ClassProperty
     @staticmethod
     def BASE_URL():
         """PUBLIC WEB reference towards the cluster."""
-        return ('http://' + FrameworkSettings.SERVER_IP + ':' + str(FrameworkSettings.WEB_SERVER_PORT) + '/')
-    
-    
+        return 'http://' + FrameworkSettings.SERVER_IP + ':' + str(FrameworkSettings.WEB_SERVER_PORT) + '/'
+
+
     @ClassProperty
     @staticmethod
     def URL_TVB_VERSION():
@@ -414,7 +448,7 @@ class BaseProfile():
         default = "http://www.thevirtualbrain.org/register/version.xml"
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_URL_VERSION, default)
 
-    
+
     # ADMINISTRATOR user:
     @ClassProperty
     @staticmethod
@@ -422,7 +456,8 @@ class BaseProfile():
     def ADMINISTRATOR_NAME():
         """Give name for the Admin user, first created."""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_ADMIN_NAME, 'admin')
-    
+
+
     @ClassProperty
     @staticmethod
     @settings_loaded()
@@ -430,13 +465,15 @@ class BaseProfile():
         """Admin's password used when creating first user"""
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_ADMIN_PWD, '1a1dc91c907325c69271ddf0c944bc72')
         # MD5 for 'pass'
-        
+
+
     @ClassProperty
     @staticmethod
     def ADMINISTRATOR_BLANK_PWD():
         """Unencrypted default password"""
         return 'pass'
-    
+
+
     @ClassProperty
     @staticmethod
     @settings_loaded()
@@ -451,43 +488,43 @@ class BaseProfile():
     def CHERRYPY_CONFIGURATION():
         """CherryPy startup configuration"""
         return {
-          'global': {
-                     'server.socket_host': '0.0.0.0',
-                     'server.socket_port': FrameworkSettings.WEB_SERVER_PORT,
-                     'server.thread_pool': 20,
-                     'engine.autoreload_on': False,
-                     'server.max_request_body_size' : 1932735283 #1.8 GB
-                    },
-          '/' :     {
-                     'tools.encode.on': True,
-                     'tools.encode.encoding': 'utf-8',
-                     'tools.decode.on': True,
-                     'tools.gzip.on': True,
-                     'tools.sessions.on': True,
-                     'tools.sessions.storage_type': 'ram',
-                     'tools.sessions.timeout': 6000, # 100 hours
-                     'tools.sessions.locking': 'explicit',
-                     'tools.upload.on': True, # Tool to check upload content size 
-                     'tools.cleanup.on' : True # Tool to clean up files on disk
-                     },   
-          '/static': {
-                     'tools.staticdir.root': FrameworkSettings.CURRENT_DIR,
-                     'tools.staticdir.on': True,
-                     'tools.staticdir.dir': os.path.join('interfaces', 'web', 'static')
-                     },   
-          '/static_view': {
-                     'tools.staticdir.root': FrameworkSettings.CURRENT_DIR,
-                     'tools.staticdir.on': True,
-                     'tools.staticdir.dir': os.path.join('interfaces', 'web', 'templates', 'genshi', 'visualizers'),
-                     },
-          '/schema': {
-                     'tools.staticdir.root': FrameworkSettings.CURRENT_DIR,
-                     'tools.staticdir.on': True,
-                     'tools.staticdir.dir': os.path.join('core', 'schema'),
-                     },
+            'global': {
+                'server.socket_host': '0.0.0.0',
+                'server.socket_port': FrameworkSettings.WEB_SERVER_PORT,
+                'server.thread_pool': 20,
+                'engine.autoreload_on': False,
+                'server.max_request_body_size': 1932735283  # 1.8 GB
+            },
+            '/': {
+                'tools.encode.on': True,
+                'tools.encode.encoding': 'utf-8',
+                'tools.decode.on': True,
+                'tools.gzip.on': True,
+                'tools.sessions.on': True,
+                'tools.sessions.storage_type': 'ram',
+                'tools.sessions.timeout': 6000,  # 100 hours
+                'tools.sessions.locking': 'explicit',
+                'tools.upload.on': True,    # Tool to check upload content size
+                'tools.cleanup.on': True    # Tool to clean up files on disk
+            },
+            '/static': {
+                'tools.staticdir.root': FrameworkSettings.CURRENT_DIR,
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join('interfaces', 'web', 'static')
+            },
+            '/static_view': {
+                'tools.staticdir.root': FrameworkSettings.CURRENT_DIR,
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join('interfaces', 'web', 'templates', 'genshi', 'visualizers'),
+            },
+            '/schema': {
+                'tools.staticdir.root': FrameworkSettings.CURRENT_DIR,
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join('core', 'schema'),
+            },
         }
-        
-        
+
+
     @staticmethod
     def read_config_file():
         """
@@ -499,14 +536,14 @@ class BaseProfile():
         config_dict = {}
         with open(FrameworkSettings.TVB_CONFIG_FILE, 'r') as cfg_file:
             data = cfg_file.read()
-            entries = [line for line in data.split('\n') if not line.startswith('#') and len(line.strip())>0]
+            entries = [line for line in data.split('\n') if not line.startswith('#') and len(line.strip()) > 0]
             for one_entry in entries:
                 name, value = one_entry.split('=', 1)
                 config_dict[name] = value
             FrameworkSettings.FILE_SETTINGS = config_dict
         return config_dict
-    
-    
+
+
     @classmethod
     def add_entries_to_config_file(cls, input_data):
         """
@@ -522,13 +559,14 @@ class BaseProfile():
         with open(cls.TVB_CONFIG_FILE, 'w') as file_writer:
             for key in config_dict:
                 file_writer.write(key + '=' + str(config_dict[key]) + '\n')
-    
+
+
     @classmethod
     def update_config_file(cls, data_dict):
-        '''
-        Update data from configuration file, without restart. Used by 
+        """
+        Update data from configuration file, without restart. Used by
         methods like change password, or change email.
-        '''
+        """
         config_dict = FrameworkSettings.read_config_file()
         if config_dict is None:
             config_dict = data_dict
@@ -539,21 +577,22 @@ class BaseProfile():
         with open(cls.TVB_CONFIG_FILE, 'w') as file_writer:
             for key in config_dict:
                 file_writer.write(key + '=' + str(config_dict[key]) + '\n')
-    
-    
+
+
     @staticmethod
     def get_attribute(attr_name, default=None, dtype=str):
-        '''
+        """
         Get a cfg attribute that could also be found in the settings file.
-        '''
+        """
         try:
             if FrameworkSettings.FILE_SETTINGS and attr_name in FrameworkSettings.FILE_SETTINGS:
                 return dtype(FrameworkSettings.FILE_SETTINGS[attr_name])
-        except ValueError, _error:
+        except ValueError:
             ## Invalid convert operation.
             return default
         return default
-    
+
+
     #File keys
     KEY_ADMIN_NAME = 'ADMINISTRATOR_NAME'
     KEY_ADMIN_PWD = 'ADMINISTRATOR_PASSWORD'
@@ -588,26 +627,29 @@ class BaseProfile():
         return (os.path.exists(os.path.join(tvb_root, 'AUTHORS'))
                 and os.path.exists(os.path.join(tvb_root, 'ui_test'))
                 and os.path.exists(os.path.join(tvb_root, 'tvb_test')))
-    
+
+
     def is_windows(self):
         """
         Return True if current run is not development and is running on Windows.
         """
         return platform.startswith('win') and not self.is_development()
-    
+
+
     def is_linux(self):
         """ 
         Return True if current run is not development and is running on Linux.
         """
-        return not (platform.startswith('win') or platform =='darwin' or self.is_development())
-    
+        return not (platform.startswith('win') or platform == 'darwin' or self.is_development())
+
+
     def is_mac(self):
         """
         Return True if current run is not development and is running on Mac OS X
         """
-        return platform =='darwin' and not self.is_development()
-    
-    
+        return platform == 'darwin' and not self.is_development()
+
+
     def get_python_path(self):
         """Get Python path, based on running options."""
         if self.is_development():
@@ -640,8 +682,9 @@ class TestSQLiteProfile(BaseProfile):
     LOGGER_CONFIG_FILE_NAME = "logger_config.conf"
     #Overrite the config file
     TVB_CONFIG_FILE = os.path.expanduser(os.path.join("~", '.test.tvb.configuration'))
-    
+
     RENDER_HTML = False
+
 
     @ClassProperty
     @staticmethod
@@ -670,14 +713,15 @@ class TestSQLiteProfile(BaseProfile):
     def SELECTED_DB():
         """The selected DB will be SQLite."""
         return 'sqlite'
-    
-    
+
+
     @ClassProperty
     @staticmethod
     @settings_loaded()
     def CODE_CHECKED_TO_VERSION():
         return sys.maxint
-    
+
+
     @ClassProperty
     @staticmethod
     def SVN_VERSION():
@@ -691,12 +735,13 @@ class TestPostgresProfile(TestSQLiteProfile):
     Defines settings for running tests on a Postgres database.
     """
     RENDER_HTML = False
-    
+
+
     @ClassProperty
     @staticmethod
     def DB_URL():
         """Used DB url: IP,PORT. The DB  needs to be created in advance."""
-        default = ('postgresql+psycopg2://postgres:root@127.0.0.1:5432/tvb-test?user=postgres&password=postgres')
+        default = 'postgresql+psycopg2://postgres:root@127.0.0.1:5432/tvb-test?user=postgres&password=postgres'
         return default
 
 
@@ -713,10 +758,10 @@ class DeploymentProfile(BaseProfile):
     """
     Profile for packages deployed already.
     """
-    
+
     EXTERNALS_FOLDER_PARENT = os.path.dirname(BaseProfile.CURRENT_DIR)
-    
-    
+
+
     @classmethod
     def initialize_profile(cls):
         """
@@ -727,16 +772,18 @@ class DeploymentProfile(BaseProfile):
         #when we are in deployment mode.
         import warnings
         from sqlalchemy import exc as sa_exc
+
         warnings.simplefilter("ignore", category=sa_exc.SAWarning)
         cfg = FrameworkSettings()
         if cfg.is_windows():
             data_path = os.path.dirname(sys.executable)
-            # Add root folder as first in PYTHONPATH so we can find tvb there if we checked out from GIT for contributors
+            #Add root folder as first in PYTHONPATH so we can find tvb there if we checked out from GIT for contributors
             root_folder = os.path.dirname(data_path)
-            os.environ['PYTHONPATH'] = os.path.join(root_folder, 'tvb_simulator_library')  + os.pathsep + '' 
-            os.environ['PYTHONPATH'] = os.environ['PYTHONPATH'] + os.pathsep + data_path + os.pathsep + os.path.join(data_path, 'lib-tk')
+            new_python_path = os.path.join(root_folder, 'tvb_simulator_library') + os.pathsep
+            new_python_path += data_path + os.pathsep + os.path.join(data_path, 'lib-tk')
+            os.environ['PYTHONPATH'] = new_python_path
             os.environ['PATH'] = data_path
-        
+
         if cfg.is_mac():
             # MacOS package structure is in the form:
             # Contents/Resorces/lib/python2.7/tvb . PYTHONPATH needs to be set
@@ -744,23 +791,28 @@ class DeploymentProfile(BaseProfile):
             # from where to start looking for TK and TCL up to Contents/
             data_path = os.path.dirname(__file__)
             python_folder = os.path.dirname(os.path.split(data_path)[0])
-            os.environ['PYTHONPATH'] = python_folder + os.pathsep + os.path.join(python_folder, 'site-packages.zip')
-            os.environ['PYTHONPATH'] = os.environ['PYTHONPATH'] + os.pathsep + os.path.join(python_folder, 'lib-dynload')
+
             data_path = os.path.split(os.path.split(os.path.split(python_folder)[0])[0])[0]
             setup_tk_tcl_environ(data_path)
-            # Add root folder as first in PYTHONPATH so we can find tvb there if we checked out from GIT for contributors
+
+            #Add root folder as first in PYTHONPATH so we can find tvb there if we checked out from GIT for contributors
             root_folder = os.path.split(os.path.split(data_path)[0])[0]
-            os.environ['PYTHONPATH'] = os.path.join(root_folder, 'tvb_simulator_library')  + os.pathsep + '' + os.pathsep + os.environ['PYTHONPATH']
-        
+            new_python_path = python_folder + os.pathsep + os.path.join(python_folder, 'site-packages.zip')
+            new_python_path += os.pathsep + os.path.join(python_folder, 'lib-dynload')
+            new_python_path = os.path.join(root_folder, 'tvb_simulator_library') + os.pathsep + new_python_path
+            os.environ['PYTHONPATH'] = new_python_path
+
         if cfg.is_linux():
             # Note that for the Linux package some environment variables like LD_LIBRARY_PATH,
             # LD_RUN_PATH, PYTHONPATH and PYTHONHOME are set also in the startup scripts.
             data_path = os.path.dirname(sys.executable)
-            # Add root folder as first in PYTHONPATH so we can find tvb there if we checked out from GIT for contributors
+            #Add root folder as first in PYTHONPATH so we can find tvb there if we checked out from GIT for contributors
             root_folder = os.path.dirname(data_path)
-            os.environ['PYTHONPATH'] = os.path.join(root_folder, 'tvb_simulator_library') + os.pathsep + '' + os.pathsep + os.path.join(data_path, 'lib-tk')
+            new_python_path = os.path.join(root_folder, 'tvb_simulator_library')
+            new_python_path += os.pathsep + os.path.join(data_path, 'lib-tk')
+            os.environ['PYTHONPATH'] = new_python_path
             setup_tk_tcl_environ(data_path)
-            
+
         if not cfg.is_development():
             #Set path to only search in our custom set PYTHONPATH and ignore any other Python defaults.
             sys.path = os.environ.get('PYTHONPATH', '').split(os.pathsep)
@@ -778,17 +830,17 @@ class ConsoleProfile(DeploymentProfile):
 
 if tvb_profile.CURRENT_SELECTED_PROFILE == tvb_profile.TEST_POSTGRES_PROFILE:
     FrameworkSettings = TestPostgresProfile
-    
+
 elif tvb_profile.CURRENT_SELECTED_PROFILE == tvb_profile.TEST_SQLITE_PROFILE:
     FrameworkSettings = TestSQLiteProfile
-    
+
 elif tvb_profile.CURRENT_SELECTED_PROFILE == tvb_profile.CONSOLE_PROFILE:
     FrameworkSettings = ConsoleProfile
-    
+
 elif BaseProfile.is_development() or tvb_profile.CURRENT_SELECTED_PROFILE == tvb_profile.DEVELOPMENT_PROFILE:
     FrameworkSettings = DevelopmentProfile
-    
+
 else:
     FrameworkSettings = DeploymentProfile
-    
+
 FrameworkSettings.initialize_profile()

@@ -34,7 +34,7 @@ from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.code_versions.base_classes import UpdateManager
 from tvb.core.entities.file.hdf5storage import HDF5StorageManager
 from tvb.core.entities.file.fileshelper import FilesHelper
-from tvb.core.entities.file.exceptions import MissingDataFileException, FileVersioningException
+from tvb.core.entities.file.exceptions import MissingDataFileException, FileVersioningException, FileStructureException
 from tvb.core.entities.storage import dao
 
 
@@ -77,6 +77,10 @@ class FilesUpdateManager(UpdateManager):
         except MissingDataFileException, ex:
             self.log.exception(ex)
             return False
+        except FileStructureException, ex:
+            self.log.exception(ex)
+            return False
+
         if file_version == cfg.DATA_VERSION:
             return True
         return False
@@ -140,7 +144,7 @@ class FilesUpdateManager(UpdateManager):
             # Read DataTypes in pages just to spare memory consumption
             datatypes_nr_of_pages = datatype_total_count // self.DATA_TYPES_PAGE_SIZE
             if datatype_total_count % self.DATA_TYPES_PAGE_SIZE:
-                datatypes_nr_of_pages = datatypes_nr_of_pages + 1
+                datatypes_nr_of_pages += 1
             current_datatype_page = 1
             
             while current_datatype_page <= datatypes_nr_of_pages:
@@ -158,13 +162,13 @@ class FilesUpdateManager(UpdateManager):
                 current_datatype_page += 1
                 
             # Now update the configuration file since update was done
-            config_file_update_dict = {cfg.KEY_LAST_CHECKED_FILE_VERSION : cfg.DATA_VERSION}
+            config_file_update_dict = {cfg.KEY_LAST_CHECKED_FILE_VERSION: cfg.DATA_VERSION}
             if nr_of_dts_upgraded_fault == 0:
                 # Everything went fine
                 config_file_update_dict[cfg.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_VALID
                 return_status = True
                 return_message = ("File upgrade finished successfully for all %s entries. "
-                                  "Thank you for your patience" % (nr_of_dts_upgraded_fine))
+                                  "Thank you for your patience" % nr_of_dts_upgraded_fine)
                 self.log.info(return_message)
             else:
                 # Something went wrong
@@ -172,7 +176,7 @@ class FilesUpdateManager(UpdateManager):
                 return_status = False
                 return_message = ("Out of %s stored DataTypes, %s were upgraded successfully "
                                   "and %s had faults and were marked invalid" % (datatype_total_count, 
-                                                    nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault))
+                                  nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault))
                 self.log.warning(return_message)
             cfg.add_entries_to_config_file(config_file_update_dict)
             return return_status, return_message

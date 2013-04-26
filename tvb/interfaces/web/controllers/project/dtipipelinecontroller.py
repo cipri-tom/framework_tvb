@@ -36,7 +36,7 @@ import tvb.interfaces.web.controllers.basecontroller as basecontroller
 try:
     from cherrypy._cpreqbody import Part
     # cover cases when the web interface is not available.
-except Exception, _:
+except Exception:
     Part = FieldStorage
     
     

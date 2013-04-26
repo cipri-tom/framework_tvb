@@ -26,7 +26,6 @@ but also user related annotation (checked-logged).
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-import json
 import cherrypy
 import formencode
 from hashlib import md5
@@ -80,8 +79,7 @@ def admin():
             """ Decorator for public method"""
             if hasattr(cherrypy, basecontroller.KEY_SESSION):
                 user = basecontroller.get_logged_user()
-                if ((user is not None and user.is_administrator())
-                    or SettingsService.is_first_run()):
+                if (user is not None and user.is_administrator()) or SettingsService.is_first_run():
                     return func(*a, **b)
             basecontroller.set_error_message('Only Administrators can access this application area!')
             raise cherrypy.HTTPRedirect('/tvb')
@@ -119,7 +117,7 @@ class UserController(basecontroller.BaseController):
                     basecontroller.add2session(basecontroller.KEY_USER, user)
                     basecontroller.set_info_message('Welcome ' + username)
                     self.logger.debug("User " + username + " has just logged in!")
-                    if (user.selected_project is not None):
+                    if user.selected_project is not None:
                         prj = user.selected_project
                         prj = ProjectService().find_project(prj)
                         self._mark_selected(prj)
@@ -298,10 +296,10 @@ class UserController(basecontroller.BaseController):
                     user.role = data[key]
                     user.validated = valid
                     self.user_service.edit_user(user)
-                    not_deleted = not_deleted + 1
+                    not_deleted += 1
             # The entire current page was deleted, go to previous page
             if not_deleted == 0 and page > 1:
-                page = page - 1
+                page -= 1
 
         admin_ = basecontroller.get_logged_user().username
         user_list, pages_no = self.user_service.retrieve_all_users(admin_, page)

@@ -38,6 +38,7 @@ import tvb.core.entities.model.db_update_scripts as scripts
 LOGGER = get_logger(__name__)
 
 
+
 def initialize_startup():
     """ Force DB tables create, in case no data is already found."""
     is_db_empty = False
@@ -47,7 +48,7 @@ def initialize_startup():
         LOGGER.debug("Database access exception, maybe DB is empty")
         is_db_empty = True
     session.close()
-        
+
     if is_db_empty:
         LOGGER.info("Initializing Database")
         if os.path.exists(cfg.DB_VERSIONING_REPO):
@@ -59,13 +60,14 @@ def initialize_startup():
         model.Base.metadata.create_all(bind=session.connection())
         session.commit()
         session.close()
-        LOGGER.info("Database Default Tables created successfully!")    
+        LOGGER.info("Database Default Tables created successfully!")
     else:
         _update_sql_scripts()
-        migratesqlapi.upgrade(cfg.DB_URL, cfg.DB_VERSIONING_REPO, 
+        migratesqlapi.upgrade(cfg.DB_URL, cfg.DB_VERSIONING_REPO,
                               version=cfg.DB_CURRENT_VERSION)
         LOGGER.info("Database already has some data, will not be re-created!")
     return is_db_empty
+
 
 
 def reset_database():
@@ -79,12 +81,12 @@ def reset_database():
         inspector = reflection.Inspector.from_engine(session.connection())
         for table in inspector.get_table_names():
             try:
-                LOGGER.debug("Removing:"+ table)
+                LOGGER.debug("Removing:" + table)
                 session.execute(text("DROP TABLE \"%s\" CASCADE" % table))
-            except Exception, _:
+            except Exception:
                 try:
                     session.execute(text("DROP TABLE %s" % table))
-                except Exception, excep1:    
+                except Exception, excep1:
                     LOGGER.error("Could no drop table %s", table)
                     LOGGER.exception(excep1)
         session.commit()
@@ -93,9 +95,9 @@ def reset_database():
         LOGGER.warning(excep)
     finally:
         session.close()
-        
-        
- 
+
+
+
 def _update_sql_scripts():
     """
     When a new release is done, make sure old DB scripts are updated.

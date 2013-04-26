@@ -26,9 +26,9 @@
 
 import unittest
 import os
-import shutil 
+import shutil
 import tvb.core.entities.file.hdf5storage as hdf5
-import numpy as numpy 
+import numpy as numpy
 from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 
@@ -39,15 +39,17 @@ DATASET_NAME_1 = "dataset1"
 DATASET_NAME_2 = "dataset2"
 META_KEY = "meta_key"
 META_VALUE = "meta_value"
-META_DICT = {META_KEY:META_VALUE}
+META_DICT = {META_KEY: META_VALUE}
 STORE_PATH = "/node1/node2"
+
 
 
 class HDF5StorageTest(unittest.TestCase):
     """
     This tests storage of data into HDF5 format (H5 files).
-    """        
-    
+    """
+
+
     def setUp(self):
         """
         Set up the context needed by the tests.
@@ -57,29 +59,29 @@ class HDF5StorageTest(unittest.TestCase):
         if os.path.exists(self.storage_folder):
             shutil.rmtree(self.storage_folder)
         os.makedirs(self.storage_folder)
-        
+
         # Now create HDF5 storage instance
         self.storage = hdf5.HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME)
-        
+
         self.test_2D_array = numpy.random.random((10, 10))
         self.test_3D_array = numpy.random.random((3, 3, 3))
         self.test_string_array = numpy.array([["a", "b"], ["c", "d"]])
-    
-    
+
+
     def tearDown(self):
         """
         Tear down to revert any changes made by a test.
         """
         self.storage.close_file()
-        
+
         if os.path.exists(self.storage_folder):
             shutil.rmtree(self.storage_folder)
-        
-     
-    def assertArrayEqual(self, expected_arr, current_arr, message = None):
+
+
+    def assertArrayEqual(self, expected_arr, current_arr, message=None):
         numpy.testing.assert_array_equal(expected_arr, current_arr, message)
-        
-        
+
+
     # -------------- TESTS ---------------------
     def test_file_creation(self):
         """
@@ -88,17 +90,19 @@ class HDF5StorageTest(unittest.TestCase):
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
         full_path = os.path.join(self.storage_folder, STORAGE_FILE_NAME)
         self.assertTrue(os.path.exists(full_path), "Storage file not created.")
-        
+
+
     def test_invalid_storage_path(self):
         """
         This method will test scenarios where no storage path or storage file is provided
         """
         # Test if folder name is None
         self.assertRaises(FileStructureException, hdf5.HDF5StorageManager, None, STORAGE_FILE_NAME)
-        
+
         # Test if file name is None
         self.assertRaises(FileStructureException, hdf5.HDF5StorageManager, self.storage_folder, None)
-        
+
+
     def test_simple_data_storage(self):
         """
         Test if simple array data is stored
@@ -108,6 +112,7 @@ class HDF5StorageTest(unittest.TestCase):
         read_data = self.storage.get_data(DATASET_NAME_1)
         self.assertArrayEqual(self.test_2D_array, read_data, "Did not get the expected data")
 
+
     def test_simple_data_storage_on_path(self):
         """
         Test if simple array data is stored on a given path
@@ -115,44 +120,48 @@ class HDF5StorageTest(unittest.TestCase):
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array, STORE_PATH)
         # Now read data
         read_data = self.storage.get_data(DATASET_NAME_1, None, STORE_PATH)
-        self.assertArrayEqual(self.test_2D_array, read_data, "Did not get the expected data")
+        self.assertArrayEqual(self.test_2D_array, read_data)
 
-        
+
     def test_string_data_storage(self):
         """
         Test store of string data (array of strings
-        """    
+        """
         self.storage.store_data(DATASET_NAME_1, self.test_string_array)
         # Now read data
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_string_array, read_data, "Did not get the expected data")
-            
+        self.assertArrayEqual(self.test_string_array, read_data)
+
+
     def test_store_none_data(self):
         """
         Test scenario when trying to store None data
         """
-        self.assertRaises(FileStructureException, self.storage.store_data, DATASET_NAME_1, None)    
-   
+        self.assertRaises(FileStructureException, self.storage.store_data, DATASET_NAME_1, None)
+
+
     def test_append_data1(self):
         """
         Test data store using append method
         """
         self.storage.append_data(DATASET_NAME_1, self.test_3D_array)
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_3D_array, read_data, "Did not get the expected data")
-        
+        self.assertArrayEqual(self.test_3D_array, read_data)
+
+
     def test_append_data2(self):
         """
         Test data store using append method (multiple calls)
         """
         for index in range(self.test_2D_array.shape[-1]):
             slices = (slice(None, None, 1), slice(index, index + 1, 1))
-            
+
             self.storage.append_data(DATASET_NAME_1, self.test_2D_array[slices])
-            
-        self.storage.close_file()    
+
+        self.storage.close_file()
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_2D_array, read_data, "Did not get the expected data")    
+        self.assertArrayEqual(self.test_2D_array, read_data)
+
 
     def test_append_data_on_path(self):
         """
@@ -160,65 +169,71 @@ class HDF5StorageTest(unittest.TestCase):
         """
         self.storage.append_data(DATASET_NAME_1, self.test_3D_array, where=STORE_PATH)
         read_data = self.storage.get_data(DATASET_NAME_1, where=STORE_PATH)
-        self.assertArrayEqual(self.test_3D_array, read_data, "Did not get the expected data")
-        
+        self.assertArrayEqual(self.test_3D_array, read_data)
+
+
     def test_append_other_dimension(self):
         """
         This method test append operation on other dimension
         """
         for index in range(self.test_2D_array.shape[0]):
             slices = (slice(index, index + 1, 1), slice(None, None, 1))
-            
+
             self.storage.append_data(DATASET_NAME_1, self.test_2D_array[slices], 0)
-            
+
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_2D_array, read_data, "Did not get the expected data")
-    
+        self.assertArrayEqual(self.test_2D_array, read_data)
+
+
     def test_append_strings(self):
         """
         Test appending strings 
         """
         for index in range(self.test_string_array.shape[-1]):
             slices = (slice(None, None, 1), slice(index, index + 1, 1))
-            
+
             self.storage.append_data(DATASET_NAME_1, self.test_string_array[slices])
-            
+
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_string_array, read_data, "Did not get the expected data")    
-        
+        self.assertArrayEqual(self.test_string_array, read_data)
+
+
     def test_append_none_data(self):
         """
         Test appending null value to dataset
         """
         self.assertRaises(FileStructureException, self.storage.append_data, DATASET_NAME_1, None)
-  
+
+
     def test_append_without_closing_file(self):
         """
         Test appending data but keeping hdf5 file open. 
         """
         for index in range(self.test_3D_array.shape[-1]):
             slices = (slice(None, None, 1), slice(index, index + 1, 1), slice(None, None, 1))
-            self.storage.append_data(DATASET_NAME_1, self.test_3D_array[slices], grow_dimension = 1,close_file=False)
-            
+            self.storage.append_data(DATASET_NAME_1, self.test_3D_array[slices], grow_dimension=1, close_file=False)
+
         self.storage.close_file()
-        
+
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_3D_array, read_data, "Did not get the expected data")    
-    
+        self.assertArrayEqual(self.test_3D_array, read_data)
+
+
     def test_close_file_multiple_time(self):
         """
         Test closing H5 file multiple times.
         """
         for index in range(self.test_3D_array.shape[-1]):
             slices = (slice(None, None, 1), slice(index, index + 1, 1), slice(None, None, 1))
-            self.storage.append_data(DATASET_NAME_1, self.test_3D_array[slices], grow_dimension = 1,close_file=False)
-            
+            self.storage.append_data(DATASET_NAME_1, self.test_3D_array[slices], grow_dimension=1, close_file=False)
+
         self.storage.close_file()
         self.storage.close_file()
-        
+
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_3D_array, read_data, "Did not get the expected data")  
-        
+        self.assertArrayEqual(self.test_3D_array, read_data)
+
+
     def test_delete_dataset(self):
         """
         This test checks deletion of a dataset from H5 file.
@@ -226,11 +241,12 @@ class HDF5StorageTest(unittest.TestCase):
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
         # Now check if data was persisted. 
         read_data = self.storage.get_data(DATASET_NAME_1)
-        self.assertArrayEqual(self.test_2D_array, read_data, "Did not get the expected data")    
-        
+        self.assertArrayEqual(self.test_2D_array, read_data)
+
         # Now delete dataset
         self.storage.remove_data(DATASET_NAME_1)
-        self.assertRaises(MissingDataSetException, self.storage.get_data, DATASET_NAME_1)  
+        self.assertRaises(MissingDataSetException, self.storage.get_data, DATASET_NAME_1)
+
 
     def test_delete_dataset_on_path(self):
         """
@@ -240,97 +256,104 @@ class HDF5StorageTest(unittest.TestCase):
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array, STORE_PATH)
         # Now check if data was persisted. 
         read_data = self.storage.get_data(DATASET_NAME_1, None, STORE_PATH)
-        self.assertArrayEqual(self.test_2D_array, read_data, "Did not get the expected data")    
-        
+        self.assertArrayEqual(self.test_2D_array, read_data)
+
         # Now delete dataset
         self.storage.remove_data(DATASET_NAME_1, STORE_PATH)
-        self.assertRaises(MissingDataSetException, self.storage.get_data, DATASET_NAME_1) 
-        
+        self.assertRaises(MissingDataSetException, self.storage.get_data, DATASET_NAME_1)
+
+
     def test_delete_missing_dataset(self):
         """
         This test checks deletion of non existing  dataset.
         """
         self.assertRaises(FileStructureException, self.storage.remove_data, DATASET_NAME_1)
-    
+
+
     def test_read_sliced_data(self):
         """
         This test checks reading of data on slices.
         """
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
-        
+
         # Now check if data was persisted, but read it using slices
         for index in range(len(self.test_2D_array)):
             sl = slice(index, index + 1, 1)
             read_data = self.storage.get_data(DATASET_NAME_1, sl)
-            self.assertArrayEqual(self.test_2D_array[sl], read_data, "Did not get the expected data")
-            
+            self.assertArrayEqual(self.test_2D_array[sl], read_data)
+
+
     def test_add_metadata(self):
         """
         This method checks metadata add for root or a dataset
         """
         # Create a dataset 
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
-        
+
         # Now add meta info to it.
         self.storage.set_metadata(META_DICT, DATASET_NAME_1)
         read_meta_value = self.storage.get_metadata(DATASET_NAME_1)
-        self.assertEqual(META_VALUE, read_meta_value[META_KEY], "Retrieved meta value is not correct")
-    
+        self.assertEqual(META_VALUE, read_meta_value[META_KEY])
+
         # Now we'll test adding metadata on root node
-        self.storage.set_metadata(META_DICT)        
+        self.storage.set_metadata(META_DICT)
         read_meta_value = self.storage.get_metadata()
-        self.assertEqual(META_VALUE, read_meta_value[META_KEY], "Retrieved meta value is not correct")
-    
+        self.assertEqual(META_VALUE, read_meta_value[META_KEY])
+
+
     def test_add_metadata_on_path(self):
         """
         This method checks metadata add for a dataset stored under a given path
         """
         # Create a dataset 
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array, where=STORE_PATH)
-        
+
         # Now add meta info to it.
         self.storage.set_metadata(META_DICT, DATASET_NAME_1, where=STORE_PATH)
         read_meta_value = self.storage.get_metadata(DATASET_NAME_1, where=STORE_PATH)
-        self.assertEqual(META_VALUE, read_meta_value[META_KEY], "Retrieved meta value is not correct")
-        
+        self.assertEqual(META_VALUE, read_meta_value[META_KEY])
+
+
     def test_delete_metadata(self):
         """
         Test deletion of metadata for a dataset or root node.
         """
         # Create a dataset 
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
-        
+
         # Now add meta info to it.
         self.storage.set_metadata(META_DICT, DATASET_NAME_1)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1)
-        self.assertEqual(META_VALUE, read_meta_data[META_KEY], "Retrieved meta value is not correct")
+        self.assertEqual(META_VALUE, read_meta_data[META_KEY])
         self.storage.remove_metadata(META_KEY, DATASET_NAME_1)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1)
         self.assertEqual(0, len(read_meta_data), "There should be no metadata stored on dataset")
-    
+
         # Now we'll test removal of metadata on root node
-        self.storage.set_metadata(META_DICT)        
+        self.storage.set_metadata(META_DICT)
         read_meta_data = self.storage.get_metadata()
         self.assertEqual(META_VALUE, read_meta_data[META_KEY], "Retrieved meta value is not correct")
         self.storage.remove_metadata(META_KEY)
         read_meta_data = self.storage.get_metadata()
-        self.assertEqual(1, len(read_meta_data), "There should be no metadata stored on root node, except data version")   
-    
+        self.assertEqual(1, len(read_meta_data), "There should be no metadata stored on root node, except data version")
+
+
     def test_delete_metadata_on_path(self):
         """
         Test deletion of metadata for a dataset stored on a given path
         """
         # Create a dataset 
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array, STORE_PATH)
-        
+
         # Now add meta info to it.
         self.storage.set_metadata(META_DICT, DATASET_NAME_1, where=STORE_PATH)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1, where=STORE_PATH)
-        self.assertEqual(META_VALUE, read_meta_data[META_KEY], "Retrieved meta value is not correct")
+        self.assertEqual(META_VALUE, read_meta_data[META_KEY])
         self.storage.remove_metadata(META_KEY, DATASET_NAME_1, where=STORE_PATH)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1, where=STORE_PATH)
         self.assertEqual(0, len(read_meta_data), "There should be no metadata stored on dataset")
-        
+
+
     def test_delete_missing_metadata(self):
         """
         This method tests removal of a missing metadata
@@ -339,11 +362,12 @@ class HDF5StorageTest(unittest.TestCase):
         # Test delete on a node
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1)
         self.assertEqual(0, len(read_meta_data), "There should be no metadata stored on dataset")
-        
+
         # Test delete on root node
         read_meta_data = self.storage.get_metadata()
-        self.assertEqual(1, len(read_meta_data), "There should be no metadata stored on root node, except data version") 
-        
+        self.assertEqual(1, len(read_meta_data), "There should be no metadata stored on root node, except data version")
+
+
     def test_delete_metadata_missing_dataset(self):
         """
         Test retrieval of metadata for a missing dataset.
@@ -351,24 +375,23 @@ class HDF5StorageTest(unittest.TestCase):
         # Create
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
         self.assertRaises(MissingDataSetException, self.storage.get_metadata, DATASET_NAME_2)
-        
-    
+
+
     def test_concurent_file_access(self):
         """
         This method tests scenario when HDF5 file is opened concurrent for read & write
         """
         new_storage = hdf5.HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME)
         new_storage.store_data(DATASET_NAME_2, self.test_2D_array)
-        
+
         for index in range(self.test_3D_array.shape[-1]):
             slices = (slice(None, None, 1), slice(index, index + 1, 1), slice(None, None, 1))
             # Write into file, but leave file open
-            self.storage.append_data(DATASET_NAME_1, self.test_3D_array[slices], \
-                                     grow_dimension = 1,close_file=False)
-        
+            self.storage.append_data(DATASET_NAME_1, self.test_3D_array[slices], grow_dimension=1, close_file=False)
+
             # Now try to read file
             read_data = new_storage.get_data(DATASET_NAME_2)
-            self.assertArrayEqual(self.test_2D_array, read_data, "Did not get the expected data")  
+            self.assertArrayEqual(self.test_2D_array, read_data)
 
 
     def test_add_metadata_non_tvb_specific(self):
@@ -377,51 +400,54 @@ class HDF5StorageTest(unittest.TestCase):
         """
         # Create a dataset 
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
-        
+
         # Now add meta info to it.
         self.storage.set_metadata(META_DICT, DATASET_NAME_1, False)
         read_meta_value = self.storage.get_metadata(DATASET_NAME_1)
-        self.assertEqual(META_VALUE, read_meta_value[META_KEY], "Retrieved meta value is not correct")
-    
+        self.assertEqual(META_VALUE, read_meta_value[META_KEY])
+
         # Now we'll test adding metadata on root node
-        self.storage.set_metadata(META_DICT, '', False)        
+        self.storage.set_metadata(META_DICT, '', False)
         read_meta_value = self.storage.get_metadata()
-        self.assertEqual(META_VALUE, read_meta_value[META_KEY], "Retrieved meta value is not correct")
-    
+        self.assertEqual(META_VALUE, read_meta_value[META_KEY])
+
+
     def test_delete_metadata_non_tvb_specific(self):
         """
         Test deletion of metadata for a dataset or root node.
         """
         # Create a dataset 
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
-        
+
         # Now add meta info to it.
         self.storage.set_metadata(META_DICT, DATASET_NAME_1, False)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1)
-        self.assertEqual(META_VALUE, read_meta_data[META_KEY], "Retrieved meta value is not correct")
+        self.assertEqual(META_VALUE, read_meta_data[META_KEY])
         self.storage.remove_metadata(META_KEY, DATASET_NAME_1, False)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1)
-        self.assertEqual(0, len(read_meta_data), "There should be no metadata stored on dataset")
-    
+        self.assertEqual(0, len(read_meta_data))
+
         # Now we'll test removal of metadata on root node
-        self.storage.set_metadata(META_DICT, '', False)        
+        self.storage.set_metadata(META_DICT, '', False)
         read_meta_data = self.storage.get_metadata()
-        self.assertEqual(META_VALUE, read_meta_data[META_KEY], "Retrieved meta value is not correct")
+        self.assertEqual(META_VALUE, read_meta_data[META_KEY])
         self.storage.remove_metadata(META_KEY, '', False)
         read_meta_data = self.storage.get_metadata()
-        self.assertEqual(1, len(read_meta_data), "There should be no metadata stored on root node, except data version") 
+        self.assertEqual(1, len(read_meta_data))
+
 
     def test_data_version(self):
         """
         Test if data version meta data is assigned when H5 file is created
         """
         self.storage.store_data(DATASET_NAME_1, self.test_2D_array)
-        
+
         # Now read meta data for root node
         read_data = self.storage.get_metadata()
-        self.assertArrayEqual(cfg.DATA_VERSION, read_data[cfg.DATA_VERSION_ATTRIBUTE], 
-                              "Did not get the expected data version")
-        
+        self.assertArrayEqual(cfg.DATA_VERSION, read_data[cfg.DATA_VERSION_ATTRIBUTE])
+
+
+
 def suite():
     """
     Gather all the tests in a test suite.
@@ -431,9 +457,10 @@ def suite():
     return test_suite
 
 
+
 if __name__ == "__main__":
     #So you can run tests individually.
     TEST_RUNNER = unittest.TextTestRunner()
     TEST_SUITE = suite()
-    TEST_RUNNER.run (TEST_SUITE)      
+    TEST_RUNNER.run(TEST_SUITE)
     

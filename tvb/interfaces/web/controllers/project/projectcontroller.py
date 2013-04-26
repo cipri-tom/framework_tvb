@@ -36,7 +36,7 @@ from simplejson import JSONEncoder
 from cherrypy.lib.static import serve_file
 from tvb.config import SIMULATOR_CLASS, SIMULATOR_MODULE
 from tvb.basic.config.settings import TVBSettings as cfg
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData, StructureNode
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.transient.filtering import StaticFiltersFactory
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.projectservice import ProjectService
@@ -137,7 +137,7 @@ class ProjectController(bc.BaseController):
             self.logger.exception(exc)
             bc.set_error_message(exc.message)
         prj = bc.get_current_project()
-        if (prj is not None and prj.id == int(project_id)):
+        if prj is not None and prj.id == int(project_id):
             bc.remove_from_session(bc.KEY_PROJECT)
 
 
@@ -148,7 +148,7 @@ class ProjectController(bc.BaseController):
         selected_project = bc.get_current_project()
         if len(self.project_service.retrieve_projects_for_user(current_user.id, 1)) == 1:
             selected_project = saved_project
-        if (selected_project is None or (saved_project.id == selected_project.id)):
+        if selected_project is None or (saved_project.id == selected_project.id):
             self._mark_selected(saved_project)
 
 
@@ -250,14 +250,14 @@ class ProjectController(bc.BaseController):
         """
         Display table of operations for a given project selected
         """
-        if (project_id == None) or (not int(project_id)):
+        if (project_id is None) or (not int(project_id)):
             raise cherrypy.HTTPRedirect('/project')
 
         ## Toggle filters
         filters = self.__get_operations_filters()
         selected_filters = None
         for my_filter in filters:
-            if (cherrypy.request.method == 'POST' and (filtername is not None)):
+            if cherrypy.request.method == 'POST' and (filtername is not None):
                 if reset_filters:
                     my_filter.selected = False
                 elif my_filter.display_name == filtername:
@@ -274,7 +274,8 @@ class ProjectController(bc.BaseController):
 
         page = int(page)
         project, total_op_count, filtered_ops, pages_no = self.project_service.retrieve_project_full(project_id,
-                                                                                            selected_filters, page)
+                                                                                                     selected_filters,
+                                                                                                     page)
         ## Select current project
         self._mark_selected(project)
         group_url = ''
@@ -318,7 +319,8 @@ class ProjectController(bc.BaseController):
         """
         Returns the HTML which contains the details for the given dataType.
         """
-        if exclude_tabs is None: exclude_tabs = []
+        if exclude_tabs is None:
+            exclude_tabs = []
         selected_project = bc.get_current_project()
         datatype_details, states, entity = self.project_service.get_datatype_details(entity_gid)
 
@@ -361,9 +363,9 @@ class ProjectController(bc.BaseController):
 
         overlay_class = "can-browse editor-node node-type-" + str(current_type).lower()
         if is_relevant:
-            overlay_class = overlay_class + " node-relevant"
+            overlay_class += " node-relevant"
         else:
-            overlay_class = overlay_class + " node_irrelevant"
+            overlay_class += " node_irrelevant"
         overlay_title = current_type
         if datatype_details.datatype_tag_1:
             overlay_title += " " + datatype_details.datatype_tag_1
@@ -374,21 +376,21 @@ class ProjectController(bc.BaseController):
             tabs.append(OverlayTabDefinition("Metadata", "metadata"))
             overlay_indexes.append(0)
         if "Analyzers" not in exclude_tabs:
-            tabs.append(OverlayTabDefinition("Analyzers", "analyzers", enabled = (categories and 'Analyze' in categories)))
+            tabs.append(OverlayTabDefinition("Analyzers", "analyzers", enabled=categories and 'Analyze' in categories))
             overlay_indexes.append(1)
         if "Visualizers" not in exclude_tabs:
-            tabs.append(OverlayTabDefinition("Visualizers", "visualizers", enabled = (categories and 'View' in categories)))
+            tabs.append(OverlayTabDefinition("Visualizers", "visualizers", enabled=categories and 'View' in categories))
             overlay_indexes.append(2)
 
         enable_link_tab = False
         if (not entity.invalid) and (linkable_projects_dict is not None):
-            if (self.PRROJECTS_FOR_LINK_KEY in linkable_projects_dict):
+            if self.PRROJECTS_FOR_LINK_KEY in linkable_projects_dict:
                 projects_for_link = linkable_projects_dict[self.PRROJECTS_FOR_LINK_KEY]
-                if (projects_for_link is not None and len(projects_for_link) > 0):
+                if projects_for_link is not None and len(projects_for_link) > 0:
                     enable_link_tab = True
-            if (self.PRROJECTS_LINKED_KEY in linkable_projects_dict):
+            if self.PRROJECTS_LINKED_KEY in linkable_projects_dict:
                 projects_linked = linkable_projects_dict[self.PRROJECTS_LINKED_KEY]
-                if (projects_linked is not None and len(projects_linked) > 0):
+                if projects_linked is not None and len(projects_linked) > 0:
                     enable_link_tab = True
         if "Links" not in exclude_tabs:
             tabs.append(OverlayTabDefinition("Links", "link_to", enabled=enable_link_tab))
@@ -439,7 +441,7 @@ class ProjectController(bc.BaseController):
         """
         Returns the HTML which contains the details for the given operation.
         """
-        if is_group == True or is_group == "1":
+        if is_group is True or is_group == "1":
             ### we have an OperationGroup entity.
             template_specification = self._compute_operation_details(entity_gid, True)
             #I expect that all the operations from a group are visible or not
@@ -454,9 +456,9 @@ class ProjectController(bc.BaseController):
         template_specification["backPageIdentifier"] = back_page
         overlay_class = "can-browse editor-node node-type-" + template_specification["nodeType"]
         if template_specification["isRelevant"]:
-            overlay_class = overlay_class + " node-relevant"
+            overlay_class += " node-relevant"
         else:
-            overlay_class = overlay_class + " node_irrelevant"
+            overlay_class += " node_irrelevant"
 
         template_specification = self.fill_overlay_attributes(template_specification, "Details", "Operation",
                                                               "project/details_operation_overlay", overlay_class)
@@ -503,7 +505,7 @@ class ProjectController(bc.BaseController):
         """
         Return the page skeleton for displaying the project structure.
         """
-        if (project_id == None) or (not int(project_id)):
+        if (project_id is None) or (not int(project_id)):
             raise cherrypy.HTTPRedirect('/project')
         selected_project = self.project_service.find_project(project_id)
         self._mark_selected(selected_project)
@@ -569,9 +571,8 @@ class ProjectController(bc.BaseController):
         Start Upload mechanism
         """
         success_link = "/project/editstructure/" + str(project_id)
-        if ((cherrypy.request.method == 'POST' and cancel) or not
-        (project_id and int(project_id) and (algo_group_id is not None)
-         and int(algo_group_id))):
+        if ((cherrypy.request.method == 'POST' and cancel) or
+                not (project_id and int(project_id) and (algo_group_id is not None) and int(algo_group_id))):
             raise cherrypy.HTTPRedirect(success_link)
 
         project = self.project_service.find_project(project_id)
@@ -638,7 +639,8 @@ class ProjectController(bc.BaseController):
                           first_level="Data_State", second_level="Data_Subject", filter_value=None):
         """
         AJAX exposed method. 
-        Will return the complete JSON for Project's structure, or filtered tree (filter only Relevant entities or Burst only Data).
+        Will return the complete JSON for Project's structure, or filtered tree
+        (filter only Relevant entities or Burst only Data).
         """
         selected_filter = StaticFiltersFactory.build_datatype_filters(single_filter=visibility_filter)
 
@@ -771,8 +773,6 @@ class ProjectController(bc.BaseController):
         """
         Method used for creating a JSON representation of a graph.
         """
-        #TODO-io-ld: Review this method for complexity
-
         selected_filter = StaticFiltersFactory.build_datatype_filters(single_filter=visibility_filter)
 
         graph_branches = []
@@ -811,7 +811,7 @@ class ProjectController(bc.BaseController):
             parent_op = graph_structures.OperationGroupNodeStructure(parent_op_group.gid)
             parent_op.selected = True
             parent_op = [parent_op]
-            if selected_filter.display_name == StaticFiltersFactory.RELEVANT_VIEW and datatype.visible == False:
+            if selected_filter.display_name == StaticFiltersFactory.RELEVANT_VIEW and datatype.visible is False:
                 dt_outputs = []
             else:
                 dt_outputs = self._create_datatype_nodes([datatype])
@@ -825,7 +825,8 @@ class ProjectController(bc.BaseController):
                                                                                           selected_filter)
                 op_inputs = self.project_service.get_operations_for_datatype_group(selected_dt.id, selected_filter)
                 op_inputs_in_groups = self.project_service.get_operations_for_datatype_group(selected_dt.id,
-                                                                        selected_filter, only_in_groups=True)
+                                                                                             selected_filter,
+                                                                                             only_in_groups=True)
                 #create graph nodes
                 dt_inputs, parent_op, dt_outputs, op_inputs = self._create_nodes(dt_inputs, [], [selected_dt],
                                                                                  op_inputs, item_gid)
@@ -837,12 +838,12 @@ class ProjectController(bc.BaseController):
                 dt_inputs = ProjectService.get_datatype_and_datatypegroup_inputs_for_operation(parent_op.gid,
                                                                                                selected_filter)
                 op_inputs = self.project_service.get_operations_for_datatype(selected_dt.gid, selected_filter)
-                op_inputs_in_groups = self.project_service.get_operations_for_datatype(selected_dt.gid,
-                                                                    selected_filter, only_in_groups=True)
+                op_inputs_in_groups = self.project_service.get_operations_for_datatype(selected_dt.gid, selected_filter,
+                                                                                       only_in_groups=True)
                 dt_outputs = self.project_service.get_results_for_operation(parent_op.id, selected_filter)
                 #create graph nodes
-                dt_inputs, parent_op, dt_outputs, op_inputs = self._create_nodes(dt_inputs,
-                                                            [parent_op], dt_outputs, op_inputs, item_gid)
+                dt_inputs, parent_op, dt_outputs, op_inputs = self._create_nodes(dt_inputs, [parent_op], dt_outputs,
+                                                                                 op_inputs, item_gid)
                 op_inputs_in_groups = self._create_operation_group_nodes(op_inputs_in_groups)
                 op_inputs.extend(op_inputs_in_groups)
 

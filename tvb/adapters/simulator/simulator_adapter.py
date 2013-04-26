@@ -46,19 +46,20 @@ from tvb.datatypes import noise_framework
 import tvb.datatypes.time_series as time_series
 
 
+
 class SimulatorAdapter(ABCAsynchronous):
     """
     Interface between the Simulator and the Framework.
     """
     _ui_name = "Simulation Core"
-    
+
     available_models = get_traited_subclasses(Model)
     available_monitors = get_traited_subclasses(Monitor)
     available_integrators = get_traited_subclasses(Integrator)
     available_couplings = get_traited_subclasses(Coupling)
     available_noise = get_traited_subclasses(Noise)
-    
-    
+
+
 ### Info: This are the possible results returned with this adapter from different Monitors.
 ###       When a list appears(surface & region), we actually return only one based on param surface being None or not.
 
@@ -71,28 +72,27 @@ class SimulatorAdapter(ABCAsynchronous):
 #                       "SphericalEEG": time_series.TimeSeriesEEG,
 #                       "SphericalMEG": time_series.TimeSeriesMEG,
 #                       "Bold": [time_series.TimeSeriesRegion, time_series.TimeSeriesSurface]}
-    
+
     RESULTS_MAP = {time_series.TimeSeriesEEG: ["SphericalEEG", "EEG"],
-                   time_series.TimeSeriesMEG: ["SphericalMEG"], #TODO: add here also "MEG" monitor reference
+                   time_series.TimeSeriesMEG: ["SphericalMEG"], # Add here also "MEG" monitor reference
                    time_series.TimeSeries: ["GlobalAverage", "SpatialAverage"]}
-    
-                   # time_series.TimeSeriesVolume: ["Bold"], 
+
+                   # time_series.TimeSeriesVolume: ["Bold"],
                    #SK:   For a number of reasons, it's probably best to avoid returning TimeSeriesVolume ,
-                   #      from a simulation directly, instead just stick with the source, i.e. Region and Surface, 
-                   #      then later we can add a voxelisation "analyser" to produce TimeSeriesVolume on which Volume 
+                   #      from a simulation directly, instead just stick with the source, i.e. Region and Surface,
+                   #      then later we can add a voxelisation "analyser" to produce TimeSeriesVolume on which Volume
                    #      based analysers and visualisers (which don't exist yet) can operate.
-                   
+
     # This is a list with the monitors that actually return multi dimensions for the state variable dimension.
     # We exclude from this for example EEG, MEG or Bold which return 
     HAVE_STATE_VARIABLES = ["GlobalAverage", "SpatialAverage", "Raw", "SubSample", "TemporalAverage"]
-    
-    
-    
+
+
     def __init__(self):
         super(SimulatorAdapter, self).__init__()
         self.log.debug("%s: Initialized..." % str(self))
-    
-    
+
+
     def get_input_tree(self):
         """
         Return a list of lists describing the interface to the simulator. This
@@ -105,35 +105,35 @@ class SimulatorAdapter(ABCAsynchronous):
         # We should add as hidden the Simulator State attribute.
         result.append({'name': 'simulation_state', 'type': SimulationState, 'required': False, 'ui_hidden': True})
         return result
-    
-    
+
+
     def get_output(self):
         """
         :return: list of classes for possible results of the Simulator.
         """
         return [time_series.TimeSeries]
-    
-    
+
+
     def configure(self, model, model_parameters, integrator, integrator_parameters, connectivity,
-               monitors, monitors_parameters=None, surface=None, surface_parameters=None, stimulus=None,
-               coupling=None, coupling_parameters=None, initial_conditions=None, 
-               conduction_speed = None, simulation_length = 0, simulation_state=None):
+                  monitors, monitors_parameters=None, surface=None, surface_parameters=None, stimulus=None,
+                  coupling=None, coupling_parameters=None, initial_conditions=None,
+                  conduction_speed=None, simulation_length=0, simulation_state=None):
         """
         Make preparations for the adapter launch.
         """
         self.log.debug("available_couplings: %s..." % str(self.available_couplings))
         self.log.debug("coupling: %s..." % str(coupling))
         self.log.debug("coupling_parameters: %s..." % str(coupling_parameters))
-        
+
         self.log.debug("%s: Initializing Model..." % str(self))
         noise_framework.build_noise(model_parameters)
         model_instance = self.available_models[str(model)](**model_parameters)
         self._validate_model_parameters(model_instance, connectivity, surface)
-        
+
         self.log.debug("%s: Initializing Integration scheme..." % str(self))
         noise_framework.build_noise(integrator_parameters)
         integr = self.available_integrators[integrator](**integrator_parameters)
-        
+
         self.log.debug("%s: Instantiating Monitors..." % str(self))
         monitors_list = []
         for monitor_name in monitors:
@@ -143,13 +143,13 @@ class SimulatorAdapter(ABCAsynchronous):
             else:
                 ### We have monitors without any UI settable parameter.
                 monitors_list.append(self.available_monitors[str(monitor_name)]())
-            
+
         if len(monitors) < 1:
             raise LaunchException("Can not launch operation without monitors selected !!!")
-        
+
         self.log.debug("%s: Initializing Coupling..." % str(self))
         coupling_inst = self.available_couplings[str(coupling)](**coupling_parameters)
-        
+
         self.log.debug("Initializing Cortex...")
         if surface is not None and surface_parameters is not None:
             cortex_entity = Cortex(use_storage=False).populate_cortex(surface, surface_parameters)
@@ -162,40 +162,41 @@ class SimulatorAdapter(ABCAsynchronous):
                 raise LaunchException("Incompatible LocalConnectivity -- Surface !!")
         else:
             cortex_entity = None
-        
+
         self.log.debug("%s: Instantiating requested simulator..." % str(self))
         connectivity.configure()
-        self.algorithm = Simulator(connectivity= connectivity, coupling= coupling_inst, surface= cortex_entity,
-                                   stimulus= stimulus, model= model_instance, integrator= integr,
-                                   monitors= monitors_list, initial_conditions= initial_conditions, 
-                                   conduction_speed = conduction_speed)
+        self.algorithm = Simulator(connectivity=connectivity, coupling=coupling_inst, surface=cortex_entity,
+                                   stimulus=stimulus, model=model_instance, integrator=integr,
+                                   monitors=monitors_list, initial_conditions=initial_conditions,
+                                   conduction_speed=conduction_speed)
         self.log.debug("%s: Initializing storage..." % str(self))
         try:
             self.algorithm.configure()
-            if simulation_state != None:
+            if simulation_state is not None:
                 simulation_state.fill_into(self.algorithm)
         except ValueError, err:
             raise LaunchException("Failed to configure simulator due to invalid Input Values. It could be because "
-                                  "of an incompatibility between different version of TVB code.", err) 
-    
-    
+                                  "of an incompatibility between different version of TVB code.", err)
+
+
     def get_required_memory_size(self, **kwargs):
         """
         Return the required memory to run this algorithm.
         """
         return self.algorithm.memory_requirement()
-    
-    
+
+
     def get_required_disk_size(self, **kwargs):
         """
         Return the required disk size this algorithm estimates it will take. (in kB)
         """
         return self.algorithm.storage_requirement(kwargs['simulation_length']) / 2 ** 10
-    
+
+
     def launch(self, model, model_parameters, integrator, integrator_parameters, connectivity,
                monitors, monitors_parameters=None, surface=None, surface_parameters=None, stimulus=None,
-               coupling=None, coupling_parameters=None, initial_conditions=None, 
-               conduction_speed = None, simulation_length = 0, simulation_state=None): 
+               coupling=None, coupling_parameters=None, initial_conditions=None,
+               conduction_speed=None, simulation_length=0, simulation_state=None):
         """
         Called from the GUI to launch a simulation.
           *: string class name of chosen model, etc...
@@ -208,64 +209,66 @@ class SimulatorAdapter(ABCAsynchronous):
         start_time = self.algorithm.current_step * self.algorithm.integrator.dt
         m_ind = -1
         for m_name in monitors:
-            m_ind += 1 
+            m_ind += 1
             sample_period = self.algorithm.monitors[m_ind].period
             # Create the required output for each monitor that was submitted
-            if (m_name in self.RESULTS_MAP[time_series.TimeSeriesEEG] 
+            if (m_name in self.RESULTS_MAP[time_series.TimeSeriesEEG]
                 and hasattr(self.algorithm.monitors[m_ind], 'sensors')):
-                result_datatypes[m_name] = time_series.TimeSeriesEEG(storage_path=self.storage_path, 
+                result_datatypes[m_name] = time_series.TimeSeriesEEG(storage_path=self.storage_path,
                                                                      sensors=self.algorithm.monitors[m_ind].sensors,
                                                                      sample_period=sample_period,
-                                                                     title=' ' + m_name, start_time=start_time,)
-                
-            elif (m_name in self.RESULTS_MAP[time_series.TimeSeriesMEG] 
-                and hasattr(self.algorithm.monitors[m_ind], 'sensors')):
-                result_datatypes[m_name] = time_series.TimeSeriesMEG(storage_path=self.storage_path, 
+                                                                     title=' ' + m_name, start_time=start_time, )
+
+            elif (m_name in self.RESULTS_MAP[time_series.TimeSeriesMEG]
+                  and hasattr(self.algorithm.monitors[m_ind], 'sensors')):
+                result_datatypes[m_name] = time_series.TimeSeriesMEG(storage_path=self.storage_path,
                                                                      sensors=self.algorithm.monitors[m_ind].sensors,
                                                                      sample_period=sample_period,
                                                                      title=' ' + m_name, start_time=start_time)
-            
+
             elif (m_name in self.RESULTS_MAP[time_series.TimeSeries]):
-                result_datatypes[m_name] = time_series.TimeSeries(storage_path=self.storage_path, 
+                result_datatypes[m_name] = time_series.TimeSeries(storage_path=self.storage_path,
                                                                   sample_period=sample_period,
                                                                   title=' ' + m_name, start_time=start_time)
-            
+
             elif surface is None:
                 ## We do not have a surface selected from UI, or regions only result.
-                result_datatypes[m_name] = time_series.TimeSeriesRegion(storage_path=self.storage_path, 
-                                                                    connectivity=connectivity,
-                                                                    sample_period=sample_period,
-                                                                    title='Regions ' + m_name, start_time=start_time)
-            
+                result_datatypes[m_name] = time_series.TimeSeriesRegion(storage_path=self.storage_path,
+                                                                        connectivity=connectivity,
+                                                                        sample_period=sample_period,
+                                                                        title='Regions ' + m_name,
+                                                                        start_time=start_time)
+
             else:
-                result_datatypes[m_name] = time_series.TimeSeriesSurface(storage_path=self.storage_path, 
-                                                                    surface=surface, sample_period=sample_period,
-                                                                    title='Surface ' + m_name, start_time=start_time)
+                result_datatypes[m_name] = time_series.TimeSeriesSurface(storage_path=self.storage_path,
+                                                                         surface=surface, sample_period=sample_period,
+                                                                         title='Surface ' + m_name,
+                                                                         start_time=start_time)
             # Now check if the monitor will return results for each state variable, in which case store
             # the labels for these state variables.
             if m_name in self.HAVE_STATE_VARIABLES:
-                selected_state_vars = [self.algorithm.model.state_variables[idx] 
+                selected_state_vars = [self.algorithm.model.state_variables[idx]
                                        for idx in self.algorithm.monitors[m_ind].voi]
-                result_datatypes[m_name].labels_dimensions = {result_datatypes[m_name].labels_ordering[1]: selected_state_vars}
-        
+                result_datatypes[m_name].labels_dimensions = {result_datatypes[m_name].labels_ordering[1]:
+                                                                  selected_state_vars}
+
         #### Create Simulator State entity and persist it in DB. H5 file will be empty now.
         simulation_state = SimulationState(storage_path=self.storage_path)
         self._capture_operation_results([simulation_state])
-        
+
         ### Run simulation
         self.log.debug("%s: Starting simulation..." % str(self))
-        for result in self.algorithm(simulation_length = simulation_length):
+        for result in self.algorithm(simulation_length=simulation_length):
             for j in range(len(monitors)):
                 if result[j] is not None:
-                    expected_rows = int(simulation_length / result_datatypes[monitors[j]].sample_period)
-                    result_datatypes[monitors[j]].write_time_slice([result[j][0]], expected_rows)
-                    result_datatypes[monitors[j]].write_data_slice([result[j][1]], expected_rows)
-        
+                    result_datatypes[monitors[j]].write_time_slice([result[j][0]])
+                    result_datatypes[monitors[j]].write_data_slice([result[j][1]])
+
         self.log.debug("%s: Completed simulation, starting to store simulation state " % str(self))
         ### Populate H5 file for simulator state. This step could also be done while running sim, in background.
         simulation_state.populate_from(self.algorithm)
         self._capture_operation_results([simulation_state])
-        
+
         self.log.debug("%s: Simulation state persisted, returning results " % str(self))
         final_results = []
         for result in result_datatypes.values():
@@ -273,8 +276,8 @@ class SimulatorAdapter(ABCAsynchronous):
             final_results.append(result)
         self.log.info("%s: Adapter simulation finished!!" % str(self))
         return final_results
-    
-    
+
+
     def _validate_model_parameters(self, model_instance, connectivity, surface):
         """
         Checks if the size of the model parameters is set correctly.
@@ -285,18 +288,18 @@ class SimulatorAdapter(ABCAsynchronous):
             if isinstance(param_value, numpy.ndarray):
                 if len(param_value) == 1:
                     continue
-                if ((surface is not None and len(param_value) != surface.number_of_vertices) 
+                if ((surface is not None and len(param_value) != surface.number_of_vertices)
                     and (connectivity is not None and len(param_value) != connectivity.number_of_regions)):
                     msg = str(surface.number_of_vertices) + ' or ' + str(connectivity.number_of_regions)
                     msg = self._get_exception_message(param, msg, len(param_value))
                     self.log.error(msg)
                     raise LaunchException(msg)
-                elif (connectivity is not None and len(param_value) != connectivity.number_of_regions):
+                elif connectivity is not None and len(param_value) != connectivity.number_of_regions:
                     msg = self._get_exception_message(param, connectivity.number_of_regions, len(param_value))
                     self.log.error(msg)
                     raise LaunchException(msg)
-    
-    
+
+
     @staticmethod
     def _get_exception_message(param_name, expected_size, actual_size):
         """

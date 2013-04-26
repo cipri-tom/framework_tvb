@@ -114,7 +114,7 @@ class SettingsController(UserController):
                     os.mkdir(storage_path)
                 except OSError:
                     return {'status': 'not ok',
-                            'message': 'Could not create root storage for TVB. Are you sure you have permissions there?'}
+                            'message': 'Could not create root storage for TVB. Please check write permissions!'}
             self.settingsservice.check_db_url(data[self.settingsservice.KEY_DB_URL])
             return {'status': 'ok', 'message': 'The database URL is valid.'}
         except InvalidSettingsException, excep:
@@ -151,12 +151,12 @@ class DiskSpaceValidator(formencode.FancyValidator):
         """
         try:
             value = long(value)
-        except Exception, _:
+        except Exception:
             raise formencode.Invalid('Invalid disk space %s. Should be number' % value, value, None)
 
         available_mem_kb = SettingsService.get_disk_free_space()
         kb_value = value * (2 ** 10)
-        if kb_value > 0 and kb_value < available_mem_kb:
+        if 0 < kb_value < available_mem_kb:
             return kb_value
         else:
             available_mem_mb = available_mem_kb / (2 ** 10)
@@ -175,9 +175,9 @@ class PortValidator(formencode.FancyValidator):
         """
         try:
             value = int(value)
-        except Exception, _:
+        except Exception:
             raise formencode.Invalid('Invalid port %s. Should be number between 0 and 65535.' % value, value, None)
-        if value > 0 and value < 65535:
+        if 0 < value < 65535:
             return value
         else:
             raise formencode.Invalid('Invalid port number %s. Should be in interval [0, 65535]' % value, value, None)
@@ -194,9 +194,9 @@ class ThreadNrValidator(formencode.FancyValidator):
         """
         try:
             value = int(value)
-        except Exception, _:
+        except Exception:
             raise formencode.Invalid('Invalid number %d. Should be number between 1 and 16.' % value, value, None)
-        if value > 0 and value < 17:
+        if 0 < value < 17:
             return value
         else:
             raise formencode.Invalid('Invalid number %d. Should be in interval [1, 16]' % value, value, None)
@@ -206,27 +206,31 @@ class SurfaceVerticesNrValidator(formencode.FancyValidator):
     """
     Custom validator for the number of vertices allowed for a surface
     """
-    MAX_VALUE = 256 * 256 * 256 + 1 # Max number of colors 
+    # This limitation is given by our Max number of colors in pick mechanism
+    MAX_VALUE = 256 * 256 * 256 + 1
+
 
     def _to_python(self, value, _):
         """ 
         Validation required method.
         """
+        msg = 'Invalid value: %d. Should be a number between 1 and %d.'
         try:
             value = int(value)
-            if value > 0 and value < self.MAX_VALUE:
+            if 0 < value < self.MAX_VALUE:
                 return value
             else:
-                raise formencode.Invalid('Invalid value: %d. Should be a number between 1 and %d.'% (value,
-                                                                            self.MAX_VALUE), value, None)
-        except Exception, _:
-            raise formencode.Invalid('Invalid value: %d. Should be a number between 1 and %d.'% (value,
-                                                                            self.MAX_VALUE), value, None)
+                raise formencode.Invalid(msg % (value, self.MAX_VALUE), value, None)
+        except Exception:
+            raise formencode.Invalid(msg % (value, self.MAX_VALUE), value, None)
+
+
 
 class MatlabValidator(formencode.FancyValidator):
     """
     Custom validator for the number of vertices allowed for a surface
     """
+
 
     def _to_python(self, value, _):
         """ 
@@ -238,8 +242,9 @@ class MatlabValidator(formencode.FancyValidator):
                 return value
             else:
                 formencode.Invalid('No valid matlab installation was found at the path you provided.', '', None)
-        except Exception, _:
+        except Exception:
             raise formencode.Invalid('No valid matlab installation was found at the path you provided.', '', None)
+
 
 
 class SettingsForm(formencode.Schema):

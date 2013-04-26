@@ -34,57 +34,61 @@ from tvb.datatypes.surfaces import CorticalSurface
 from tvb.core.services.exceptions import OperationException
 from tvb.adapters.uploaders.gifti.gifti_parser import GIFTIParser
 
-
 import demoData.gifti as demo_data
+
+
 
 class GIFTISurfaceImporterTest(TransactionalTestCase):
     """
     Unit-tests for GIFTI Surface importer.
     """
-    
+
     GIFTI_SURFACE_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'sample.cortex.surf.gii')
     GIFTI_TIME_SERIES_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'gifti.case1.time_series.L.time.gii')
     WRONG_GII_FILE = os.path.abspath(__file__)
-        
+
+
     def setUp(self):
         self.datatypeFactory = DatatypesFactory()
         self.test_project = self.datatypeFactory.get_project()
         self.test_user = self.datatypeFactory.get_user()
-                
+
+
     def tearDown(self):
         """
         Clean-up tests data
         """
         FilesHelper().remove_project_structure(self.test_project.name)
-                    
+
+
     def _importSurface(self, import_file_path=None):
         """
         This method is used for importing data in GIFIT format
         :param import_file_path: absolute path of the file to be imported
         """
-            
+
         ### Retrieve Adapter instance 
         group = dao.find_group('tvb.adapters.uploaders.gifti_surface_importer', 'GIFTISurfaceImporter')
         importer = ABCAdapter.build_adapter(group)
         importer.meta_data = {DataTypeMetaData.KEY_SUBJECT: "",
                               DataTypeMetaData.KEY_STATE: "RAW"}
-        
+
         args = {'data_file': import_file_path}
-        
+
         ### Launch import Operation
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
-        
+
         surface = CorticalSurface()
         data_types = FlowService().get_available_datatypes(self.test_project.id,
-                                surface.module + "." + surface.type)
+                                                           surface.module + "." + surface.type)
         self.assertEqual(1, len(data_types), "Project should contain only one data type.")
-        
+
         surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
         self.assertTrue(surface is not None, "TimeSeries should not be none")
-        
+
         return surface
-    
-    
+
+
     def test_import_surface_gifti_data(self):
         """
             This method tests import of a surface from GIFTI file.
@@ -94,14 +98,14 @@ class GIFTISurfaceImporterTest(TransactionalTestCase):
         """
         operation_id = self.datatypeFactory.get_operation().id
         storage_path = FilesHelper().get_operation_folder(self.test_project.name, operation_id)
-        
+
         parser = GIFTIParser(storage_path, operation_id)
         surface = parser.parse(self.GIFTI_SURFACE_FILE)
-        
+
         self.assertEqual(131342, len(surface.vertices))
         self.assertEqual(262680, len(surface.triangles))
-        
-    
+
+
     def test_import_timeseries_gifti_data(self):
         """
             This method tests import of a time series from GIFTI file.
@@ -111,15 +115,16 @@ class GIFTISurfaceImporterTest(TransactionalTestCase):
         """
         operation_id = self.datatypeFactory.get_operation().id
         storage_path = FilesHelper().get_operation_folder(self.test_project.name, operation_id)
-        
+
         parser = GIFTIParser(storage_path, operation_id)
         time_series = parser.parse(self.GIFTI_TIME_SERIES_FILE)
-        
+
         data_shape = time_series.read_data_shape()
-        
+
         self.assertEqual(135, data_shape[0])
         self.assertEqual(143479, data_shape[1])
-        
+
+
     def test_import_wrong_gii_file(self):
         """ 
         This method tests import of a file in a wrong format
@@ -127,10 +132,12 @@ class GIFTISurfaceImporterTest(TransactionalTestCase):
         try:
             self._importSurface(self.WRONG_GII_FILE)
             self.fail("Import should fail in case of a wrong GIFTI format.")
-        except OperationException, _:
+        except OperationException:
             # Expected exception
             pass
-        
+
+
+
 def suite():
     """
     Gather all the tests in a test suite.
@@ -138,6 +145,7 @@ def suite():
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(GIFTISurfaceImporterTest))
     return test_suite
+
 
 
 if __name__ == "__main__":

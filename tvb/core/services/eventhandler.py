@@ -71,6 +71,7 @@ ATT_INSTANCE = "instance"
 TYPE_FILE = "file"
 
 
+
 class GenericEventExecutor(object):
     """
     Thread for executing a generic event. 
@@ -79,44 +80,45 @@ class GenericEventExecutor(object):
     runtime_mapping = {RUNTIME_USERNAME: 'self.current_user',
                        RUNTIME_PROJECT: 'self.current_project'}
     delay = 0
-    
+
+
     def __init__(self, event_node, **kwargs):
         self.event_node = event_node
         self.event = None
         self.callable_object = None
-        self.call_method = "__init__" # dummy default
+        self.call_method = "__init__"   # Dummy default __init__
         self.arguments = kwargs
         self.current_user = None
         self.current_project = None
-        
-        
+
+
     def _prepare_parameters(self):
         """Main method to prepare call parameters.
            Will handle 'runtime' evaluated params."""
         if self.event is None:
             self.parse_event_node()
-        
+
         prepared_parameters = {}
         for arg in self.arguments:
-            for key in self.runtime_mapping:            
-                if (type(self.arguments[arg]) in (str, unicode) and key in self.arguments[arg]):
+            for key in self.runtime_mapping:
+                if type(self.arguments[arg]) in (str, unicode) and key in self.arguments[arg]:
                     runtime_value = eval(self.arguments[arg].replace(key, self.runtime_mapping[key]))
-                    if runtime_value is not None: 
+                    if runtime_value is not None:
                         prepared_parameters[arg] = runtime_value
                     break
             else:
                 prepared_parameters[arg] = self._prepare_custom_parameter(arg)
         return prepared_parameters
-                
-                
+
+
     def _prepare_custom_parameter(self, arg):
         """ 
         Treat executor specific parameter.
         Default behavior implemented bellow, is just read value from self.arguments.
         """
         return self.arguments[arg]
-        
-        
+
+
     def run(self):
         """
         This method will be executed in a different thread.
@@ -128,14 +130,14 @@ class GenericEventExecutor(object):
         method = getattr(self.callable_object, self.call_method)
         method(**parameters)
         LOCKS_QUEUE.put(1)
-            
-            
+
+
     def set_runtime_parameters(self, user=None, project=None):
         """Fill 'runtime' variables."""
         self.current_user = user
         self.current_project = project
-            
-            
+
+
     def parse_event_node(self):
         """Parse the stored event node to get required data and arguments."""
         kw_parameters = {}
@@ -158,7 +160,7 @@ class GenericEventExecutor(object):
                 kw_parameters.update(_parse_arguments(one_arg))
                 continue
             LOGGER.info("Ignored undefined node %s", str(one_arg.nodeName))
-        
+
         self.arguments.update(kw_parameters)
 
 
@@ -168,20 +170,21 @@ class AdapterEventExecutor(GenericEventExecutor):
     Thread for firing a custom event. 
     The event in this case is a custom method, on an Adapter instance. 
     """
-    
+
+
     def __init__(self, events_node, **kwargs):
         GenericEventExecutor.__init__(self, events_node, **kwargs)
         self.operation_relevant = True
-        
-    
+
+
     def _prepare_custom_parameter(self, arg):
         """ Overwrite to prepare specific parameters. """
         current_value = self.arguments[arg]
-        
-        if (isinstance(current_value, dict) and ATT_UID in current_value):
+
+        if isinstance(current_value, dict) and ATT_UID in current_value:
             uid = current_value[ATT_UID]
             current_type = model.DataType
-            ## Search current entitie's type in adapter.get_input_tree result
+            ## Search current entity's type in adapter.get_input_tree result
             full_input_tree = self.callable_object.get_input_tree()
             for att_def in full_input_tree:
                 if att_def[ATT_NAME] == arg:
@@ -190,8 +193,8 @@ class AdapterEventExecutor(GenericEventExecutor):
             ### Retrieve entity of the correct Type from DB.
             current_value = dao.get_last_data_with_uid(uid, current_type)
         return current_value
-       
-        
+
+
     def run(self):
         """
         Fire TVB operation which makes sure the Adapter method is called.
@@ -200,11 +203,11 @@ class AdapterEventExecutor(GenericEventExecutor):
         if self.delay > 0:
             sleep(self.delay)
         parameters = self._prepare_parameters()
-        FlowService().fire_operation(self.callable_object, self.current_user, self.current_project.id, 
+        FlowService().fire_operation(self.callable_object, self.current_user, self.current_project.id,
                                      method_name=self.call_method, visible=self.operation_relevant, **parameters)
         LOCKS_QUEUE.put(1)
-                
-                
+
+
     def parse_event_node(self):
         """
         Parse the stored event node to get required data and arguments.
@@ -233,9 +236,9 @@ class AdapterEventExecutor(GenericEventExecutor):
                 kw_parameters.update(_parse_arguments(one_arg))
                 continue
             LOGGER.info("Ignored undefined node %s", str(one_arg.nodeName))
-        
+
         self.arguments.update(kw_parameters)
-        
+
 
 
 def handle_event(hookpoint, current_user=None, current_project=None):
@@ -247,9 +250,10 @@ def handle_event(hookpoint, current_user=None, current_project=None):
         for executor in EXECUTORS_DICT[hookpoint]:
             executor = copy.deepcopy(executor)
             executor.set_runtime_parameters(current_user, current_project)
-            threading.Thread(target= executor.run).start()
+            threading.Thread(target=executor.run).start()
     else:
         LOGGER.debug("No events are declared for method %s", hookpoint)
+
 
 
 def read_events(path):
@@ -261,7 +265,8 @@ def read_events(path):
         all_files = os.listdir(one_path)
         for f_name in all_files:
             if f_name.endswith(EVENTS_SUFIX):
-                read_from_file(os.path.join(one_path, f_name), EXECUTORS_DICT)  
+                read_from_file(os.path.join(one_path, f_name), EXECUTORS_DICT)
+
 
 
 def read_from_file(file_name, executor_dict):
@@ -269,10 +274,10 @@ def read_from_file(file_name, executor_dict):
     For an XML file that defines some events, get these events in a dictionary.
     """
     doc_xml = xml.dom.minidom.parse(file_name)
-    for one_event in doc_xml.lastChild.childNodes:   
+    for one_event in doc_xml.lastChild.childNodes:
         if one_event.nodeType != Node.ELEMENT_NODE:
             continue
-        else:              
+        else:
             event_trigger = one_event.getAttribute(ATT_HOOKPOINT)
             LOGGER.debug("Found event for hook point %s", event_trigger)
             if one_event.getAttribute('type') == 'generic':
@@ -285,9 +290,10 @@ def read_from_file(file_name, executor_dict):
             if event_trigger in executor_dict:
                 executor_dict[event_trigger].append(event_executor)
             else:
-                executor_dict[event_trigger] = [event_executor]      
+                executor_dict[event_trigger] = [event_executor]
 
-  
+
+
 def _parse_arguments(xml_node):
     """
     From a given XML node, retrieve all children, 
@@ -302,9 +308,9 @@ def _parse_arguments(xml_node):
         current_value = kwarg.getAttribute(ATT_VALUE)
         try:
             module = kwarg.getAttribute(ATT_MODULE)
-        except Exception, _:
+        except Exception:
             module = None
-            
+
         if current_type == TYPE_STR:
             current_value = str(current_value).lstrip().rstrip()
         elif current_type == TYPE_FILE:
@@ -312,13 +318,13 @@ def _parse_arguments(xml_node):
             if module:
                 python_module = __import__(str(module), globals(), locals(), ["__init__"])
                 root_folder = os.path.dirname(os.path.abspath(python_module.__file__))
-                current_value = os.path.join(root_folder, current_value)  
+                current_value = os.path.join(root_folder, current_value)
         elif current_type == ATT_UID:
             current_value = {ATT_UID: current_value}
         elif current_type == ATT_PRIMITIVE:
             current_value = eval(current_value)
-        kw_parameters[str(current_name)] = current_value 
-        
+        kw_parameters[str(current_name)] = current_value
+
     return kw_parameters
 
 

@@ -29,11 +29,15 @@ on scipy.io's loadmat and savemat function.
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 """
 
-import os, time, random, tempfile
+import os
+import time
+import random
+import tempfile
 from scipy.io import loadmat, savemat
 from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.core.utils import MATLAB, OCTAVE, matlab_cmd
 from tvb.core.adapters.abcadapter import ABCAsynchronous
+
 
 
 class MatlabAnalyzer(ABCAsynchronous):
@@ -47,10 +51,11 @@ class MatlabAnalyzer(ABCAsynchronous):
 
     matlab_paths = []
 
+
     def __init__(self):
         ABCAsynchronous.__init__(self)
         self.mlab_exe = cfg.MATLAB_EXECUTABLE
-        self.hex = hex(random.randint(0, 2**32))
+        self.hex = hex(random.randint(0, 2 ** 32))
         self.script_name = "script%s" % self.hex
         self.script_fname = self.script_name + '.m'
         self.wkspc_name = "wkspc%s" % self.hex
@@ -59,14 +64,16 @@ class MatlabAnalyzer(ABCAsynchronous):
         self.done_fname = self.done_name + '.mat'
         self.log_fname = "log%s" % self.hex
 
+
     def _matlab_pre(self):
         """
         Called to obtain the pre operation code for MATLAB. Current, we
         1. add paths to the MATLAB path
         2. enter a try clause
         """
-        paths = "".join(["addpath('"+p+"');\n" for p in self.matlab_paths])
+        paths = "".join(["addpath('" + p + "');\n" for p in self.matlab_paths])
         return paths + "\ntry\n"
+
 
     def _matlab_post(self):
         """
@@ -76,11 +83,13 @@ class MatlabAnalyzer(ABCAsynchronous):
         3. save all working files
         """
         catch = "\ncatch e\nexception%s = e\nend\n" % self.hex
+        save_clause = ""
         if MATLAB in self.mlab_exe:
             save_clause = "hexstamp = '%s'\nsave %s -V7\nsave %s -V7 hexstamp\nquit"
         if OCTAVE in self.mlab_exe:
             save_clause = "hexstamp = '%s'\nsave %s.mat -V7\nsave %s.mat -V7 hexstamp\nquit"
         return catch + save_clause % (self.hex, self.wkspc_name, self.done_name)
+
 
     def launch(self, code, data=None, wd=None, cleanup=True):
         """
@@ -89,17 +98,19 @@ class MatlabAnalyzer(ABCAsynchronous):
         """
         return self.matlab(code, data, cleanup)
 
+
     def cleanup(self):
         """
         Make sure Matlab is closed after execution.
         """
-        time.sleep(0.5) # wait for MATLAB to close
+        time.sleep(0.5)  # wait for MATLAB to close
         for file_ref in [self.script_fname, self.wkspc_fname,
                          self.done_fname, self.log_fname]:
             try:
                 os.remove(file_ref)
-            except Exception, _:
+            except Exception:
                 pass
+
 
     def add_to_path(self, path_to_add):
         """
@@ -107,6 +118,7 @@ class MatlabAnalyzer(ABCAsynchronous):
         in the MATLAB session
         """
         self.matlab_paths.append(path_to_add)
+
 
     def matlab(self, code, data=None, work_dir=None, cleanup=True):
         """
@@ -133,7 +145,7 @@ class MatlabAnalyzer(ABCAsynchronous):
         if data:
             pre += "\nload %s\n" % self.wkspc_name
             savemat(self.wkspc_fname, data, format="5")
-        with open(self.script_fname,'w') as file_data:
+        with open(self.script_fname, 'w') as file_data:
             file_data.write(pre + code + post)
 
         os.system(matlab_cmd(self.mlab_exe, self.script_name, self.log_fname))
@@ -144,8 +156,10 @@ class MatlabAnalyzer(ABCAsynchronous):
             logtext = file_data.read()
         retdata = loadmat(self.wkspc_fname, squeeze_me=True)
 
-        if cleanup: self.cleanup()
+        if cleanup:
+            self.cleanup()
         return pre + code + post, logtext, retdata
+
 
     @classmethod
     def scrape_mfile(filename):
@@ -169,7 +183,7 @@ class MatlabAnalyzer(ABCAsynchronous):
 
         with open(filename) as fd:
             src = fd.read()
-        
+
         # grab the docstring first
         docs = re.search('(^%.*\n)+', src, re.MULTILINE).group()
 

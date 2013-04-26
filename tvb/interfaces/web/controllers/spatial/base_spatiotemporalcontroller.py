@@ -53,20 +53,21 @@ INTEGRATOR_PARAMETERS = 'integrator_parameters'
 PARAMS_MODEL_PATTERN = 'model_parameters_option_%s_%s'
 
 
+
 class SpatioTemporalController(base.BaseController):
     """
     Base class which contains methods related to spatio-temporal actions.
     """
 
+
     def __init__(self):
         base.BaseController.__init__(self)
         self.flow_service = FlowService()
         self.logger = get_logger(__name__)
-        editable_entities = []
-        editable_entities.append(dict(link= '/spatial/stimulus/region/step_1_submit/1/1', title='Region Stimulus',
-                                      subsection= 'regionstim', description='Create a new Stimulus on Region level'))
-        editable_entities.append(dict(link= '/spatial/stimulus/surface/step_1_submit/1/1', title='Surface Stimulus',
-                                      subsection= 'surfacestim', description='Create a new Stimulus on Surface level'))
+        editable_entities = [dict(link='/spatial/stimulus/region/step_1_submit/1/1', title='Region Stimulus',
+                                  subsection='regionstim', description='Create a new Stimulus on Region level'),
+                             dict(link='/spatial/stimulus/surface/step_1_submit/1/1', title='Surface Stimulus',
+                                  subsection='surfacestim', description='Create a new Stimulus on Surface level')]
         self.submenu_list = editable_entities
 
 
@@ -106,7 +107,7 @@ class SpatioTemporalController(base.BaseController):
         first_range = burst_configuration.get_simulation_parameter_value('first_range')
         second_range = burst_configuration.get_simulation_parameter_value('second_range')
         if ((first_range is not None and str(first_range).startswith(MODEL_PARAMETERS)) or
-            (second_range is not None and str(second_range).startswith(MODEL_PARAMETERS))):
+                (second_range is not None and str(second_range).startswith(MODEL_PARAMETERS))):
             base.set_error_message("When configuring model parameters you are not allowed to specify range values.")
             raise cherrypy.HTTPRedirect("/burst/")
         _, group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
@@ -178,11 +179,11 @@ class SpatioTemporalController(base.BaseController):
         """
         Prepares the input tree obtained from a creator.
         """
-        return {'inputList': input_list, 
+        return {'inputList': input_list,
                 base.KEY_PARAMETERS_CONFIG: False}
 
 
-    def get_creator_and_interface(self, creator_module, creator_class, datatype_instance, lock_midpoint_for_eq = None):
+    def get_creator_and_interface(self, creator_module, creator_class, datatype_instance, lock_midpoint_for_eq=None):
         """
         Returns a Tuple: a creator instance and a dictionary for the creator interface.
         The interface is prepared for rendering, it is populated with existent data, in case of a
@@ -246,8 +247,8 @@ class SpatioTemporalController(base.BaseController):
         """
         project_id = base.get_current_project().id
         category = self.flow_service.get_visualisers_category()
-        
-        interface = [{'name': 'existentEntitiesSelect', 'label': label, 'type' : entity_type}]
+
+        interface = [{'name': 'existentEntitiesSelect', 'label': label, 'type': entity_type}]
         if entity_gid is not None:
             interface[0]['default'] = entity_gid
         interface = self.flow_service.prepare_parameters(interface, project_id, category.id)
@@ -267,9 +268,9 @@ class SpatioTemporalController(base.BaseController):
         entire_tree = deepcopy(left_input_tree)
         entire_tree.extend(right_input_tree)
         SelectedAdapterContext().add_adapter_to_session(None, entire_tree)
-        
-       
-    def fill_default_attributes(self, template_dictionary, subsection = 'stimulus'):
+
+
+    def fill_default_attributes(self, template_dictionary, subsection='stimulus'):
         """
         Overwrite base controller to add required parameters for adapter templates.
         """
@@ -305,7 +306,7 @@ class SpatioTemporalController(base.BaseController):
             error_msg = "The min value for the x-axis should be an integer value."
 
         return min_x, max_x, error_msg
-    
+
 
     @staticmethod
     def _lock_midpoints(equations_dict):
@@ -332,7 +333,7 @@ class SpatioTemporalController(base.BaseController):
         try:
             int(str_value)
             return True
-        except Exception, _:
+        except Exception:
             return False
         
         

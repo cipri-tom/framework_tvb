@@ -96,14 +96,17 @@ KEY_OVERLAY_PREVIOUS = "action_overlay_previous"
 KEY_OVERLAY_NEXT = "action_overlay_next"
 
 
+
 def settings():
     """
     Annotation to check if a the settings file exists before allowing access
     to some parts of TVB.
     """
 
+
     def dec(func):
         """ Annotation wrapping web public function"""
+
 
         def deco(*a, **b):
             """ Decorator for public method"""
@@ -111,9 +114,12 @@ def settings():
                 return func(*a, **b)
             raise cherrypy.HTTPRedirect('/settings/settings')
 
+
         return deco
 
+
     return dec
+
 
 
 def profile(template_path, func, *a, **b):
@@ -130,14 +136,17 @@ def profile(template_path, func, *a, **b):
     return stream.render('xhtml')
 
 
+
 def using_template(template_name):
     """
     Annotation to check if a user is logged before accessing a controller method.
     """
     template_path = os.path.join(cfg.TEMPLATE_ROOT, template_name + '.html')
 
+
     def dec(func):
         """ Allow to get the signature back"""
+
 
         def deco(*a, **b):
             """ Allow to get the docstring back"""
@@ -163,18 +172,23 @@ def using_template(template_name):
                 set_error_message("An unexpected exception appeared. Please contact your system administrator.")
                 raise cherrypy.HTTPRedirect("/tvb?error=True")
 
+
         return deco
+
 
     return dec
 
 
-def ajax_call(json_form = True):
+
+def ajax_call(json_form=True):
     """
     Annotation to wrap all JSON calls, and log on server in case of an exception.
     """
 
+
     def dec(func):
         """ Allow to get the signature back"""
+
 
         def deco(*a, **b):
             """ Allow to get the docstring back"""
@@ -189,14 +203,17 @@ def ajax_call(json_form = True):
                 if isinstance(excep, cherrypy.HTTPRedirect):
                     raise excep
 
-                logger =  get_logger("tvb.interface.web.controllers.basecontroller")
+                logger = get_logger("tvb.interface.web.controllers.basecontroller")
                 logger.error("Encountered exception when calling asynchronously :" + str(func))
                 logger.exception(excep)
                 raise excep
 
+
         return deco
 
+
     return dec
+
 
 
 def set_message(msg, m_type):
@@ -207,9 +224,11 @@ def set_message(msg, m_type):
     cherrypy.session.release_lock()
 
 
+
 def set_error_message(msg):
     """ Set error message in session"""
     set_message(msg, TYPE_ERROR)
+
 
 
 def set_warning_message(msg):
@@ -217,16 +236,19 @@ def set_warning_message(msg):
     set_message(msg, TYPE_WARNING)
 
 
+
 def set_info_message(msg):
     """ Set info message in session"""
     set_message(msg, TYPE_INFO)
 
 
+
 def get_from_session(attribute):
     """ check if something exists in session and return"""
-    if cherrypy.session.has_key(attribute):
+    if attribute in cherrypy.session:
         return cherrypy.session[attribute]
     return None
+
 
 
 def get_current_project():
@@ -234,9 +256,11 @@ def get_current_project():
     return get_from_session(KEY_PROJECT)
 
 
+
 def get_logged_user():
     """Get current logged User from session"""
     return get_from_session(KEY_USER)
+
 
 
 def add2session(key, value):
@@ -246,10 +270,11 @@ def add2session(key, value):
     cherrypy.session.release_lock()
 
 
+
 def remove_from_session(key):
     """ Remove from session an attributes if exists."""
     cherrypy.session.acquire_lock()
-    if cherrypy.session.has_key(key):
+    if key in cherrypy.session:
         result = copy(cherrypy.session[key])
         del cherrypy.session[key]
         cherrypy.session.release_lock()
@@ -262,10 +287,12 @@ def remove_from_session(key):
 FILES_TO_DELETE_ATTR = "files_to_delete"
 
 
+
 class BaseController(object):
     """
     This class contains the methods served at the root of the Web site.
     """
+
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
@@ -285,13 +312,11 @@ class BaseController(object):
 
         local_connectivity_link = '/spatial/localconnectivity/step_1/1'
 
-        connectivity_submenu = []
-        connectivity_submenu.append(dict(title="Large Scale Connectivity", subsection="connectivity",
-                                         description="View Connectivity Regions. Perform Connectivity lesions",
-                                         link=connectivity_link))
-        connectivity_submenu.append(dict(title="Local Connectivity", subsection="local",
-                                         description="Create or view existent Local Connectivity entities.",
-                                         link=local_connectivity_link))
+        connectivity_submenu = [dict(title="Large Scale Connectivity", subsection="connectivity",
+                                     description="View Connectivity Regions. Perform Connectivity lesions",
+                                     link=connectivity_link),
+                                dict(title="Local Connectivity", subsection="local", link=local_connectivity_link,
+                                     description="Create or view existent Local Connectivity entities.")]
         self.connectivity_submenu = connectivity_submenu
 
 
