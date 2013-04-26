@@ -18,7 +18,6 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
-from tvb.core.entities.exportable import Exportable
 
 """
 Here we define entities related to workflows and portlets.
@@ -36,7 +35,7 @@ from tvb.core.entities.model.model_base import Base
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import Algorithm
-
+from tvb.core.entities.exportable import Exportable
 
 
 
@@ -51,20 +50,20 @@ class Portlet(Base):
     - last date of introspection.
     """
     __tablename__ = 'PORTLETS'
-    
+
     id = Column(Integer, primary_key=True)
     algorithm_identifier = Column(String)
     xml_path = Column(String)
     name = Column(String)
     last_introspection_check = Column(DateTime)
-    
-    
+
+
     def __init__(self, algorithm_identifier, xml_path, name="TVB Portlet"):
         self.algorithm_identifier = algorithm_identifier
         self.xml_path = xml_path
         self.name = name
         self.last_introspection_check = datetime.datetime.now()
-        
+
 
 
 class Workflow(Base, Exportable):
@@ -82,14 +81,16 @@ class Workflow(Base, Exportable):
     fk_burst = Column(Integer, ForeignKey('BURST_CONFIGURATIONS.id', ondelete="CASCADE"))
     status = Column(String)
 
-    project = relationship(Project, backref=backref('WORKFLOWS', order_by=id, cascade = "delete, all"))
-    burst = relationship(BurstConfiguration, backref=backref('WORKFLOWS', order_by=id, cascade = "delete, all"))
+    project = relationship(Project, backref=backref('WORKFLOWS', order_by=id, cascade="delete, all"))
+    burst = relationship(BurstConfiguration, backref=backref('WORKFLOWS', order_by=id, cascade="delete, all"))
+
 
     def __init__(self, project_id, burst_id, status='started'):
         self.fk_project = project_id
         self.fk_burst = burst_id
         self.status = status
-        
+
+
     def from_dict(self, info_dict):
         self.status = info_dict['status']
 
@@ -124,31 +125,31 @@ class _BaseWorkflowStep(Exportable):
     """
     tab_index = Column(Integer)
     index_in_tab = Column(Integer)
-    
+
     _static_param = Column(String)
     _dynamic_param = Column(String)
     user_dynamic_param = Column(String)
-    
+
     ### Transient fields:
     step_visible = True
-    
-    
+
+
     @declared_attr
     def fk_workflow(cls):
         """
         Column attributes with Foreign Keys can not be declared directly in SqlAlchemy
         """
         return Column(Integer, ForeignKey('WORKFLOWS.id', ondelete="CASCADE"))
-    
-    
+
+
     @declared_attr
     def fk_algorithm(cls):
         """
         Column attributes with Foreign Keys can not be declared directly in SqlAlchemy
         """
         return Column(Integer, ForeignKey('ALGORITHMS.id', ondelete="CASCADE"))
-    
-    
+
+
     def __init__(self, workflow_id, algorithm_id, tab_index, index_in_tab,
                  static_param, dynamic_param, user_dynamic_param=None):
         """ Set default attributes in current step."""
@@ -159,48 +160,53 @@ class _BaseWorkflowStep(Exportable):
         self.static_param = static_param
         self.dynamic_param = dynamic_param
         self.user_dynamic_param = user_dynamic_param
-        
+
+
     def from_dict(self, data):
         self._static_param = data['_static_param']
         self._dynamic_param = data['_dynamic_param']
         self.user_dynamic_param = data['user_dynamic_param']
         self.tab_index = data['tab_index']
         self.index_in_tab = data['index_in_tab']
-        
-        
+
+
     def _set_dynamic_parameters(self, dynamic_params):
         """Set dynamic parameters into JSON"""
         if isinstance(dynamic_params, str):
             self._dynamic_param = dynamic_params
         else:
             self._dynamic_param = json.dumps(dynamic_params)
-            
+
+
     def _get_dynamic_parameters(self):
         """Get dynamic parameters as a dictionary"""
         return json.loads(self._dynamic_param)
-    
-    dynamic_param = property(fget = _get_dynamic_parameters, fset = _set_dynamic_parameters)
+
+
+    dynamic_param = property(fget=_get_dynamic_parameters, fset=_set_dynamic_parameters)
 
 
     @property
     def dynamic_workflow_param_names(self):
         """Return list with strings, representing flatten names of the input dynamic parameters"""
         return self.dynamic_param.keys()
-    
-    
+
+
     def _set_static_parameters(self, static_params):
         """Set static parameters into JSON"""
         if isinstance(static_params, str):
             self._static_param = static_params
         else:
             self._static_param = json.dumps(static_params)
-            
+
+
     def _get_static_parameters(self):
         """Get static parameters as a dictionary"""
         return json.loads(self._static_param)
-    
-    static_param = property(fget = _get_static_parameters, fset = _set_static_parameters) 
-    
+
+
+    static_param = property(fget=_get_static_parameters, fset=_set_static_parameters)
+
 
 
 class WorkflowStepView(Base, _BaseWorkflowStep):
@@ -213,33 +219,35 @@ class WorkflowStepView(Base, _BaseWorkflowStep):
     """
     __tablename__ = 'WORKFLOW_VIEW_STEPS'
     id = Column(Integer, primary_key=True)
-    
+
     fk_portlet = Column(Integer, ForeignKey('PORTLETS.id', ondelete="CASCADE"))
     ui_name = Column(String)
-    
-    workflow = relationship(Workflow, backref=backref('WORKFLOW_VIEW_STEPS', order_by=id, cascade = "delete, all"))
-    algorithm = relationship(Algorithm, backref=backref('WORKFLOW_VIEW_STEPS', order_by=id, cascade = "delete, all"))
-    portlet = relationship(Portlet, backref=backref('WORKFLOW_VIEW_STEPS', order_by=id, cascade = "delete, all"))
-    
-    
-    def __init__(self, algorithm_id, static_param=None, dynamic_param=None, user_dynamic_param = None, 
-                 workflow_id = None, portlet_id = -1, tab_index = None, index_in_tab = None, ui_name = "Default"):
+
+    workflow = relationship(Workflow, backref=backref('WORKFLOW_VIEW_STEPS', order_by=id, cascade="delete, all"))
+    algorithm = relationship(Algorithm, backref=backref('WORKFLOW_VIEW_STEPS', order_by=id, cascade="delete, all"))
+    portlet = relationship(Portlet, backref=backref('WORKFLOW_VIEW_STEPS', order_by=id, cascade="delete, all"))
+
+
+    def __init__(self, algorithm_id, static_param=None, dynamic_param=None, user_dynamic_param=None,
+                 workflow_id=None, portlet_id=-1, tab_index=None, index_in_tab=None, ui_name="Default"):
         """Fill current selected portlet parameters."""
-        _BaseWorkflowStep.__init__(self, workflow_id, algorithm_id, tab_index, index_in_tab, 
+        _BaseWorkflowStep.__init__(self, workflow_id, algorithm_id, tab_index, index_in_tab,
                                    static_param, dynamic_param, user_dynamic_param)
         self.fk_portlet = portlet_id
         self.ui_name = ui_name
         self.step_visible = False
-        
-        
+
+
     def clone(self):
         """Return clone - not linked to any DB session or Operation."""
         return WorkflowStepView(self.fk_algorithm, self.static_param, self.dynamic_param, self.user_dynamic_param,
                                 self.fk_workflow, self.fk_portlet, self.tab_index, self.index_in_tab, self.ui_name)
 
+
     def from_dict(self, data):
         super(WorkflowStepView, self).from_dict(data)
         self.ui_name = data['ui_name']
+
 
 
 class WorkflowStep(Base, _BaseWorkflowStep):
@@ -253,26 +261,27 @@ class WorkflowStep(Base, _BaseWorkflowStep):
     """
     __tablename__ = 'WORKFLOW_STEPS'
     id = Column(Integer, primary_key=True)
-    
+
     step_index = Column(Integer)
     fk_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="SET NULL"))
-    
-    workflow = relationship(Workflow, backref=backref('WORKFLOW_STEPS', order_by=id, cascade = "delete, all"))
-    algorithm = relationship(Algorithm, backref=backref('WORKFLOW_STEPS', order_by=id, cascade = "delete, all"))
-    
 
-    def __init__(self, algorithm_id, static_param=None, dynamic_param = None, user_dynamic_param = None, 
-                 workflow_id = None, step_index = None, tab_index = None, index_in_tab = None):
+    workflow = relationship(Workflow, backref=backref('WORKFLOW_STEPS', order_by=id, cascade="delete, all"))
+    algorithm = relationship(Algorithm, backref=backref('WORKFLOW_STEPS', order_by=id, cascade="delete, all"))
+
+
+    def __init__(self, algorithm_id, static_param=None, dynamic_param=None, user_dynamic_param=None,
+                 workflow_id=None, step_index=None, tab_index=None, index_in_tab=None):
         """Fill current step parameters."""
         _BaseWorkflowStep.__init__(self, workflow_id, algorithm_id, tab_index, index_in_tab,
                                    static_param, dynamic_param, user_dynamic_param)
         self.step_index = step_index
-       
+
 
     def clone(self):
         """Return clone - not linked to any DB session or Operation."""
         return WorkflowStep(self.fk_algorithm, self.static_param, self.dynamic_param, self.user_dynamic_param,
                             self.fk_workflow, self.step_index, self.tab_index, self.index_in_tab)
+
 
     def from_dict(self, data):
         super(WorkflowStep, self).from_dict(data)

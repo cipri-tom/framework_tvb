@@ -49,6 +49,7 @@ ROLE_RESEARCHER = "RESEARCHER"
 USER_ROLES = [ROLE_ADMINISTRATOR, ROLE_CLINICIAN, ROLE_RESEARCHER]
 
 
+
 class User(Base):
     """
     Contains the users informations.
@@ -63,9 +64,9 @@ class User(Base):
     validated = Column(Boolean)
     selected_project = Column(Integer)
     used_disk_space = Column(Float)
-    
+
     preferences = association_proxy('user_preferences', 'value',
-                                    creator = lambda k, v: UserPreferences(key = k, value = v))
+                                    creator=lambda k, v: UserPreferences(key=k, value=v))
 
 
     def __init__(self, login, password, email=None, validated=True, role=ROLE_RESEARCHER, used_disk_space=0):
@@ -78,30 +79,30 @@ class User(Base):
 
 
     def __repr__(self):
-        return "<USER('%s','%s','%s','%s','%s', %s)>" % (self.username, self.password, 
-                    self.email, self.validated, self.role, str(self.selected_project))
+        return "<USER('%s','%s','%s','%s','%s', %s)>" % (self.username, self.password, self.email, self.validated,
+                                                         self.role, str(self.selected_project))
 
 
     def is_administrator(self):
         """Return a boolean, saying if current user has role Administrator"""
         if self.role == ROLE_ADMINISTRATOR:
             return True
-        else: 
+        else:
             return False
-        
-        
+
+
     def is_online_help_active(self):
         """
         This method returns True if this user should see online help.
-        """        
+        """
         is_help_active = True
         if UserPreferences.ONLINE_HELP_ACTIVE in self.preferences:
-            flag_str =  self.preferences[UserPreferences.ONLINE_HELP_ACTIVE]
+            flag_str = self.preferences[UserPreferences.ONLINE_HELP_ACTIVE]
             is_help_active = utils.string2bool(flag_str)
-            
-        return is_help_active      
-        
-        
+
+        return is_help_active
+
+
     def switch_online_help_state(self):
         """
         This method changes the state of the OnlineHelp Active flag.
@@ -116,17 +117,17 @@ class UserPreferences(Base):
     Contains the user preferences data.
     """
     __tablename__ = 'USER_PREFERENCES'
-    
+
     ONLINE_HELP_ACTIVE = "online_help_active"
-    
-    fk_user = Column(Integer, ForeignKey('USERS.id'), primary_key = True)
-    key = Column(String, primary_key = True)
+
+    fk_user = Column(Integer, ForeignKey('USERS.id'), primary_key=True)
+    key = Column(String, primary_key=True)
     value = Column(String)
 
-    user = relationship(User, backref = backref("user_preferences", cascade="all, delete-orphan", lazy='joined',
-                                                collection_class = attribute_mapped_collection("key")))
-    
-    
+    user = relationship(User, backref=backref("user_preferences", cascade="all, delete-orphan", lazy='joined',
+                                              collection_class=attribute_mapped_collection("key")))
+
+
     def __repr__(self):
         return 'UserPreferences: %s - %s' % (self.key, self.value)
 
@@ -144,11 +145,11 @@ class Project(Base, Exportable):
     last_updated = Column(DateTime)
     fk_admin = Column(Integer, ForeignKey('USERS.id'))
     gid = Column(String, unique=True)
-    
-    administrator = relationship(User, backref = backref('PROJECTS', order_by = id))
-    
+
+    administrator = relationship(User, backref=backref('PROJECTS', order_by=id))
+
     ### Transient Attributes
-    operations_finished = 0 
+    operations_finished = 0
     operations_started = 0
     operations_error = 0
     members = []
@@ -158,9 +159,9 @@ class Project(Base, Exportable):
         self.name = name
         self.fk_admin = fk_admin
         self.description = description
-        self.gid = generate_guid() 
-        
-        
+        self.gid = generate_guid()
+
+
     def refresh_update_date(self):
         """Mark entity as being changed NOW. (last_update field)"""
         self.last_updated = datetime.datetime.now()
@@ -168,16 +169,16 @@ class Project(Base, Exportable):
 
     def __repr__(self):
         return "<Project('%s', '%s')>" % (self.name, self.fk_admin)
-    
-    
+
+
     def to_dict(self):
         """
         Overwrite superclass method to add required changes.
         """
         _, base_dict = super(Project, self).to_dict(excludes=['id', 'fk_admin', 'administrator', 'trait'])
         return self.__class__.__name__, base_dict
-    
-    
+
+
     def from_dict(self, dictionary, user_id):
         """
         Add specific attributes from a input dictionary.
@@ -188,9 +189,9 @@ class Project(Base, Exportable):
         self.gid = dictionary['gid']
         self.fk_admin = user_id
         return self
-    
-     
-     
+
+
+
 class User_to_Project(Base):
     """
     Multiple Users can be members of a given Project.
@@ -203,10 +204,12 @@ class User_to_Project(Base):
 
 
     def __init__(self, user, case):
+
         if type(user) == int:
             self.fk_user = user
         else:
             self.fk_user = user.id
+
         if type(case) == int:
             self.fk_project = case
         else:

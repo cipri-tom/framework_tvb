@@ -637,4 +637,15 @@ ul#portlets-toolbar li a.hideable.action {
     background-color: rgba(152, 153, 161, 0.1);
 }
 
+/* PSE Message Incompatible */
+.pse-incompatible {
+    margin: 5%;
+}
 
+.pse-incompatible mark {
+    font-style: italic;
+}
+
+.pse-incompatible h3 {
+    margin-bottom: 10px;
+}
