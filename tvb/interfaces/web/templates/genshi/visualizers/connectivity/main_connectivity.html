@@ -9,6 +9,7 @@
     <script type="text/javascript" src="/static/js/zoom.js" ></script>
     <script type="text/javascript" src="/static/js/jit-tvb.js?4266" ></script>
     <script type="text/javascript" src="/static/js/projectTree.js?4266"></script>
+    <script type="text/javascript" src="/static/js/mplh5.js?4266"></script>
     <script type="text/javascript" src="/static/colorPicker/js/colorpicker.js"></script>
     <script type="text/javascript" src="/static/colorPicker/js/colorPickerComponent.js"></script>
     <script type="text/javascript" src="/static/js/webGL_ShaderAndMatrixes.js?4266" ></script>
@@ -63,7 +64,12 @@
 		</ul>
 		
 		<div id="monitor-mplh5" class="monitor-container" style="display:none">
-			<xi:include href="../mplh5/figure.html"/>  
+			<xi:include href="../mplh5/figure_template.html" py:with="parentDiv='monitorDiv'"></xi:include>
+			<script type="text/javascript">
+		        $(document).ready(function() {
+		            connect_manager('$serverIp', $serverPort, $figureNumber);
+		        });
+		    </script>
 		</div>	
 		
 		<xi:include href="connectivity_view.html"/>

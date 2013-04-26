@@ -18,11 +18,13 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
+from tvb.core.adapters.exceptions import LaunchException
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import json
+import urllib
 import cherrypy
 from tvb.config import PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS, ISO_PSE_ADAPTER_CLASS, ISO_PSE_ADAPTER_MODULE
 from tvb.core.services import projectservice
@@ -79,10 +81,14 @@ class ParameterExplorationController(bc.BaseController):
         
     @bc.using_template('visualizers/parameter_exploration/burst_preview')
     def _get_flot_html_result(self, adapter, datatype_group_id, color_metric, size_metric):
-        params = adapter.prepare_parameters(datatype_group_id, color_metric, size_metric)
-        for key in ['labels_x', 'labels_y', 'data']:
-            params[key] = json.dumps(params[key])
-        return params
+        try:
+            params = adapter.prepare_parameters(datatype_group_id, color_metric, size_metric)
+            for key in ['labels_x', 'labels_y', 'data']:
+                params[key] = json.dumps(params[key])
+            return params
+        except LaunchException, ex:
+            error_msg = urllib.quote(ex.message)
+            raise cherrypy.HTTPRedirect('/burst/explore/_display_error_page?adapter_name="Discrete+viewer"&message="%s"'%(error_msg,))
     
     @cherrypy.expose
     @ajax_call(False)
@@ -102,8 +108,13 @@ class ParameterExplorationController(bc.BaseController):
         """
         Generate the HTML for the isocline visualizers.
         """
-        return adapter.burst_preview(datatype_group_id, width, height)
+        try:
+            return adapter.burst_preview(datatype_group_id, width, height)
+        except LaunchException, ex:
+            error_msg = urllib.quote(ex.message)
+            raise cherrypy.HTTPRedirect('/burst/explore/_display_error_page?adapter_name="Isocline+viewer"&message="%s"'%(error_msg,))
     
+    @cherrypy.expose
     @bc.using_template('burst/burst_pse_error')
     def _display_error_page(self, adapter_name, message):
         return {'adapter_name' : adapter_name, 'message' : message}

@@ -28,8 +28,8 @@ function change_cursor_info(id) {
 
 function exec_user_cmd(id, cmd_json) {
 	var commandDict = $.parseJSON(cmd_json);
-	var cmdType = commandDict['/*exec_user_cmd*/'];
-	var cmdParams = commandDict['/*parameters*/'];
+	var cmdType = commandDict['exec_user_cmd'];
+	var cmdParams = commandDict['parameters'];
     //this command is sent only to close the blocker overlay if the user clicks on a figure(not on a button)
     if (cmdType == "FAKE_COMMAND") {
         return true;
@@ -38,14 +38,14 @@ function exec_user_cmd(id, cmd_json) {
     	eval(cmdParams);
     	return false;
     } else {
-    	 var ret_str = "";
+    	 var retArgs = {};
 	     try {
-	        ret_str = eval(cmdParams);
+	        retArgs = eval(cmdParams);
 	     } catch(err) { 
-	         ret_str = "user command failed: " + err;
+	         retArgs = {"msg" : "user command failed: " + err};
 	     }
 	      try {
-	        sendMessage(id, "<user_cmd_ret id='"+id+"' args='" + ret_str + "'>");
+	        sendMessage(id, 'user_cmd_ret', retArgs);
 	      } catch (err) { 
 	          displayMessage('error returning output of user cmd:' + err, 'errorMessage'); 
 	      }
@@ -121,7 +121,7 @@ function connect_manager(server_ip, server_port, id) {
     								try {
 	                                    document.getElementById('status_' + id).innerHTML = "Connected";
 	                                    canvas_socket[id].socket_connected = true;
-	                                    if (e.data.indexOf("/*exec_user_cmd*/") >= 0) {
+	                                    if (e.data.indexOf("exec_user_cmd") >= 0 && e.data.indexOf("parameters") >= 0) {
 	                                        var shouldClose = exec_user_cmd(id, e.data);
 	                                        if (shouldClose == true) { closeBlockerOverlay(); }
 	                                    } else {
@@ -140,7 +140,7 @@ function connect_manager(server_ip, server_port, id) {
                                     	for (var fig_id in canvas_socket) {
                                     		canvas_socket[id].socket_connected = false;
                                     	}
-                                        sendMessage(id, "<register id='"+id+"'>");
+                                        sendMessage(id, 'register', {});
                                         document.getElementById('status_' + id).innerHTML = "Register message sent ("+id+")";
                                     } catch (err) {
                                         displayMessage(err, "errorMessage");
@@ -163,11 +163,15 @@ function waitOnConnection(id, commandStr, timeIncrements, maximumAttempts) {
    
 }
 
-function sendMessage(id, msg, showOverlay) {
+function sendMessage(id, msgType, msgArgs, showOverlay) {
+	var msgDict = {};
+	msgDict['type'] = msgType;
+	msgDict['args'] = msgArgs;
+	msgDict['id'] = '' + id;
 	if (showOverlay != false) {
 		showBlockerOverlay();
 	}
-	canvas_socket[id].send(msg);
+	canvas_socket[id].send(JSON.stringify(msgDict));
 }
 
 var allow_resize = true;
@@ -200,9 +204,9 @@ function wrapClickCanvas(e, ref) {
      clickCanvas(e, p[3], p[2]);
 }
 
-function handle_user_event(arg_string, id) {
+function handle_user_event(args, id) {
       try {
-        sendMessage(id, "<user_event id='"+id+"' args='" + id + "," + arg_string + "'>");
+      	sendMessage(id, 'user_event', args);
       } catch (err) {}
 }
 
@@ -210,9 +214,12 @@ function handle_click(e, id) {
     try {
         var pc = document.getElementById('canvas_' + id);
         var pos = findPosition(pc);
-        sendMessage(id, "<click id='" + id + "' args='" + (e.pageX - pos[0]) +
-            "," + (canvii[id].clientHeight - (e.pageY - pos[1])) + "," + (e.button + 1) + "'>");
-        // we need coords based on 0,0 in bottom left corner...
+        var commandArgs = {
+        	'start_x' : (e.pageX - pos[0]),
+        	'start_y' : (canvii[id].clientHeight - (e.pageY - pos[1])),
+        	'button' : (e.button + 1)
+        }
+        sendMessage(id, 'click', commandArgs)
     } catch (err) {}
 }
 
@@ -305,7 +312,11 @@ function slideSize(e) {
 
 function do_resize(id, w, h) {
       try {
-        sendMessage(id, "<resize id='"+id+"' args='" + w + "," + h + "'>");
+        var msgArgs = {
+        	'width' : w,
+        	'height' : h
+        }
+        sendMessage(id, 'resize', msgArgs)
       } catch (err) {
           displayMessage("Error when resizing!", "errorMessage");
       }
@@ -326,19 +337,19 @@ function outSize() {
 }
 
 function close_plot(id) {
-     sendMessage(id, "<close id='"+id+"' args=''>");
+     sendMessage(id, 'close', {});
      stop_plotting(id);
      canvii[id].width = canvii[id].width;
 }
 
 function go_home(id) {
-     sendMessage(id, "<home id='"+id+"' args=''>");
+     sendMessage(id, 'home', {});
 }
 
-function maximise(id) {
-    pcs = document.getElementById('main');
-    var w = pcs.clientWidth; 
-    var h = pcs.clientHeight - 20;
+function maximise(id, parent_div_id) {
+    pcs = document.getElementById(parent_div_id);
+    var w = pcs.clientWidth - 10; 
+    var h = pcs.clientHeight - 40;
     resize = id;
     do_resize(id, w, h);
     resize = -1;
@@ -356,8 +367,14 @@ function zoom_in(id, axes) {
      }
      var plc = document.getElementById("canvas_" + id);
      var pos = findPosition(plc);
-     var zoom_coords = axes + "," + (startX - (pos[0] + aleft)) + "," + (canvii[id].height - (stopY - (pos[1] + atop))) + "," + (stopX - (pos[0] + aleft)) + "," + (canvii[id].height - (startY - (pos[1] + atop)));
-     sendMessage(id, "<zoom id='"+id+"' args='" + zoom_coords + "'>");
+     var zoom_coords = {
+     	'axes' : axes,
+     	'bottom_x0' : (startX - (pos[0] + aleft)),
+     	'bottom_y0' : (canvii[id].height - (stopY - (pos[1] + atop))),
+     	'top_x1' : (stopX - (pos[0] + aleft)),
+     	'top_y1' : (canvii[id].height - (startY - (pos[1] + atop)))
+      	}
+     sendMessage(id, 'zoom', zoom_coords);
      startX = stopX = startY = stopY = 0;
      zdiv[id].style.width = "0px";
      zdiv[id].style.height = "0px";
@@ -392,8 +409,11 @@ function slideCanvas(e,id,axes) {
 		try {
 	        var pc = document.getElementById('canvas_' + id);
 	        var pos = findPosition(pc);
-	        sendMessage(id, "<motion_notify id='" + id + "' args='" + (e.pageX - pos[0]) +
-	            "," + (canvii[id].clientHeight - (e.pageY - pos[1])) + "'>", false);
+	        var msgArgs = {
+	        	'current_x' : (e.pageX - pos[0]),
+	        	'current_y' : (canvii[id].clientHeight - (e.pageY - pos[1]))
+	        }
+	        sendMessage(id, 'motion_notify', msgArgs, false);
 	        // we need coords based on 0,0 in bottom left corner...
 	    } catch (err) {}
 	}

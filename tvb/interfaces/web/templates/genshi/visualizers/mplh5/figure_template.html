@@ -24,7 +24,7 @@
                        </td>
                        <py:if test="showFullToolbar == True">
 	                       <td width="24" style="text-align: right; padding-left: 5px; padding-right: 5px;">
-	                           <img id="mb_$figureNumber" src="" onclick="maximise($figureNumber);" style="cursor: pointer;" tabindex="1" onkeypress="fireOnClick(this)"/> 
+	                           <img id="mb_$figureNumber" src="" onclick="maximise($figureNumber, '$parentDiv');" style="cursor: pointer;" tabindex="1" onkeypress="fireOnClick(this)"/> 
 	                           <script>document.getElementById('mb_$figureNumber').src = document.getElementById('button_max').src</script>
 	                       </td>
 	                       <td width="24" style="text-align: right; padding-right: 5px;" onmousedown="clickSize(event,$figureNumber);">

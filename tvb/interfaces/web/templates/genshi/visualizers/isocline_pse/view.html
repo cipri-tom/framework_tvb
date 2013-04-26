@@ -11,16 +11,24 @@
     <script src="/static_view/isocline_pse/scripts/isocline.js" type="text/javascript"></script>
     
    	<div id="iso_main">
+   		
+   		<!-- Controls for changing metrics -->
+		<ul class="toolbar-inline burst-pse-metrics">
+			<li>
+			<label for="active_metric_select">Color metric</label>
+			<select id="active_metric_select" onchange="updateMetric(this);">
+				<py:for each="metric in sorted(metrics.keys())">
+					<option value="${metric}">${metric}</option>
+				</py:for>
+			</select>
+			</li>
+		</ul>
+   		
    		<py:for each="metric in sorted(metrics.keys())">
 			<div id="$metric" style="display:none">
-				<xi:include href="../mplh5/figure_template.html" py:with="figureNumber=figureNumbers[metric]"/>
+				<xi:include href="../mplh5/figure_template.html" py:with="figureNumber=figureNumbers[metric];parentDiv='main'"/>
 			</div>
 		</py:for>
-		<select onchange="updateMetric(this);">
-			<py:for each="metric in sorted(metrics.keys())">
-				<option value="${metric}">${metric}</option>
-			</py:for>
-		</select>
    	</div>
 	
 	<script type="text/javascript">

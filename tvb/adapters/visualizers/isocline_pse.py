@@ -124,6 +124,9 @@ class IsoclinePseAdapter(ABCMPLH5Displayer):
 
         # Get the computed measures on this datatype
         first_op = dao.get_operations_in_group(operation_group.id)[0]
+        if first_op.status != model.STATUS_FINISHED:
+            raise LaunchException("Not all operations from this range are finished. "
+                                      "Cannot generate data until then.")
         datatype = dao.get_results_for_operation(first_op.id)[0]
         dt_measure = dao.get_generic_entity(DatatypeMeasure, datatype.gid, '_analyzed_datatype')[0]
         figure_nrs = {}
