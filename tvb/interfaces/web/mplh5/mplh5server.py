@@ -29,6 +29,8 @@ import mplh5canvas.simple_server
 
 SYNC_EVENT = threading.Event()
 
+
+
 class ServerStarter(threading.Thread):
     """
     Handler for starting in a different thread the MPLH5 server.
@@ -36,24 +38,25 @@ class ServerStarter(threading.Thread):
     but the main thread should wait for it, otherwise wrong import 
     of pylb might be used.
     """
-    
+    logger = None
+
     def run(self):
         """
         Start MPLH5 server. 
         This method needs to be executed as soon as possible, before any import of pylab.
         Otherwise the proper mplh5canvas back-end will not be used correctly.
         """
-        try:    
+        try:
             matplotlib.use('module://tvb.interfaces.web.mplh5.mplh5_backend')
             self.logger.info("MPLH5 back-end server started.")
         except Exception, excep:
             self.logger.error("Could not start MatplotLib server side!!!")
             self.logger.exception(excep)
         SYNC_EVENT.set()
- 
- 
- 
-def start_server(logger):       
+
+
+
+def start_server(logger):
     """Start MPLH5 server in a new thread, to avoid crashes."""
     thread = ServerStarter()
     thread.logger = logger

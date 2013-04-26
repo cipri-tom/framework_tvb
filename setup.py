@@ -32,30 +32,31 @@ import shutil
 import setuptools
 
 VERSION = "1.1"
-  
+
 TVB_TEAM = "Lia Domide, Ionel Ortelecan, Bogdan Neacsa, Calin Pavel, "
 TVB_TEAM += "Stuart Knock, Marmaduke Woodman, Paula Sansz Leon, "
 
 TVB_INSTALL_REQUIREMENTS = ["apscheduler", "beautifulsoup", "cherrypy", "cfflib", "formencode",
-                            "lxml", "minixsv", "mod_pywebsocket", "networkx", "nibabel", "numpy", 
-                            "numexpr", "psutil", "scikit-learn", "scipy", "simplejson", 
+                            "lxml", "minixsv", "mod_pywebsocket", "networkx", "nibabel", "numpy",
+                            "numexpr", "psutil", "scikit-learn", "scipy", "simplejson",
                             "sqlalchemy", "sqlalchemy-migrate"]
-    
-EXCLUDE_INTROSPECT_FOLDERS = [folder for folder in os.listdir(".") 
+
+EXCLUDE_INTROSPECT_FOLDERS = [folder for folder in os.listdir(".")
                               if os.path.isdir(os.path.join(".", folder)) and folder != "tvb"]
 
-setuptools.setup( name = "tvb",
-                  version = VERSION,
-                  packages = setuptools.find_packages(exclude = EXCLUDE_INTROSPECT_FOLDERS),
-                  license = "GPL v2",
-                  author = TVB_TEAM,
-                  author_email = 'lia.domide@codemart.ro',
-                  include_package_data = True,
-                  install_requires = TVB_INSTALL_REQUIREMENTS,
-                  extras_require = {'postgres': ["psycopg2"]})  
+setuptools.setup(name="tvb",
+                 version=VERSION,
+                 packages=setuptools.find_packages(exclude=EXCLUDE_INTROSPECT_FOLDERS),
+                 license="GPL v2",
+                 author=TVB_TEAM,
+                 author_email='lia.domide@codemart.ro',
+                 include_package_data=True,
+                 install_requires=TVB_INSTALL_REQUIREMENTS,
+                 extras_require={'postgres': ["psycopg2"]})
 
 ## Clean after install      
 shutil.rmtree('tvb.egg-info', True)
-    
+
+    
 
 

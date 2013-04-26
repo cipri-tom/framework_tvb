@@ -19,9 +19,9 @@
 #
 #
 
-'''
-@author: calin.pavel <calin.pavel@codemart.ro>
-'''
+"""
+.. moduleauthor:: calin.pavel <calin.pavel@codemart.ro>
+"""
 import os
 import shutil
 import cherrypy
@@ -35,49 +35,52 @@ CONTENT_LENGTH_KEY = 'content-length'
 LOG = get_logger(__name__)
 
 
+
 class RequestHandler(object):
     """
-        This class contains different methods that can be used to enhance 
-        request processing. They are called at different moments depending the 
-        way they were registered in cherrypy configuration.
+    This class contains different methods that can be used to enhance
+    request processing. They are called at different moments depending the
+    way they were registered in cherrypy configuration.
     """
-    
+
+
     @staticmethod
     def check_upload_size():
         """
-            This method checks if the uploaded content exceeds a given size
+        This method checks if the uploaded content exceeds a given size
         """
         # convert the header keys to lower case
         lcHDRS = {}
         for key, val in cherrypy.request.headers.iteritems():
             lcHDRS[key.lower()] = val
-    
+
         if CONTENT_LENGTH_KEY in lcHDRS:
             size = float(lcHDRS[CONTENT_LENGTH_KEY])
             if size > cherrypy.server.max_request_body_size:
                 raise cherrypy.HTTPRedirect("/tvb?error=True")
-     
-    @staticmethod      
+
+
+    @staticmethod
     def clean_files_on_disk():
         """
-            This method is executed at the end of a request and checks if there is any
-            file which should be deleted on disk. 
-        """ 
+        This method is executed at the end of a request and checks if there is any
+        file which should be deleted on disk.
+        """
         files_list = bc.get_from_session(bc.FILES_TO_DELETE_ATTR)
         if files_list is not None and len(files_list) > 0:
             for (i, file_to_delete) in enumerate(files_list):
                 if os.path.exists(file_to_delete):
                     try:
-                        LOG.debug("End of request - deleting file/folder:%s"%file_to_delete)
+                        LOG.debug("End of request - deleting file/folder:%s" % file_to_delete)
                         if os.path.isfile(file_to_delete):
                             os.remove(file_to_delete)
                         else:
                             shutil.rmtree(file_to_delete)
-                    
+
                         # Delete success - now remove file from list
-                        del files_list[i]    
+                        del files_list[i]
                     except Exception, exc:
-                        LOG.error("Could not delete file/folder: %s"%file_to_delete)
+                        LOG.error("Could not delete file/folder: %s" % file_to_delete)
                         LOG.exception(exc)
                 else:
                     # File not found on disk, so we remove it from list

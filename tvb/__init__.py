@@ -30,7 +30,8 @@ from pkgutil import extend_path
 __path__ = extend_path(__path__, __name__)
 
 if 'tvb' in __path__:
-    # We want the order in PYTHONPATH to have an influence in case we have both scientific_library and TVB Framework present.
+    # We want the order in PYTHONPATH to have an influence in case we have both TVB Scientific Library
+    # and TVB Framework present.
     # So just remove tvb from __path__ since this will only influence relative imports.
     __path__.remove('tvb')
 

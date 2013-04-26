@@ -35,6 +35,7 @@ from sys import platform, argv
 
 ### Set running profile from arguments.
 from tvb.basic.profile import TvbProfile
+
 TvbProfile.set_profile(argv, True)
 from tvb.basic.config.settings import TVBSettings
 
@@ -42,10 +43,11 @@ from tvb.basic.config.settings import TVBSettings
 if TVBSettings().is_linux():
     os.environ['MATPLOTLIBDATA'] = os.path.join(os.path.dirname(sys.executable), 'mpl-data')
     sys.path = ['', os.path.dirname(sys.executable)]
-    
+
 ### Import MPLH5 to have the back-end Thread started.
 from tvb.interfaces.web.mplh5 import mplh5server
 from tvb.basic.logger.builder import get_logger
+
 LOGGER = get_logger('tvb.interfaces.web.mplh5.mplh5server')
 mplh5server.start_server(LOGGER)
 
@@ -82,63 +84,66 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 LOGGER.info("TVB application running using encoding: " + sys.getdefaultencoding())
 
-def init_cherrypy(arguments = None):
+
+
+def init_cherrypy(arguments=None):
     #### Mount static folders from modules marked for introspection
     arguments = arguments or []
     CONFIGUER = TVBSettings.CHERRYPY_CONFIGURATION
     for module in arguments:
         module_inst = __import__(str(module), globals(), locals(), ["__init__"])
         module_path = os.path.dirname(os.path.abspath(module_inst.__file__))
-        CONFIGUER["/static_"+str(module)] = {'tools.staticdir.on': True, 
-                                             'tools.staticdir.dir': '.',
-                                             'tools.staticdir.root': module_path}
-        
+        CONFIGUER["/static_" + str(module)] = {'tools.staticdir.on': True,
+                                               'tools.staticdir.dir': '.',
+                                               'tools.staticdir.root': module_path}
+
     #### Mount controllers, and specify the root URL for them.
-    cherrypy.tree.mount(BaseController(), "/", config= CONFIGUER)
-    cherrypy.tree.mount(UserController(), "/user/", config= CONFIGUER)
-    cherrypy.tree.mount(ProjectController(), "/project/", config= CONFIGUER)
-    cherrypy.tree.mount(FigureController(), "/project/figure/", config= CONFIGUER)
-    cherrypy.tree.mount(FlowController(), "/flow/", config= CONFIGUER)
-    cherrypy.tree.mount(SettingsController(), "/settings/", config= CONFIGUER)
-    cherrypy.tree.mount(DTIPipelineController(), "/pipeline/", config= CONFIGUER)
-    cherrypy.tree.mount(HelpController(), "/help/", config= CONFIGUER)
-    cherrypy.tree.mount(BurstController(), "/burst/", config= CONFIGUER)
-    cherrypy.tree.mount(ParameterExplorationController(), "/burst/explore/", config= CONFIGUER)
-    cherrypy.tree.mount(SpatioTemporalController(), "/spatial/", config= CONFIGUER)
-    cherrypy.tree.mount(RegionsModelParametersController(), "/spatial/modelparameters/regions/", config= CONFIGUER)
-    cherrypy.tree.mount(SurfaceModelParametersController(), "/spatial/modelparameters/surface/", config= CONFIGUER)
-    cherrypy.tree.mount(RegionStimulusController(), "/spatial/stimulus/region/", config= CONFIGUER)
-    cherrypy.tree.mount(SurfaceStimulusController(), "/spatial/stimulus/surface/", config= CONFIGUER)
-    cherrypy.tree.mount(LocalConnectivityController(), "/spatial/localconnectivity/", config= CONFIGUER)
+    cherrypy.tree.mount(BaseController(), "/", config=CONFIGUER)
+    cherrypy.tree.mount(UserController(), "/user/", config=CONFIGUER)
+    cherrypy.tree.mount(ProjectController(), "/project/", config=CONFIGUER)
+    cherrypy.tree.mount(FigureController(), "/project/figure/", config=CONFIGUER)
+    cherrypy.tree.mount(FlowController(), "/flow/", config=CONFIGUER)
+    cherrypy.tree.mount(SettingsController(), "/settings/", config=CONFIGUER)
+    cherrypy.tree.mount(DTIPipelineController(), "/pipeline/", config=CONFIGUER)
+    cherrypy.tree.mount(HelpController(), "/help/", config=CONFIGUER)
+    cherrypy.tree.mount(BurstController(), "/burst/", config=CONFIGUER)
+    cherrypy.tree.mount(ParameterExplorationController(), "/burst/explore/", config=CONFIGUER)
+    cherrypy.tree.mount(SpatioTemporalController(), "/spatial/", config=CONFIGUER)
+    cherrypy.tree.mount(RegionsModelParametersController(), "/spatial/modelparameters/regions/", config=CONFIGUER)
+    cherrypy.tree.mount(SurfaceModelParametersController(), "/spatial/modelparameters/surface/", config=CONFIGUER)
+    cherrypy.tree.mount(RegionStimulusController(), "/spatial/stimulus/region/", config=CONFIGUER)
+    cherrypy.tree.mount(SurfaceStimulusController(), "/spatial/stimulus/surface/", config=CONFIGUER)
+    cherrypy.tree.mount(LocalConnectivityController(), "/spatial/localconnectivity/", config=CONFIGUER)
     cherrypy.config.update(CONFIGUER)
-    
+
     #----------------- Register additional request handlers -----------------
     # This tool checks for MAX upload size
     cherrypy.tools.upload = Tool('on_start_resource', RequestHandler.check_upload_size)
     # This tools clean up files on disk (mainly after export)
     cherrypy.tools.cleanup = Tool('on_end_request', RequestHandler.clean_files_on_disk)
     #----------------- End register additional request handlers ----------------
-      
+
     #### HTTP Server is fired now ######  
     cherrypy.engine.start()
-    
+
+
 
 def start_tvb(arguments):
     """
     Fire CherryPy server and listen on a free port
     """
-    
+
     if PARAM_RESET_DB in arguments:
     ##### When specified, clean everything in DB
         reset()
         arguments.remove(PARAM_RESET_DB)
-        
+
     if not os.path.exists(TVBSettings.TVB_STORAGE):
         try:
             os.makedirs(TVBSettings.TVB_STORAGE)
-        except Exception, excep:
+        except Exception:
             sys.exit("You do not have enough rights to use TVB storage folder:" + str(TVBSettings.TVB_STORAGE))
-            
+
     try:
         initialize(arguments)
     except InvalidSettingsException, excep:
@@ -148,9 +153,9 @@ def start_tvb(arguments):
     #### Mark that the interface is Web
     ABCDisplayer.VISUALIZERS_ROOT = TVBSettings.WEB_VISUALIZERS_ROOT
     ABCDisplayer.VISUALIZERS_URL_PREFIX = TVBSettings.WEB_VISUALIZERS_URL_PREFIX
-    
+
     init_cherrypy(arguments)
-    
+
     try:
     ################ Fire a browser page at the end. 
         if platform.startswith('win'):
@@ -159,7 +164,7 @@ def start_tvb(arguments):
             browser_app = webbrowser.get('macosx')
         else:
             browser_app = webbrowser
-            
+
         # Remove the paths that we set in the startup script as in some Linux
         # machines this could break the default browser from opening TVB start page.
         ORIGINAL_LD_LIBRARY_PATH = os.environ.get('LD_LIBRARY_PATH', None)
@@ -168,37 +173,37 @@ def start_tvb(arguments):
             del os.environ['LD_LIBRARY_PATH']
         if ORIGINAL_LD_RUN_PATH:
             del os.environ['LD_RUN_PATH']
-            
+
         ## Actual browser fire.
         if CONFIG_EXISTS:
             browser_app.open(TVBSettings.BASE_URL)
         else:
-            browser_app.open(TVBSettings.BASE_URL + 'settings/settings')   
-            
+            browser_app.open(TVBSettings.BASE_URL + 'settings/settings')
+
         ## Restore environment settings after fire browser.
         if ORIGINAL_LD_LIBRARY_PATH:
             os.environ['LD_LIBRARY_PATH'] = ORIGINAL_LD_LIBRARY_PATH
         if ORIGINAL_LD_RUN_PATH:
             os.environ['LD_RUN_PATH'] = ORIGINAL_LD_RUN_PATH
-            
+
     except Exception, excep:
         LOGGER.error("Browser could not be fired!  Please manually type in your preferred browser: "
                      "http://127.0.0.1:8080/")
-        LOGGER.exception(excep) 
-    
-    ## Launch CherryPy loop forever.      
+        LOGGER.exception(excep)
+
+    ## Launch CherryPy loop forever.
     LOGGER.info("Finished starting TVB version:" + str(TVBSettings.CURRENT_VERSION))
     cherrypy.engine.block()
     cherrypy.log.error_log
 
 
+
 if __name__ == '__main__':
     #### Prepare parameters and fire CherryPy
-    
     #### Remove not-relevant parameter, 0 should point towards this "run.py" file
     DUPLICATE_ARGV = copy(argv)
     DUPLICATE_ARGV.remove(DUPLICATE_ARGV[0])
-    
+
     start_tvb(DUPLICATE_ARGV)
 
 
