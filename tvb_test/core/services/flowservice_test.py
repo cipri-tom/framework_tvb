@@ -344,8 +344,7 @@ class FlowServiceTest(TransactionalTestCase):
                                                                   "tvb_test.datatypes.datatype1.Datatype1", filter_op)
         returned_subjects = [one_data[3] for one_data in returned_data]
 
-        if ("John Doe0" not in returned_subjects or "John Doe1" not in returned_subjects
-            or len(returned_subjects) != 2):
+        if "John Doe0" not in returned_subjects or "John Doe1" not in returned_subjects or len(returned_subjects) != 2:
             self.fail("DataTypes were not filtered properly!")
 
 

@@ -32,6 +32,7 @@ from tvb.core.entities.transient.pse import ContextPSE
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.mapped_values import DatatypeMeasure
+from tvb.basic.filters.chain import FilterChain
 
 
 
@@ -52,7 +53,9 @@ class ParameterExplorationAdapter(ABCDisplayer):
         return [{'name': 'datatype_group',
                  'label': 'Datatype Group',
                  'type': model.DataTypeGroup,
-                 'required': True}]
+                 'required': True,
+                 'conditions': FilterChain(fields=[FilterChain.datatype + ".no_of_ranges"],
+                                           operations=["<="], values=[2])}]
 
 
     def __init__(self):

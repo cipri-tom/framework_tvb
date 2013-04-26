@@ -107,7 +107,7 @@ class BaseProfile():
 
 
     # II. Attributes with value not changeable from settings page:
-    DB_CURRENT_VERSION = 3
+    DB_CURRENT_VERSION = 4
     # Overwrite number of connections to the DB. 
     # Otherwise might reach PostgreSQL limit when launching multiple concurrent operations.
     # MAX_DB_CONNECTION default value will be used for WEB  
@@ -152,6 +152,7 @@ class BaseProfile():
         """Current SVN version in the package running now."""
         try:
             import bin
+
             with open(os.path.join(os.path.dirname(bin.__file__), 'tvb.version'), 'r') as version_file:
                 result = version_file.read()
                 return result

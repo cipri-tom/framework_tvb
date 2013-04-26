@@ -91,13 +91,13 @@ class DataType(Base):
     user_tag_3 = Column(String)
     user_tag_4 = Column(String)
     user_tag_5 = Column(String)
-    
+
     # ID of a burst in which current dataType was generated
     # Native burst-results are referenced from a workflowSet as well
     # But we also have results generated afterwards from TreeBurst tab.
-    fk_parent_burst = Column(Integer, ForeignKey('BURST_CONFIGURATIONS.id')) 
+    fk_parent_burst = Column(Integer, ForeignKey('BURST_CONFIGURATIONS.id'))
     _parent_burst = relationship(BurstConfiguration, backref=backref("DATA_TYPES", order_by=id))
-                                      
+
     #it should be a reference to a DataTypeGroup, but we can not create that FK
     #because this two tables (DATA_TYPES, DATA_TYPES_GROUPS) will reference each
     #other mutually and SQL-Alchemy complains about that.
@@ -105,8 +105,8 @@ class DataType(Base):
 
     fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     parent_operation = relationship(Operation, backref=backref("DATA_TYPES", order_by=id, cascade="all,delete"))
-    
-    
+
+
     def __init__(self, gid=None, **kwargs):
 
         if gid is None:
@@ -115,7 +115,7 @@ class DataType(Base):
             self.gid = gid
         self.type = self.__class__.__name__
         self.module = self.__class__.__module__
-        
+
         try:
             self.__initdb__(**kwargs)
         except Exception as exc:
@@ -164,13 +164,14 @@ class DataType(Base):
         Return accepted UI filters for current DataType.
         """
         return copy(FILTER_CATEGORIES)
-    
-    
+
+
     def persist_full_metadata(self):
         """
         Do nothing here. We will implement this only in MappedType.
         """
         pass
+
 
 
 class DataTypeGroup(DataType):
@@ -182,14 +183,26 @@ class DataTypeGroup(DataType):
 
     id = Column('id', Integer, ForeignKey('DATA_TYPES.id', ondelete="CASCADE"), primary_key=True)
     count_results = Column(Integer)
+    no_of_ranges = Column(Integer, default=0)    # Number of ranged parameters
     fk_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id', ondelete="CASCADE"))
-    
-    parent_operation_group = relationship(OperationGroup, backref=backref("DATA_TYPES_GROUPS", cascade="delete"))
-    
 
-    def __init__(self, operation_group_id, **kwargs):
+    parent_operation_group = relationship(OperationGroup, backref=backref("DATA_TYPES_GROUPS", cascade="delete"))
+
+
+    def __init__(self, operation_group, **kwargs):
+
         super(DataTypeGroup, self).__init__(**kwargs)
-        self.fk_operation_group = operation_group_id
+
+        self.fk_operation_group = operation_group.id
+
+        if operation_group.range3 is not None:
+            self.no_of_ranges = 3
+        elif operation_group.range2 is not None:
+            self.no_of_ranges = 2
+        elif operation_group.range1 is not None:
+            self.no_of_ranges = 1
+        else:
+            self.no_of_ranges = 0
 
 
 
@@ -222,9 +235,9 @@ class ConnectivitySelection(Base):
     Interest area.
     Or subset of nodes from a Connectivity.
     """
-    
-    __tablename__ = "CONNECTIVITY_SELECTIONS" 
-    
+
+    __tablename__ = "CONNECTIVITY_SELECTIONS"
+
     id = Column(Integer, primary_key=True)
     gid = Column(String)
     ui_name = Column(String)
@@ -232,12 +245,14 @@ class ConnectivitySelection(Base):
     labels = Column(String)
     fk_in_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
 
+
     def __init__(self, selected_nodes, labels, project_id, ui_name='Default'):
         self.ui_name = ui_name
         self.selected_nodes = selected_nodes
         self.labels = labels
         self.fk_in_project = project_id
         self.gid = generate_guid()
+
 
     def __repr__(self):
         return '<Selection(%s, %s)>' % (self.ui_name, self.selected_nodes)

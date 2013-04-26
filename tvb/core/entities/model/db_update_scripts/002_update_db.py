@@ -40,11 +40,12 @@ COL_5 = Column('_labels_dimensions', String, default="{}")
 COL_6 = Column('_labels_ordering', String, default="[]")
 COL_7 = Column('_unidirectional', Integer)
 
-
-TABLE_RENAMES = [('BURST_CONFIGURATION', 'BURST_CONFIGURATIONS'), 
+TABLE_RENAMES = [('BURST_CONFIGURATION', 'BURST_CONFIGURATIONS'),
                  ('CONNECTIVITY_SELECTION', 'CONNECTIVITY_SELECTIONS'),
-                 ('USER_TO_PROJECT', 'USERS_TO_PROJECTS'), 
+                 ('USER_TO_PROJECT', 'USERS_TO_PROJECTS'),
                  ('OPERATION_PROCESS_IDENTIFIER', 'OPERATION_PROCESS_IDENTIFIERS')]
+
+
 
 def upgrade(migrate_engine):
     """
@@ -53,62 +54,75 @@ def upgrade(migrate_engine):
     """
     meta.bind = migrate_engine
     table1 = meta.tables['MAPPED_TIME_SERIES_DATA']
-    
+
     create_column(COL_1, table1)
     create_column(COL_2, table1)
     create_column(COL_3, table1)
     create_column(COL_4, table1)
     create_column(COL_5, table1)
+
     session = SA_SESSIONMAKER()
     try:
         # We have a database that supports renaming columns. This way we save data from old timeseries.
-        session.execute(text("ALTER TABLE \"MAPPED_TIME_SERIES_DATA\" RENAME COLUMN _dim_labels to _labels_ordering"))
-        session.execute(text("ALTER TABLE \"MAPPED_CROSS_CORRELATION_DATA\" RENAME COLUMN _dim_labels to _labels_ordering"))
+        session.execute(text("ALTER TABLE \"MAPPED_TIME_SERIES_DATA\" "
+                             "RENAME COLUMN _dim_labels to _labels_ordering"))
+        session.execute(text("ALTER TABLE \"MAPPED_CROSS_CORRELATION_DATA\" "
+                             "RENAME COLUMN _dim_labels to _labels_ordering"))
     except sqlalchemy.exc.OperationalError:
         # We have a database like sqlite. Just create a new column, we're gonna miss old data in this case.
-        session.execute(text("ALTER TABLE \"MAPPED_TIME_SERIES_DATA\" ADD COLUMN _labels_ordering VARYING CHARACTER(255)"))
-        session.execute(text("ALTER TABLE \"MAPPED_CROSS_CORRELATION_DATA\" ADD COLUMN _labels_ordering VARYING CHARACTER(255)"))
+        session.execute(text("ALTER TABLE \"MAPPED_TIME_SERIES_DATA\" "
+                             "ADD COLUMN _labels_ordering VARYING CHARACTER(255)"))
+        session.execute(text("ALTER TABLE \"MAPPED_CROSS_CORRELATION_DATA\" "
+                             "ADD COLUMN _labels_ordering VARYING CHARACTER(255)"))
+
     session.execute(text("DROP TABLE \"MAPPED_PSI_TABLE_DATA\""))
     session.execute(text("DROP TABLE \"MAPPED_NERF_TABLE_DATA\""))
     session.execute(text("DROP TABLE \"MAPPED_LOOK_UP_TABLES_DATA\""))
     session.commit()
     session.close()
-    
+
     table2 = meta.tables['MAPPED_CONNECTIVITY_DATA']
     create_column(COL_7, table2)
-    
+
     for mapping in TABLE_RENAMES:
         session = SA_SESSIONMAKER()
-        session.execute(text("ALTER TABLE \"%s\" RENAME TO \"%s\""%(mapping[0], mapping[1])))
+        session.execute(text("ALTER TABLE \"%s\" RENAME TO \"%s\"" % (mapping[0], mapping[1])))
         session.commit()
         session.close()
-    
+
+
 
 def downgrade(migrate_engine):
     """Operations to reverse the above upgrade go here."""
     meta.bind = migrate_engine
-    
+
     table1 = meta.tables['MAPPED_TIME_SERIES_DATA']
     drop_column(COL_1, table1)
     drop_column(COL_2, table1)
     drop_column(COL_3, table1)
     drop_column(COL_4, table1)
+
     session = SA_SESSIONMAKER()
     try:
-        session.execute(text("ALTER TABLE \"MAPPED_TIME_SERIES_DATA\" RENAME COLUMN _labels_ordering to _dim_labels"))
-        session.execute(text("ALTER TABLE \"MAPPED_CROSS_CORRELATION_DATA\" RENAME COLUMN _labels_ordering to _dim_labels"))
+        session.execute(text("ALTER TABLE \"MAPPED_TIME_SERIES_DATA\" "
+                             "RENAME COLUMN _labels_ordering to _dim_labels"))
+        session.execute(text("ALTER TABLE \"MAPPED_CROSS_CORRELATION_DATA\" "
+                             "RENAME COLUMN _labels_ordering to _dim_labels"))
+
     except sqlalchemy.exc.OperationalError:
-        session.execute(text("ALTER TABLE \"MAPPED_TIME_SERIES_DATA\" ADD COLUMN _dim_labels VARYING CHARACTER(255)"))
-        session.execute(text("ALTER TABLE \"MAPPED_CROSS_CORRELATION_DATA\" ADD COLUMN _dim_labels VARYING CHARACTER(255)"))
+        session.execute(text("ALTER TABLE \"MAPPED_TIME_SERIES_DATA\" "
+                             "ADD COLUMN _dim_labels VARYING CHARACTER(255)"))
+        session.execute(text("ALTER TABLE \"MAPPED_CROSS_CORRELATION_DATA\" "
+                             "ADD COLUMN _dim_labels VARYING CHARACTER(255)"))
     session.commit()
     session.close()
-    
+
     table2 = meta.tables['MAPPED_CONNECTIVITY_DATA']
     drop_column(COL_7, table2)
-    
+
     for mapping in TABLE_RENAMES:
         session = SA_SESSIONMAKER()
-        session.execute(text("ALTER TABLE \"%s\" RENAME TO \"%s\""%(mapping[1], mapping[0])))
+        session.execute(text("ALTER TABLE \"%s\" RENAME TO \"%s\"" % (mapping[1], mapping[0])))
         session.commit()
         session.close()
         

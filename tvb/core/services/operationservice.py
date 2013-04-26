@@ -223,7 +223,7 @@ class OperationService:
             burst_id = None
             if DataTypeMetaData.KEY_BURST in metadata:
                 burst_id = metadata[DataTypeMetaData.KEY_BURST]
-            datatype_group = model.DataTypeGroup(group.id, operation_id=operations[0].id, fk_parent_burst=burst_id,
+            datatype_group = model.DataTypeGroup(group, operation_id=operations[0].id, fk_parent_burst=burst_id,
                                                  state=metadata[DataTypeMetaData.KEY_STATE])
             dao.store_entity(datatype_group)
 
@@ -278,7 +278,7 @@ class OperationService:
                 dao.store_entity(cloned_w_step)
 
             if operation_group is not None and operation is not None:
-                datatype_group = model.DataTypeGroup(operation_group.id, operation_id=operation.id,
+                datatype_group = model.DataTypeGroup(operation_group, operation_id=operation.id,
                                                      fk_parent_burst=burst_id,
                                                      state=metadata[DataTypeMetaData.KEY_STATE])
                 dao.store_entity(datatype_group)

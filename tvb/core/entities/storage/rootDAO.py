@@ -32,27 +32,28 @@ from tvb.core.entities.storage.sessionmaker import SESSION_META_CLASS
 from tvb.config import SIMULATION_DATATYPE_CLASS
 
 
+
 class RootDAO(object):
     """
     GLOBAL OPERATIONS
     """
-    
+
     __metaclass__ = SESSION_META_CLASS
     session = None
     logger = get_logger(__name__)
-    
+
     EXCEPTION_DATATYPE_GROUP = "DataTypeGroup"
     EXCEPTION_DATATYPE_SIMULATION = SIMULATION_DATATYPE_CLASS
-    
-    
+
+
     def store_entity(self, entity):
         """Store in DB one generic entity."""
         self.session.add(entity)
         self.session.commit()
-        saved_entity = self.session.query(entity.__class__ ).filter_by(id=entity.id).one()
+        saved_entity = self.session.query(entity.__class__).filter_by(id=entity.id).one()
         return saved_entity
-        
-     
+
+
     def store_entities(self, entities_list):
         """Store in DB a list of generic entities."""
         self.session.add_all(entities_list)
@@ -61,27 +62,25 @@ class RootDAO(object):
         for entity in entities_list:
             stored_entities.append(self.session.query(entity.__class__).filter_by(id=entity.id).one())
         return stored_entities
-    
-    
+
+
     def get_generic_entity(self, entity_type, filter_value, select_field="id"):
         """Retrieve an entity from a generic table,filtered by a generic field."""
         if isinstance(entity_type, (str, unicode)):
             classname = entity_type[entity_type.rfind(".") + 1:]
-            entity_class = __import__(entity_type[0: entity_type.rfind(".")], 
-                                        globals(), locals(), classname)
+            entity_class = __import__(entity_type[0: entity_type.rfind(".")], globals(), locals(), classname)
             entity_class = eval("entity_class." + classname)
-            result = self.session.query(entity_class).filter(
-                        entity_class.__dict__[select_field]==filter_value).all()
+            result = self.session.query(entity_class).filter(entity_class.__dict__[select_field] == filter_value).all()
         else:
-            result = self.session.query(entity_type).filter(
-                         entity_type.__dict__[select_field]==filter_value).all()
+            result = self.session.query(entity_type).filter(entity_type.__dict__[select_field] == filter_value).all()
+
         # Need this since entity has attributes loaded automatically on DB load from 
         # traited DB events. This causes the session to see the entity as dirty and issues
         # an invalid commit() which leaves the entity unattached to any sessions later on.
         self.session.expunge_all()
         return result
-    
-    
+
+
     def remove_entity(self, entity_class, entity_id):
         """ 
         Find entity by Id and Type, end then remove it.
@@ -96,20 +95,21 @@ class RootDAO(object):
         except Exception, excep:
             self.logger.exception(excep)
         return result
-    
+
+
     #
     # DATA_TYPE RELATED METHODS
     #
-    
+
     def remove_datatype(self, gid):
         """When removing dataType, remove from all tables referenced."""
-        data = self.session.query(model.DataType).filter(model.DataType.gid==gid).all()
+        data = self.session.query(model.DataType).filter(model.DataType.gid == gid).all()
         for entity in data:
-            extended_ent = self.get_generic_entity(entity.module +"."+ entity.type, entity.id)
+            extended_ent = self.get_generic_entity(entity.module + "." + entity.type, entity.id)
             self.session.delete(extended_ent[0])
         self.session.commit()
-    
-        
+
+
     def get_datatype_by_id(self, data_id):
         """Retrieve DataType entity by ID."""
         result = self.session.query(model.DataType).filter_by(id=data_id).one()

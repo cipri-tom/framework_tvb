@@ -25,14 +25,17 @@ import sys
 import numpy
 import json
 from scipy import interpolate
-from tvb.basic.config.settings import TVBSettings as config
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcdisplayer import ABCMPLH5Displayer
-from tvb.datatypes.mapped_values import DatatypeMeasure
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.datatypes.mapped_values import DatatypeMeasure
+from tvb.basic.config.settings import TVBSettings as config
+from tvb.basic.filters.chain import FilterChain
 
-# The resolution of the displayed isocline
+
+# The resolution for computing dots inside the displayed isocline.
+# This is not the sae as display size.
 RESOLUTION = (600, 600)
 
 
@@ -43,6 +46,7 @@ class IsoclinePseAdapter(ABCMPLH5Displayer):
     Will be used as a generic visualizer, accessible when input entity is DataTypeGroup.
     Will also be used in Burst as a supplementary navigation layer.
     """
+
     _ui_name = "Isocline PSE"
     _ui_subsection = "pse"
 
@@ -60,7 +64,9 @@ class IsoclinePseAdapter(ABCMPLH5Displayer):
         return [{'name': 'datatype_group',
                  'label': 'Datatype Group',
                  'type': model.DataTypeGroup,
-                 'required': True}]
+                 'required': True,
+                 'conditions': FilterChain(fields=[FilterChain.datatype + ".no_of_ranges"],
+                                           operations=["=="], values=[2])}]
 
 
     def get_required_memory_size(self, **kwargs):
@@ -198,7 +204,7 @@ class IsoclinePseAdapter(ABCMPLH5Displayer):
 
     def _create_plot(self, metric, figsize, operation_group, range1_name, range2_name, figure_nrs):
         """
-        Create a plot for each metric, with a given figsize. We need also operation group, 
+        Create a plot for each metric, with a given figsize:. We need also operation group,
         ranges for data computations. figure_nrs iw a mapping between metric : figure_number
         """
         figure = self._create_new_figure(figsize)
@@ -258,7 +264,6 @@ class IsoclinePseAdapter(ABCMPLH5Displayer):
         can_interpolate_range2 = False
         range2_labels = ["_"]
         range2_name = "_"
-
         if range2 is not None:
             can_interpolate_range2 = True
             range2 = json.loads(range2)
@@ -267,9 +272,10 @@ class IsoclinePseAdapter(ABCMPLH5Displayer):
                 try:
                     range2_labels[idx] = float(entry)
                 except ValueError:
-                    # It's a datatype range, in which case interpolation makes no sense ?
+                    # It's a DataType range, in which case interpolation makes no sense ?
                     can_interpolate_range2 = False
             range2_name = range2[0]
+
         if not (can_interpolate_range1 and can_interpolate_range2):
             raise LaunchException("Need 2-D range with float values in order to interpolate data.")
         return range1_name, range2_name, range1_labels, range2_labels

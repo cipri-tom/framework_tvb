@@ -44,6 +44,7 @@ from tvb.core.utils import string2bool, date2string, LESS_COMPLEX_TIME_FORMAT
 LOG = get_logger(__name__)
 
 
+
 class AlgorithmCategory(Base):
     """
     A category that will have different boolean attributes 
@@ -61,9 +62,10 @@ class AlgorithmCategory(Base):
     order_nr = Column(Integer)
     last_introspection_check = Column(DateTime)
 
-    def __init__(self, displayname, launchable = False, rawinput = False,
-                 display = False, defaultdatastate = '', order_nr = '999', 
-                 last_introspection_check = None):
+
+    def __init__(self, displayname, launchable=False, rawinput=False,
+                 display=False, defaultdatastate='', order_nr='999',
+                 last_introspection_check=None):
         self.displayname = displayname
         self.launchable = launchable
         self.rawinput = rawinput
@@ -72,25 +74,28 @@ class AlgorithmCategory(Base):
         self.order_nr = order_nr
         self.last_introspection_check = last_introspection_check
 
+
     def __repr__(self):
-        return "<AlgorithmCategory('%s', '%s', '%s', '%s', '%s')>"% (self.displayname, self.launchable, 
-                                                    self.rawinput, self.display, self.defaultdatastate)
-    
-    
+        return "<AlgorithmCategory('%s', '%s', '%s', '%s', '%s')>" % (self.displayname, self.launchable,
+                                                                      self.rawinput, self.display,
+                                                                      self.defaultdatastate)
+
+
     def __hash__(self):
-        return hash((self.displayname, self.launchable, self.rawinput, 
-                     self.display, self.defaultdatastate, self.order_nr))    
-   
-    
+        return hash((self.displayname, self.launchable, self.rawinput,
+                     self.display, self.defaultdatastate, self.order_nr))
+
+
     def __eq__(self, other):
-        return (isinstance(other, AlgorithmCategory) and 
-                self.displayname == other.displayname and 
-                self.launchable == other.launchable 
-                and self.rawinput == other.rawinput 
-                and self.display == other.display 
+        return (isinstance(other, AlgorithmCategory) and
+                self.displayname == other.displayname and
+                self.launchable == other.launchable
+                and self.rawinput == other.rawinput
+                and self.display == other.display
                 and self.defaultdatastate == other.defaultdatastate)
 
-   
+
+
 class AlgorithmGroup(Base):
     """
     Group = Simulation|Analysis|Visualization|Upload adapter group reference.
@@ -107,17 +112,17 @@ class AlgorithmGroup(Base):
     displayname = Column(String)
     description = Column(String)
     subsection_name = Column(String)
-    ui_display = Column(Integer)        ### When negative the algorithm will not be displayed on the STEPS page.
+    ui_display = Column(Integer)        # When negative the algorithm will not be displayed on the STEPS page.
     init_parameter = Column(String)
     last_introspection_check = Column(DateTime)
 
-    group_category = relationship(AlgorithmCategory, backref=backref('ALGORITHM_GROUPS', 
-                                                                     order_by=id, cascade = "delete, all"))
-    algorithms = relationship('Algorithm', cascade = "delete, all")
-    
+    group_category = relationship(AlgorithmCategory, backref=backref('ALGORITHM_GROUPS',
+                                                                     order_by=id, cascade="delete, all"))
+    algorithms = relationship('Algorithm', cascade="delete, all")
+
 
     def __init__(self, module, classname, category_key, algorithm_param_name=None, init_parameter=None,
-                 last_introspection_check = None, description=None, subsection_name=None):
+                 last_introspection_check=None, description=None, subsection_name=None):
         self.module = module
         self.classname = classname
         self.fk_category = category_key
@@ -132,12 +137,12 @@ class AlgorithmGroup(Base):
             self.subsection_name = subsection_name
         else:
             self.subsection_name = self.module.split('.')[-1].replace('_adapter', '')
-            
+
 
     def __repr__(self):
-        return "<Group('%s', '%s', '%s', '%s', '%s', '%s')>"% (self.classname,
-               self.module, self.fk_category, self.displayname, 
-               self.algorithm_param_name, self.init_parameter)
+        return "<Group('%s', '%s', '%s', '%s', '%s', '%s')>" % (self.classname,
+                                                                self.module, self.fk_category, self.displayname,
+                                                                self.algorithm_param_name, self.init_parameter)
 
 
 
@@ -159,11 +164,12 @@ class Algorithm(Base):
     parameter_name = Column(String)
     outputlist = Column(String)
     description = Column(String)
-    
-    algo_group = relationship(AlgorithmGroup, backref=backref('ALGORITHMS', order_by=id, cascade = "delete, all"))
 
-    def __init__(self, group_id, identifier, name = '', req_data = '', 
-                 param_name = '', output = '', datatype_filter='', description=''):
+    algo_group = relationship(AlgorithmGroup, backref=backref('ALGORITHMS', order_by=id, cascade="delete, all"))
+
+
+    def __init__(self, group_id, identifier, name='', req_data='', param_name='',
+                 output='', datatype_filter='', description=''):
         self.fk_algo_group = group_id
         self.identifier = identifier
         self.required_datatype = req_data
@@ -175,8 +181,10 @@ class Algorithm(Base):
 
 
     def __repr__(self):
-        return "<Group('%d', '%s', '%s', %s', '%s', '%s')>"% (self.fk_algo_group, self.identifier, self.name, 
-                                                        self.required_datatype, self.parameter_name, self.outputlist)
+        return "<Group('%d', '%s', '%s', %s', '%s', '%s')>" % (self.fk_algo_group, self.identifier, self.name,
+                                                               self.required_datatype, self.parameter_name,
+                                                               self.outputlist)
+
 
 
 class OperationGroup(Base, Exportable):
@@ -185,16 +193,17 @@ class OperationGroup(Base, Exportable):
     in the same time by the user
     """
     __tablename__ = "OPERATION_GROUPS"
-    
-    id = Column(Integer, primary_key = True)
+
+    id = Column(Integer, primary_key=True)
     name = Column(String)
     range1 = Column(String)
     range2 = Column(String)
     range3 = Column(String)
     gid = Column(String)
     fk_launched_in = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
-    project = relationship(Project, backref=backref('OPERATION_GROUPS', order_by=id, cascade="all,delete"))    
-    
+    project = relationship(Project, backref=backref('OPERATION_GROUPS', order_by=id, cascade="all,delete"))
+
+
     def __init__(self, project_id, name='incomplete', ranges=[]):
         self.name = name
         if len(ranges) > 0:
@@ -204,11 +213,13 @@ class OperationGroup(Base, Exportable):
         if len(ranges) > 2:
             self.range3 = ranges[2]
         self.gid = generate_guid()
-        self.fk_launched_in = project_id 
+        self.fk_launched_in = project_id
+
 
     def __repr__(self):
         return "<OperationGroup(%s,%s)>" % (self.name, self.gid)
-    
+
+
     @property
     def range_references(self):
         """Memorized range starter"""
@@ -218,7 +229,8 @@ class OperationGroup(Base, Exportable):
         if self.range3 and self.range3 != 'null':
             ranges.append(self.range3)
         return ranges
-    
+
+
     def fill_operationgroup_name(self, entities_in_group):
         """
         Display name for UI.
@@ -230,7 +242,7 @@ class OperationGroup(Base, Exportable):
             new_name += " x " + json.loads(self.range2)[0]
         if self.range3 is not None:
             new_name += " x " + json.loads(self.range3)[0]
-            
+
         new_name += " - " + date2string(datetime.datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
         self.name = new_name
 
@@ -240,6 +252,8 @@ STATUS_STARTED = "STARTED"
 STATUS_FINISHED = "FINISHED"
 STATUS_CANCELED = "CANCELED"
 STATUS_ERROR = "ERROR"
+
+
 
 class Operation(Base, Exportable):
     """
@@ -251,7 +265,7 @@ class Operation(Base, Exportable):
     fk_launched_by = Column(Integer, ForeignKey('USERS.id'))
     fk_launched_in = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
     fk_from_algo = Column(Integer, ForeignKey('ALGORITHMS.id'))
-    fk_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id', ondelete="CASCADE"), default = None)
+    fk_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id', ondelete="CASCADE"), default=None)
     gid = Column(String)
     parameters = Column(String)
     meta_data = Column(String)
@@ -262,24 +276,25 @@ class Operation(Base, Exportable):
     status = Column(String, index=True)
     visible = Column(Boolean, default=True)
     additional_info = Column(String)
-    user_group = Column(String, default = None)
-    range_values = Column(String, default = None)
+    user_group = Column(String, default=None)
+    range_values = Column(String, default=None)
     result_disk_size = Column(Integer)
-    
+
     algorithm = relationship(Algorithm, backref=backref('OPERATIONS', order_by=id))
-    project = relationship(Project, backref=backref('PROJECTS', order_by=id, cascade="all,delete"))  
+    project = relationship(Project, backref=backref('PROJECTS', order_by=id, cascade="all,delete"))
     operation_group = relationship(OperationGroup, backref=backref('OPERATION_GROUPS', order_by=id))
     user = relationship(User, primaryjoin=(fk_launched_by == User.id), lazy='joined')
 
-    def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo, 
-                 parameters, meta= '', method_name= '',status=STATUS_STARTED, 
+
+    def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo,
+                 parameters, meta='', method_name='', status=STATUS_STARTED,
                  start_date=None, completion_date=None,
-                 op_group_id= None, additional_info='', user_group=None,
-                 range_values = None, result_disk_size=0):
+                 op_group_id=None, additional_info='', user_group=None,
+                 range_values=None, result_disk_size=0):
         self.fk_launched_by = fk_launched_by
         self.fk_launched_in = fk_launched_in
         self.fk_from_algo = fk_from_algo
-        self.parameters = parameters 
+        self.parameters = parameters
         self.meta_data = meta
         self.method_name = method_name
         self.create_date = datetime.datetime.now()
@@ -293,35 +308,40 @@ class Operation(Base, Exportable):
         self.gid = generate_guid()
         self.result_disk_size = result_disk_size
 
+
     def __repr__(self):
-        return "<Operation(%s,%s,'%s','%s','%s','%s','%s,'%s','%s',%s, '%s')>"\
-             % (self.fk_launched_by, self.fk_launched_in, self.fk_from_algo, 
-                self.parameters, self.meta_data, self.method_name,
-                self.start_date, self.completion_date, self.status, 
-                self.fk_operation_group, self.user_group)
+        return "<Operation(%s,%s,'%s','%s','%s','%s','%s,'%s','%s',%s, '%s')>" \
+               % (self.fk_launched_by, self.fk_launched_in, self.fk_from_algo,
+                  self.parameters, self.meta_data, self.method_name,
+                  self.start_date, self.completion_date, self.status,
+                  self.fk_operation_group, self.user_group)
+
 
     def start_now(self):
         """ Update Operation fields at startup: Status and Date"""
         self.start_date = datetime.datetime.now()
         self.status = STATUS_STARTED
 
+
     def mark_complete(self, status, additional_info=None):
         """ Update Operation fields on completion: Status and Date"""
         self.completion_date = datetime.datetime.now()
         if additional_info is not None:
             self.additional_info = additional_info
-        self.status = status  
-        
+        self.status = status
+
+
     def mark_cancelled(self):
         """Update status into CANCELED"""
-        self.status = STATUS_CANCELED 
-    
+        self.status = STATUS_CANCELED
+
+
     def to_dict(self):
         """
         Overwrite superclass method to add required changes.
         """
-        _, base_dict = super(Operation, self).to_dict(excludes=['id', 'fk_launched_by', 'user', 'fk_launched_in', 
-                                                                'project', 'fk_from_algo', 'algorithm', 
+        _, base_dict = super(Operation, self).to_dict(excludes=['id', 'fk_launched_by', 'user', 'fk_launched_in',
+                                                                'project', 'fk_from_algo', 'algorithm',
                                                                 'fk_operation_group', 'operation_group'])
         base_dict['fk_launched_in'] = self.project.gid
         base_dict['fk_from_algo'] = json.dumps(dict(module=self.algorithm.algo_group.module,
@@ -335,32 +355,31 @@ class Operation(Base, Exportable):
         if self.operation_group:
             base_dict['fk_operation_group'] = json.dumps(self.operation_group.to_dict()[1])
         return self.__class__.__name__, base_dict
-    
-    
-    def from_dict(self, dictionary, dao, user_id = None, project_gid = None):
+
+
+    def from_dict(self, dictionary, dao, user_id=None, project_gid=None):
         """
         Add specific attributes from a input dictionary.
         """
-        
+
         # If user id was specified try to load it, otherwhise use System account
         user = dao.get_system_user() if user_id is None else dao.get_user_by_id(user_id)
         self.fk_launched_by = user.id
-        
+
         # Find parent Project
-        prj_to_load = project_gid if project_gid is not None else dictionary['fk_launched_in'] 
+        prj_to_load = project_gid if project_gid is not None else dictionary['fk_launched_in']
         parent_project = dao.get_project_by_gid(prj_to_load)
         self.fk_launched_in = parent_project.id
         self.project = parent_project
-        
+
         # Find parent Algorithm
         source_algorithm = json.loads(dictionary['fk_from_algo'])
         init_parameter = None
         if 'init_parameter' in source_algorithm:
             init_parameter = source_algorithm['init_parameter']
-            
+
         algo_group = dao.find_group(source_algorithm['module'], source_algorithm['classname'], init_parameter)
-        algorithm = None
-        
+
         if algo_group:
             algorithm = dao.get_algorithm_by_group(algo_group.id, source_algorithm['identifier'])
             self.algorithm = algorithm
@@ -375,12 +394,14 @@ class Operation(Base, Exportable):
             algorithm = dao.get_algorithm_by_group(algo_group.id)
             self.fk_from_algo = algorithm.id
             dictionary['additional_info'] = ("The original parameters for this operation were: \nAdapter: %s "
-                                             "\nParameters %s" % (source_algorithm['module'] + '.' + 
-                                                            source_algorithm['classname'], dictionary['parameters']))
-        
+                                             "\nParameters %s" % (source_algorithm['module'] + '.' +
+                                                                  source_algorithm['classname'],
+                                                                  dictionary['parameters']))
+
         # Find OperationGroup, if any
-        if 'fk_operation_group' in dictionary:      
+        if 'fk_operation_group' in dictionary:
             group_dict = json.loads(dictionary['fk_operation_group'])
+            op_group = None
             if group_dict:
                 op_group = dao.get_operationgroup_by_gid(group_dict['gid'])
                 if not op_group:
@@ -395,8 +416,8 @@ class Operation(Base, Exportable):
         else:
             self.operation_group = None
             self.fk_operation_group = None
-        
-        self.parameters = dictionary['parameters'] 
+
+        self.parameters = dictionary['parameters']
         self.meta_data = dictionary['meta_data']
         self.method_name = dictionary['method_name']
         self.create_date = string2date(dictionary['create_date'])
@@ -404,15 +425,16 @@ class Operation(Base, Exportable):
             self.start_date = string2date(dictionary['start_date'])
         if dictionary['completion_date'] != "None":
             self.completion_date = string2date(dictionary['completion_date'])
-        self.status = dictionary['status'] 
+        self.status = dictionary['status']
         self.visible = string2bool(dictionary['visible'])
         self.range_values = dictionary['range_values']
         self.user_group = dictionary['user_group']
         self.additional_info = dictionary['additional_info']
         self.gid = dictionary['gid']
-        
+
         return self
-    
+
+
 
 class OperationProcessIdentifier(Base):
     """
@@ -420,27 +442,29 @@ class OperationProcessIdentifier(Base):
     it was launched so any operation can be stopped from tvb.
     """
     __tablename__ = "OPERATION_PROCESS_IDENTIFIERS"
-    
+
     id = Column(Integer, primary_key=True)
     fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     pid = Column(String)
     job_id = Column(String)
 
     operation = relationship(Operation, backref=backref('OPERATION_PROCESS_IDENTIFIERS', order_by=id, cascade="delete"))
-        
+
+
     def __init__(self, operation_id, pid=None, job_id=None):
         self.fk_from_operation = operation_id
         self.pid = pid
         self.job_id = job_id
-        
-    
+
+
+
 class ResultFigure(Base, Exportable):
     """
     Class for storing figures from results, visualize them eventually next to each other.
     A group of results, with the same session_name will be displayed 
     """
     __tablename__ = 'RESULT_FIGURES'
-    
+
     id = Column(Integer, primary_key=True)
     fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     fk_for_user = Column(Integer, ForeignKey('USERS.id', ondelete="CASCADE"))
@@ -452,7 +476,8 @@ class ResultFigure(Base, Exportable):
     file_path = Column(String)
     file_format = Column(String)
 
-    def __init__(self, operation_id, user_id, project_id, session_name, name, path, file_format = "PNG"):
+
+    def __init__(self, operation_id, user_id, project_id, session_name, name, path, file_format="PNG"):
         self.fk_from_operation = operation_id
         self.fk_for_user = user_id
         self.fk_in_project = project_id
@@ -460,21 +485,25 @@ class ResultFigure(Base, Exportable):
         self.name = name
         self.file_path = path
         self.file_format = file_format
-        
+
+
     def __repr__(self):
-        return "<ResultFigure(%d, %d, %d, %s, %s, %s, %s)>" % (self.fk_from_operation, self.fk_for_user, 
-                        self.fk_in_project, self.session_name, self.name, self.file_path, self.file_format)
-        
+        return "<ResultFigure(%d, %d, %d, %s, %s, %s, %s)>" % (self.fk_from_operation, self.fk_for_user,
+                                                               self.fk_in_project, self.session_name, self.name,
+                                                               self.file_path, self.file_format)
+
+
     def to_dict(self):
         """
         Overwrite superclass method with required additional data.
         """
-        _, base_dict = super(ResultFigure, self).to_dict(excludes=['id', 'fk_from_operation', 'fk_for_user', 
+        _, base_dict = super(ResultFigure, self).to_dict(excludes=['id', 'fk_from_operation', 'fk_for_user',
                                                                    'fk_in_project', 'operation', 'project'])
         base_dict['fk_from_operation'] = self.operation.gid
         base_dict['fk_in_project'] = self.project.gid
         return self.__class__.__name__, base_dict
-    
+
+
     def from_dict(self, dictionary):
         """
         Add specific attributes from a input dictionary.

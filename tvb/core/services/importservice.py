@@ -423,15 +423,16 @@ class ImportService():
         Store a Operation entity.
         """
         operation_entity = dao.store_entity(operation_entity)
-
         operation_group_id = operation_entity.fk_operation_group
         datatype_group = None
+
         if operation_group_id is not None:
             try:
                 datatype_group = dao.get_datatypegroup_by_op_group_id(operation_group_id)
             except Exception:
-                # If no dataType group present for current op. group, create it. 
-                datatype_group = model.DataTypeGroup(operation_group_id, operation_id=operation_entity.id)
+                # If no dataType group present for current op. group, create it.
+                operation_group = dao.get_operationgroup_by_id(operation_group_id)
+                datatype_group = model.DataTypeGroup(operation_group, operation_id=operation_entity.id)
                 datatype_group.state = ADAPTERS['Upload']['defaultdatastate']
                 datatype_group = dao.store_entity(datatype_group)
 
