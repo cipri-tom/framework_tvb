@@ -545,7 +545,7 @@ width: 100%;
 
 .parameter-space-exploration .flex-wrapper {
 display: -webkit-box;
-height: 100%;
+height: 93%;
 width: 100%; /* not really needed, maybe just to be safe for the epic maximizer function */
 -webkit-box-orient: vertical;
 -webkit-box-pack: justify;

@@ -26,38 +26,52 @@ Exceptions for services layer of the application.
 """
 from tvb.basic.traits.exceptions import TVBException
 
+
+
 class ServicesBaseException(TVBException):
     """
     Base Exception class for Services layer in the application.
     """
-    def __init__(self, message):
-        TVBException.__init__(self, message)
+
+
+    def __init__(self, message, parent_exception=None):
+        TVBException.__init__(self, message, parent_exception)
+
 
 
 class StructureException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem related to Structure Storage.
     """
+
+
     def __init__(self, message):
         ServicesBaseException.__init__(self, message)
-        
-        
+
+
+
 class OperationException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem related to Launching 
     and Executing TVB specific Operations.
     """
-    def __init__(self, message):
-        ServicesBaseException.__init__(self, message)
-        
+
+
+    def __init__(self, message, parent_exception=None):
+        ServicesBaseException.__init__(self, message, parent_exception)
+
+
 
 class UsernameException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem related to creating
     or managing a user.
     """
+
+
     def __init__(self, message):
         ServicesBaseException.__init__(self, message)
+
 
 
 class WorkflowException(ServicesBaseException):
@@ -65,56 +79,80 @@ class WorkflowException(ServicesBaseException):
     Exception to be thrown in case of a problem related to creating
     or managing a workflow.
     """
+
+
     def __init__(self, message):
         ServicesBaseException.__init__(self, message)
-  
-  
+
+
+
 class WorkflowInterStepsException(WorkflowException):
     """
     Exception to be thrown in case of a problem happened between steps of a workflow.
     Status ERROR needs to be reported at a top level (e.g. Burst) as workflow 
     steps individually can not be made responsible.
     """
+
+
     def __init__(self, message):
         WorkflowException.__init__(self, message)
-      
-        
+
+
+
 class ProjectServiceException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem in the projectservice
     module.
     """
+
+
     def __init__(self, message):
         ServicesBaseException.__init__(self, message)
-        
-        
+
+
+
 class ProjectImportException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem at project import.
     """
+
+
     def __init__(self, message):
-        ServicesBaseException.__init__(self, message) 
-        
+        ServicesBaseException.__init__(self, message)
+
+
+
 class BurstServiceException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem at project import.
     """
+
+
     def __init__(self, message):
-        ServicesBaseException.__init__(self, message)  
+        ServicesBaseException.__init__(self, message)
+
+
 
 class InvalidPortletConfiguration(ServicesBaseException):
     """
     Exception thrown in cases related to wrong portlet configurations.
     """
+
+
     def __init__(self, message):
         ServicesBaseException.__init__(self, message)
 
-class InvalidSettingsException(ServicesBaseException):        
+
+
+class InvalidSettingsException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem at project import.
     """
+
+
     def __init__(self, message):
         ServicesBaseException.__init__(self, message)
+
 
 
 class RemoveDataTypeException(ServicesBaseException):
@@ -122,8 +160,11 @@ class RemoveDataTypeException(ServicesBaseException):
     Exception to be thrown in case some one tries to remove an
     entity that is used by other entities.
     """
+
+
     def __init__(self, message):
         ServicesBaseException.__init__(self, message)
+
 
 
 class RemoveDataTypeError(ServicesBaseException):
@@ -132,11 +173,14 @@ class RemoveDataTypeError(ServicesBaseException):
     not be possible to be removed. E.g. If some one tries to remove the array
     wrapper corresponding to a time series (inheritance relationship).
     """
+
+
     def __init__(self, message):
         ServicesBaseException.__init__(self, message)
-       
-   
-class ConnectException(ServicesBaseException):  
+
+
+
+class ConnectException(ServicesBaseException):
     """ 
     Exception to be thrown when DTI Pipeline error happened.  
     """

@@ -184,7 +184,7 @@ class FlowController(base.BaseController):
         else:
             if (('Referer' not in cherrypy.request.headers or
                 ('Referer' in cherrypy.request.headers and 'step' not in cherrypy.request.headers['Referer']))
-                and 'View' in algo_group.group_category.displayname):
+                    and 'View' in algo_group.group_category.displayname):
                 # Avoid reset in case of Visualizers, as a supplementary GET
                 # might be enforced by MPLH5 on FF.
                 not_reset = True
@@ -283,7 +283,7 @@ class FlowController(base.BaseController):
                     while len(labels_set) < len(array_shape):
                         labels_set.append("Undefined")
                 if (hasattr(actual_entity, 'aggregation_functions') and actual_entity.aggregation_functions is not None
-                    and len(actual_entity.aggregation_functions) == len(array_shape)):
+                        and len(actual_entity.aggregation_functions) == len(array_shape)):
                     #will be a list of lists of aggregation functions
                     defined_functions = actual_entity.aggregation_functions
                     for i in range(len(defined_functions)):
@@ -407,7 +407,7 @@ class FlowController(base.BaseController):
         """
         for entry in input_tree:
             if (ABCAdapter.KEY_DATATYPE in entry and ABCAdapter.KEY_NAME in entry
-                and str(entry[ABCAdapter.KEY_NAME]) == str(name)):
+                    and str(entry[ABCAdapter.KEY_NAME]) == str(name)):
                 return entry
             if ABCAdapter.KEY_ATTRIBUTES in entry and entry[ABCAdapter.KEY_ATTRIBUTES] is not None:
                 in_attr = self._get_node(entry[ABCAdapter.KEY_ATTRIBUTES], name)
@@ -447,7 +447,7 @@ class FlowController(base.BaseController):
         except formencode.Invalid, excep:
             errors = excep.unpack_errors()
         except OperationException, excep1:
-            self.logger.error("Error while executing a Launch procedure:")
+            self.logger.error("Error while executing a Launch procedure:" + excep1.message)
             self.logger.exception(excep1)
             base.set_error_message(excep1.message)
 

@@ -57,8 +57,10 @@ class IsoclinePseAdapter(ABCMPLH5Displayer):
         """
         Take as Input a Connectivity Object.
         """
-        return [{'name': 'datatype_group', 'label': 'Datatype Group',
-                 'type': model.DataTypeGroup, 'required': True}]
+        return [{'name': 'datatype_group',
+                 'label': 'Datatype Group',
+                 'type': model.DataTypeGroup,
+                 'required': True}]
 
 
     def get_required_memory_size(self, **kwargs):

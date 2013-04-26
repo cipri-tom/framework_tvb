@@ -27,6 +27,7 @@ Code related to launching/duplicating operations is placed here.
 """
 
 from copy import copy
+from tvb.basic.traits.exceptions import TVBException
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
@@ -168,11 +169,11 @@ class FlowService:
         Actually return a Tuple: Adapter Instance, Dictionary for Adapter 
         Interface specification.
         """
+        adapter_module = algo_group.module.replace('-', '.')
+        adapter_name = algo_group.classname
         try:
             # Prepare Adapter Interface, by populating with existent data,
             # in case of a parameter of type DataType.
-            adapter_module = algo_group.module.replace('-', '.')
-            adapter_name = algo_group.classname
             group = dao.find_group(adapter_module, adapter_name, algo_group.init_parameter)
             adapter_instance = self.build_adapter_instance(group)
             interface = adapter_instance.get_input_tree()
@@ -181,7 +182,7 @@ class FlowService:
             return group, interface
         except Exception, excep:
             self.logger.exception(excep)
-            self.logger.error('Not found:'+ adapter_name+' in:' + adapter_module)
+            self.logger.error('Not found:' + adapter_name + ' in:' + adapter_module)
             raise OperationException("Could not prepare " + adapter_name)
     
     
@@ -202,10 +203,10 @@ class FlowService:
         """
         data_class = FilterChain._get_class_instance(data_name)
         if data_class is None:
-            self.logger.warning("Invalid Class specification:"+ str(data_name))
+            self.logger.warning("Invalid Class specification:" + str(data_name))
             return []
         else:
-            self.logger.debug('Filtering:'+ str(data_class))
+            self.logger.debug('Filtering:' + str(data_class))
             return dao.get_values_of_datatype(project_id, data_class, filters)
         
     
@@ -222,7 +223,7 @@ class FlowService:
             entity_gid = value[2]
             actual_entity = dao.get_generic_entity(type_, entity_gid, "gid")
             display_name = ''
-            if (actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], model.DataType)):
+            if actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], model.DataType):
                 display_name = actual_entity[0].display_name
             display_name = display_name + ' - ' + value[3]
             if value[5]:
@@ -233,7 +234,7 @@ class FlowService:
                 display_name = display_name + ' - ' + str(value[6])
             display_name = display_name + ' - ID:' + str(value[0])
             all_field_values = all_field_values + str(entity_gid) + ','
-            values.append({ABCAdapter.KEY_NAME: display_name, ABCAdapter.KEY_VALUE: entity_gid })
+            values.append({ABCAdapter.KEY_NAME: display_name, ABCAdapter.KEY_VALUE: entity_gid})
             if complex_dt_attributes is not None:
                 ### TODO apply filter on sub-attributes
                 values[-1][ABCAdapter.KEY_ATTRIBUTES] = complex_dt_attributes
@@ -252,12 +253,11 @@ class FlowService:
         """
         result = []
         for param in attributes_list:
-            if (param.has_key(ABCAdapter.KEY_UI_HIDE) and param[ABCAdapter.KEY_UI_HIDE]):
+            if (ABCAdapter.KEY_UI_HIDE in param) and param[ABCAdapter.KEY_UI_HIDE]:
                 continue
             transformed_param = copy(param)
-            if (param.has_key(ABCAdapter.KEY_TYPE) and not (param[ABCAdapter.KEY_TYPE] in 
-                                                            ABCAdapter.STATIC_ACCEPTED_TYPES)):
-                filter_condition = None
+
+            if (ABCAdapter.KEY_TYPE in param) and not (param[ABCAdapter.KEY_TYPE] in ABCAdapter.STATIC_ACCEPTED_TYPES):
                 if ABCAdapter.KEY_CONDITION in param:
                     filter_condition = param[ABCAdapter.KEY_CONDITION]
                     filter_condition.add_condition(FilterChain.datatype + ".visible", "==", True)
@@ -266,8 +266,8 @@ class FlowService:
                     
                 data_list = self.get_available_datatypes(project_id, param[ABCAdapter.KEY_TYPE], filter_condition)
                 complex_dt_attributes = None
-                if (param.has_key(ABCAdapter.KEY_ATTRIBUTES) and param[ABCAdapter.KEY_ATTRIBUTES] is not None
-                    and len(param[ABCAdapter.KEY_ATTRIBUTES])) > 0:
+                if (ABCAdapter.KEY_ATTRIBUTES in param and param[ABCAdapter.KEY_ATTRIBUTES] is not None
+                        and len(param[ABCAdapter.KEY_ATTRIBUTES])) > 0:
                     complex_dt_attributes = self.prepare_parameters(param[ABCAdapter.KEY_ATTRIBUTES], 
                                                                     project_id, category_key)
                 values = self.populate_values(data_list, param[ABCAdapter.KEY_TYPE], 
@@ -279,13 +279,13 @@ class FlowService:
                                          transformed_param[ABCAdapter.KEY_DEFAULT] == 'None')):
                     def_val = str(values[-1][ABCAdapter.KEY_VALUE])
                     transformed_param[ABCAdapter.KEY_DEFAULT] = def_val
-                transformed_param[ABCAdapter.KEY_FILTERABLE] = FilterChain.get_filters_for_type(param[ABCAdapter.KEY_TYPE])
-                                                   
+                transformed_param[ABCAdapter.KEY_FILTERABLE] = FilterChain.get_filters_for_type(
+                    param[ABCAdapter.KEY_TYPE])
                 transformed_param[ABCAdapter.KEY_TYPE] = ABCAdapter.TYPE_SELECT
                 # If Portlet dynamic parameter, don't add the options instead
                 # just add the default value. 
                 if KEY_DYNAMIC in param:
-                    dynamic_param = {ABCAdapter.KEY_NAME : param[ABCAdapter.KEY_DEFAULT],
+                    dynamic_param = {ABCAdapter.KEY_NAME: param[ABCAdapter.KEY_DEFAULT],
                                      ABCAdapter.KEY_VALUE: param[ABCAdapter.KEY_DEFAULT]}
                     transformed_param[ABCAdapter.KEY_OPTIONS] = [dynamic_param]
                 else:
@@ -300,20 +300,20 @@ class FlowService:
                 transformed_param[ABCAdapter.KEY_ATTRIBUTES] = []
                 
             else:
-                if (param.has_key(ABCAdapter.KEY_OPTIONS) and param[ABCAdapter.KEY_OPTIONS] is not None):
+                if ABCAdapter.KEY_OPTIONS in param and param[ABCAdapter.KEY_OPTIONS] is not None:
                     transformed_param[ABCAdapter.KEY_OPTIONS] = self.prepare_parameters(param[ABCAdapter.KEY_OPTIONS],
                                                                                         project_id, category_key)
-                    if (ABCAdapter.KEY_REQUIRED in transformed_param and transformed_param[ABCAdapter.KEY_REQUIRED] and
-                        len(param[ABCAdapter.KEY_OPTIONS]) > 0 and (ABCAdapter.KEY_DEFAULT not in transformed_param or 
-                                             transformed_param[ABCAdapter.KEY_DEFAULT] is None or 
-                                             transformed_param[ABCAdapter.KEY_DEFAULT] == 'None')):
+                    if (ABCAdapter.KEY_REQUIRED in transformed_param) and transformed_param[ABCAdapter.KEY_REQUIRED] \
+                        and (len(param[ABCAdapter.KEY_OPTIONS]) > 0) and \
+                            ((ABCAdapter.KEY_DEFAULT not in transformed_param) or
+                                     transformed_param[ABCAdapter.KEY_DEFAULT] is None or
+                                     transformed_param[ABCAdapter.KEY_DEFAULT] == 'None'):
                         def_val = str(param[ABCAdapter.KEY_OPTIONS][-1][ABCAdapter.KEY_VALUE])
                         transformed_param[ABCAdapter.KEY_DEFAULT] = def_val
                     
-                if (param.has_key(ABCAdapter.KEY_ATTRIBUTES) and param[ABCAdapter.KEY_ATTRIBUTES] is not None):
+                if (ABCAdapter.KEY_ATTRIBUTES in param) and (param[ABCAdapter.KEY_ATTRIBUTES] is not None):
                     transformed_param[ABCAdapter.KEY_ATTRIBUTES] = self.prepare_parameters(
-                                                                                    param[ABCAdapter.KEY_ATTRIBUTES], 
-                                                                                    project_id, category_key)
+                        param[ABCAdapter.KEY_ATTRIBUTES], project_id, category_key)
             result.append(transformed_param)   
         return result
     
@@ -342,14 +342,14 @@ class FlowService:
         Launch an operation, specified by AdapterInstance, for CurrentUser, 
         Current Project and a given set of UI Input Data.
         """
-        operation_name = str(adapter_instance.__class__.__name__) + "."  + method_name
+        operation_name = str(adapter_instance.__class__.__name__) + "." + method_name
         try:
 #            if OperationService.ATT_UID in data:
 #                existent = dao.get_last_data_with_uid(data[OperationService.ATT_UID])
 #                if existent is not None:
 #                    self.create_link(existent, project_id)
 #                    return "Created required links."
-            self.logger.info("Starting operation "+ operation_name)
+            self.logger.info("Starting operation " + operation_name)
             project = dao.get_project_by_id(project_id)
             tmp_folder = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
             
@@ -357,8 +357,13 @@ class FlowService:
                                                            tmp_folder, method_name, visible, **data)
             self.logger.info("Finished operation:" + operation_name)
             return result
+
+        except TVBException, excep:
+            self.logger.error("Could not launch operation " + operation_name + " with the given set of input data!")
+            self.logger.exception(excep)
+            raise OperationException(excep.message, excep)
         except Exception, excep:
-            self.logger.error("Could not launch operation "+ operation_name + " with the given set of input data!")
+            self.logger.error("Could not launch operation " + operation_name + " with the given set of input data!")
             self.logger.exception(excep)
             raise OperationException(str(excep))      
 
