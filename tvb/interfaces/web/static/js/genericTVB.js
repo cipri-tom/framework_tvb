@@ -159,10 +159,11 @@ function getSubmitableData(inputDivId, allowDisabled) {
 function toggleMaximizeColumn(link, maximizeColumnId) {
 	
 	if (link.text == "Maximize") {
-		
-		$("div[id='main']")[0].className = $("div[id='main']")[0].className + " is-maximized";
-		var maximizeColumn = $("#" + maximizeColumnId)[0]
-		maximizeColumn.className = maximizeColumn.className + ' shows-maximized';
+		if (!$("div[id='main']").hasClass('is-maximized')) {
+			$("div[id='main']")[0].className = $("div[id='main']")[0].className + " is-maximized";
+			var maximizeColumn = $("#" + maximizeColumnId)[0]
+			maximizeColumn.className = maximizeColumn.className + ' shows-maximized';
+		}
 		link.innerHTML = "Minimize";
 		link.className = link.className.replace('action-zoom-in', 'action-zoom-out');
 		

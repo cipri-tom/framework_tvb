@@ -19,17 +19,17 @@
                            <span id='cursor_info_$figureNumber' style='color: white;' onclick='change_cursor_info($figureNumber);' >Cursor</span>
                        </td>
                        <td width="24" style="text-align: right; padding-left: 5px;">
-                           <img id="hb" src="" onclick='go_home($figureNumber);' style="cursor: pointer;" tabindex="1" onkeypress="fireOnClick(this)"/>
-                           <script>document.getElementById('hb').src = document.getElementById('button_home').src</script>
+                           <img id="hb_$figureNumber" src="" onclick='go_home($figureNumber);' style="cursor: pointer;" tabindex="1" onkeypress="fireOnClick(this)"/>
+                           <script>document.getElementById('hb_$figureNumber').src = document.getElementById('button_home').src</script>
                        </td>
                        <py:if test="showFullToolbar == True">
 	                       <td width="24" style="text-align: right; padding-left: 5px; padding-right: 5px;">
-	                           <img id="mb" src="" onclick="maximise($figureNumber);" style="cursor: pointer;" tabindex="1" onkeypress="fireOnClick(this)"/> 
-	                           <script>document.getElementById('mb').src = document.getElementById('button_max').src</script>
+	                           <img id="mb_$figureNumber" src="" onclick="maximise($figureNumber);" style="cursor: pointer;" tabindex="1" onkeypress="fireOnClick(this)"/> 
+	                           <script>document.getElementById('mb_$figureNumber').src = document.getElementById('button_max').src</script>
 	                       </td>
 	                       <td width="24" style="text-align: right; padding-right: 5px;" onmousedown="clickSize(event,$figureNumber);">
-	                           <img id="rb" src=""  style="cursor: se-resize;"/> 
-	                           <script>document.getElementById('rb').src = document.getElementById('button_resize').src</script>
+	                           <img id="rb_$figureNumber" src=""  style="cursor: se-resize;"/> 
+	                           <script>document.getElementById('rb_$figureNumber').src = document.getElementById('button_resize').src</script>
 	                       </td>
                        </py:if>
                   </tr>

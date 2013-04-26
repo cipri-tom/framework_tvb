@@ -4,7 +4,11 @@
 <div id="main" class="columnized colscheme-3-1st-narrow" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/" >
 	<script type="text/javascript" src="/static/jquery/jquery.jstree.js?4266"></script>
     <script type="text/javascript" src="/static/js/bursts.js?4501"></script>
-
+	<!-- Scripts for pse. -->
+    <script type="text/javascript" src="/static/js/parameterSpace.js?4266"></script>
+    <script type="text/javascript" src="/static/colorPicker/js/colorpicker.js"></script>
+    <script type="text/javascript" src="/static/colorPicker/js/colorPickerComponent.js"></script>
+    
 	<script type="text/javascript">
     	$(document).ready(function(){
     		initBurstConfiguration($selectedPortlets, '$burstConfig.selected_tab');
@@ -61,25 +65,22 @@
 	
 	<!-- View Parameter space exploration or ISO Parameter space for selected Burst -->
 	<section id="section-pse" class="parameter-space-exploration view-column col-3" style="display: none;">
+		<h4><mark>Parameter Space Exploration</mark> <span id="title-visualizers"></span></h4>
+		<a href="#" title="Maximize View" class="column-control action action-zoom-in" id="button-maximize-iso"
+			onclick="toogleMaximizeBurst(this);">Maximize</a>
 		<ul id="section-portlets-ul" class="view-switcher tabswitcher">
-			<li class="active">
-				<a href="#" id="pse-flot" onclick="changePSETab(this, 'flot');">
+			<li id="pse-flot" class="active">
+				<a href="#" onclick="changePSETab(this, 'flot');">
 					View Parameter Space Discrete
 				</a>
 			</li>
-			<li>
-				<a href="#" id="pse-iso" onclick="changePSETab(this, 'iso');">
+			<li id="pse-iso">
+				<a href="#" onclick="changePSETab(this, 'iso');">
 					View Parameter Space Continous
 				</a>
 			</li>
 		</ul>
-			<div class="flex-wrapper" id="burst-pse-flot">
-				<h4><mark>Select</mark> Parameter space</h4>
-				<a href="#" title="Maximize Parameter space" id="button-maximize-pse" class="column-control action action-zoom-in" 
-				   onclick="toggleMaximizeColumn(this, 'section-pse');redrawPlot('main_div_pse');">Maximize</a>
-				<xi:include href="../visualizers/parameter_exploration/function_pse.html"/>
-				${generateFramePSE(available_metrics, 'burst', '')}
-			</div>
+			<div class="flex-wrapper" id="burst-pse-flot"></div>
 			<div class="flex_wrapper" id="burst-pse-iso" style="display: none"></div>
 	</section>
 	

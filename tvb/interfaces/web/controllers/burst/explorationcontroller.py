@@ -22,7 +22,7 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import json
 import cherrypy
 from tvb.config import PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS, ISO_PSE_ADAPTER_CLASS, ISO_PSE_ADAPTER_MODULE
 from tvb.core.services import projectservice
@@ -39,43 +39,72 @@ class ParameterExplorationController(bc.BaseController):
     def __init__(self):
         bc.BaseController.__init__(self)
         self.project_service = projectservice.ProjectService()
-
+        
+        
+    @cherrypy.expose
+    @ajax_call(False)
+    def get_default_pse_viewer(self, datatype_group_id):
+        """
+        For a given datatype group, check first the discrete PSE is compatible.
+        If this is not the case fallback to the continous one. If none are available
+        return None.
+        """
+        algo_group = self.flow_service.get_algorithm_by_module_and_class(PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS)[1]
+        param_explore_discrete = self.flow_service.build_adapter_instance(algo_group)
+        if param_explore_discrete.is_compatible(datatype_group_id):
+            return "FLOT"
+        algo_group = self.flow_service.get_algorithm_by_module_and_class(ISO_PSE_ADAPTER_MODULE, ISO_PSE_ADAPTER_CLASS)[1]
+        param_explore_continous = self.flow_service.build_adapter_instance(algo_group)
+        if param_explore_continous.is_compatible(datatype_group_id):
+            return "ISO"
+        return None
+    
 
     @cherrypy.expose
     @ajax_call(False)
-    def draw_parameter_exploration(self, datatype_group_id, color_metric, size_metric):
+    def draw_parameter_exploration(self, datatype_group_id, color_metric=None, size_metric=None):
         """
         Create new data for when the user chooses to refresh from the UI.
         """
-        if color_metric == 'None':
-            color_metric = None
-        if size_metric == 'None':
-            size_metric = None
-
+        if color_metric == 'None': color_metric = None
+        if size_metric == 'None': size_metric = None
         algo_group = self.flow_service.get_algorithm_by_module_and_class(PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS)[1]
         param_explore_adapter = self.flow_service.build_adapter_instance(algo_group)
-
-        params = param_explore_adapter.prepare_parameters(datatype_group_id, color_metric, size_metric)
-        return params.prepare_full_json()
-    
+        if param_explore_adapter.is_compatible(datatype_group_id):
+            return self._get_flot_html_result(param_explore_adapter, datatype_group_id, color_metric, size_metric)
+        else:
+            return self._display_error_page('Discrete Explorer', 
+                                            "Discrete explorer can only handle a max of %i values per dimension."%(
+                                                                    param_explore_adapter.MAX_POINTS_PER_DIMENSION,))
+        
+    @bc.using_template('visualizers/parameter_exploration/burst_preview')
+    def _get_flot_html_result(self, adapter, datatype_group_id, color_metric, size_metric):
+        params = adapter.prepare_parameters(datatype_group_id, color_metric, size_metric)
+        for key in ['labels_x', 'labels_y', 'data']:
+            params[key] = json.dumps(params[key])
+        return params
     
     @cherrypy.expose
-    def draw_isocline_explorer(self, datatype_group_id):
-        try:
-            html_result = self._get_iso_pse_html(datatype_group_id)
-        except cherrypy.HTTPRedirect:
-            html_result = "Continous PSE requires a 2D range of floating point values."
-        return html_result
+    @ajax_call(False)
+    def draw_isocline_explorer(self, datatype_group_id, width=None, height=None):
+        if width is not None: width = int(width)
+        if height is not None: height = int(height)
+        algo_group = self.flow_service.get_algorithm_by_module_and_class(ISO_PSE_ADAPTER_MODULE, ISO_PSE_ADAPTER_CLASS)[1]
+        iso_param_expore = self.flow_service.build_adapter_instance(algo_group)
+        if iso_param_expore.is_compatible(datatype_group_id):
+            return self._get_iso_pse_html(iso_param_expore, datatype_group_id, width, height)
+        else:
+            return self._display_error_page('Continous Explorer', "Continous PSE requires a 2D range of floating point values.")
     
     
-    @bc.using_template('visualizers/mplh5/figure')
-    def _get_iso_pse_html(self, datatype_group_id):
+    @bc.using_template('visualizers/isocline_pse/view')
+    def _get_iso_pse_html(self, adapter, datatype_group_id, width, height):
         """
         Generate the HTML for the isocline visualizers.
         """
-        algo_group = self.flow_service.get_algorithm_by_module_and_class(ISO_PSE_ADAPTER_MODULE, ISO_PSE_ADAPTER_CLASS)[1]
-        iso_param_expore = self.flow_service.build_adapter_instance(algo_group)
-        return iso_param_expore.burst_preview(datatype_group_id)
+        return adapter.burst_preview(datatype_group_id, width, height)
     
-    
+    @bc.using_template('burst/burst_pse_error')
+    def _display_error_page(self, adapter_name, message):
+        return {'adapter_name' : adapter_name, 'message' : message}
                 

@@ -48,6 +48,7 @@ class IsoclinePseAdapter(ABCMPLH5Displayer):
     def __init__(self):
         ABCMPLH5Displayer.__init__(self)
         self.figures = {}
+        self.interp_models = {}
     
     
     def get_input_tree(self):
@@ -66,9 +67,31 @@ class IsoclinePseAdapter(ABCMPLH5Displayer):
         return -1
       
       
-    def burst_preview(self, datatype_group_id):
+    def burst_preview(self, datatype_group_id, width, height):
+        """
+        Generate the preview for the burst page.
+        """
+        if not width: width = height
+        figure_size = (700, 700)
+        if width and height:
+            figure_size = (width, height)
         datatype_group = dao.get_datatype_group_by_id(datatype_group_id)
-        return self.launch(datatype_group=datatype_group, figure_size=(400, 400))
+        result_dict = self.launch(datatype_group=datatype_group, figure_size=figure_size)
+        result_dict['isPreview'] = True
+        return result_dict
+    
+    
+    def is_compatible(self, datatype_group_id):
+        """
+        Check if Isocline adapter makes sense for this datatype group.
+        """
+        datatype_group = dao.get_datatype_group_by_id(datatype_group_id)
+        operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
+        try:
+            self._get_range_values(operation_group)
+            return True
+        except LaunchException:
+            return False
     
     
     def launch(self, datatype_group, **kwargs):
@@ -79,14 +102,12 @@ class IsoclinePseAdapter(ABCMPLH5Displayer):
         show_full_toolbar = True
         if self.PARAM_FIGURE_SIZE in kwargs:
             figsize = kwargs[self.PARAM_FIGURE_SIZE]
-            figsize = ((figsize[0])/100, (figsize[1])/120)
+            figsize = ((figsize[0])/80, (figsize[1])/80)
             del kwargs[self.PARAM_FIGURE_SIZE]
         else:
             figsize = (15, 7)
 
         operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
-        if operation_group.range1 is None or operation_group.range2 is None:
-            raise LaunchException("Need 2-D range with float values in order to interpolate data.")
 
         range1_name, range2_name, self.range1, self.range2 = self._get_range_values(operation_group)
         
@@ -147,7 +168,7 @@ class IsoclinePseAdapter(ABCMPLH5Displayer):
                                     (self.range1[-1] - self.range1[0]) / RESOLUTION[0])
         posteriori_y = numpy.arange(self.range2[0], self.range2[-1], 
                                     (self.range2[-1] - self.range2[0]) / RESOLUTION[1])
-        posteriori_data = s(posteriori_x, posteriori_y)
+        posteriori_data = numpy.rot90(s(posteriori_x, posteriori_y))
 
         self.interp_models[figure.number] = s
         # Do actual plot.        

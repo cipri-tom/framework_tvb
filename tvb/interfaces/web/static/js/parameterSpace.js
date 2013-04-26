@@ -150,49 +150,68 @@ function applyHoverEvent(canvasId) {
 }
 
 
+function PSE_previewBurst(parametersCanvasId, labelsXJson, labelsYJson, series_array, dataJson,
+						 min_color, max_color, backPage, color_metric, size_metric) {
+	drawColorPickerComponent('startColorSelector', 'endColorSelector', changeColors);
+	var labels_x = $.parseJSON(labelsXJson);
+	var labels_y = $.parseJSON(labelsYJson);
+	var data = $.parseJSON(dataJson);
+	
+	var colorMetricSelect = document.getElementById('color_metric_select');
+	var sizeMetricSelect = document.getElementById('size_metric_select');
+	
+	_updatePlotPSE('main_div_pse', labels_x, labels_y, series_array, data, 
+				   min_color, max_color, backPage);
+						
+	for (var i=0; i<colorMetricSelect.options.length; i++) {
+		if (colorMetricSelect.options[i].value == color_metric) {
+			colorMetricSelect.selectedIndex = i;
+		}
+	}
+	for (var i=0; i<sizeMetricSelect.options.length; i++) {
+		if (sizeMetricSelect.options[i].value == size_metric) {
+			sizeMetricSelect.selectedIndex = i;
+		}
+	}
+	$('#startColorLabel')[0].innerHTML = '<mark>Minimum</mark> ' + min_color;
+	$('#endColorLabel')[0].innerHTML = '<mark>Maximum</mark> ' + max_color;
+	
+	if (status == "started") {
+		var timeout = setTimeout("PSE_mainDraw('"+parametersCanvasId+"','"+backPage+"')", 3000);
+	}
+}
+
+
 /*
  * Take currently selected metrics and refresh the plot. 
  */
-function PSE_mainDraw(parametersCanvasId, backPage) {
+function PSE_mainDraw(parametersCanvasId, backPage, groupId, selectedColorMetric, selectedSizeMetric) {
 	
-	var colorMetricSelect = document.getElementById('color_metric_select');
-	var selectedColorMetric = colorMetricSelect.options[colorMetricSelect.selectedIndex].value;
+	if (groupId == undefined) {
+		// We didn't get parameter, so try to get group id from page
+		groupId = document.getElementById("datatype-group-id").value
+	}
+	var url = '/burst/explore/draw_parameter_exploration/' + groupId
 	
-	var sizeMetricSelect = document.getElementById('size_metric_select');
-	var selectedSizeMetric = sizeMetricSelect.options[sizeMetricSelect.selectedIndex].value;
+	if (selectedColorMetric == undefined) {
+		selectedColorMetric = $('#color_metric_select').val()
+	}
+	if (selectedSizeMetric == undefined) {
+		selectedSizeMetric = $('#size_metric_select').val()
+	}
 	
-	var groupId = document.getElementById("datatype-group-id").value
+	if (selectedColorMetric != '' && selectedColorMetric != undefined) { 
+			url += '/' + selectedColorMetric;
+			if (selectedSizeMetric != ''  && selectedSizeMetric != undefined) {
+				url += '/' + selectedSizeMetric
+			}
+		 }
+	
 	$.ajax({  	
 			type: "POST", 
-			url: '/burst/explore/draw_parameter_exploration/' + groupId + '/' + selectedColorMetric + '/' + selectedSizeMetric,
+			url: url,
             success: function(r) { 
-            	
-            		var parameterSpaceData = $.parseJSON(r);
-            		$("#" +parametersCanvasId).empty();
-            		
-            		_updatePlotPSE(parametersCanvasId, parameterSpaceData['labels_x'], parameterSpaceData['labels_y'], 
-								   parameterSpaceData['series_array'], parameterSpaceData['data'], 
-								   parameterSpaceData['min_color'], parameterSpaceData['max_color'], backPage);
-										
-					var color_metric = parameterSpaceData['color_metric'];
-					for (var i=0; i<colorMetricSelect.options.length; i++) {
-						if (colorMetricSelect.options[i].value == color_metric) {
-							colorMetricSelect.selectedIndex = i;
-						}
-					}
-					var size_metric = parameterSpaceData['size_metric'];
-					for (var i=0; i<sizeMetricSelect.options.length; i++) {
-						if (sizeMetricSelect.options[i].value == size_metric) {
-							sizeMetricSelect.selectedIndex = i;
-						}
-					}
-					$('#startColorLabel')[0].innerHTML = '<mark>Minimum</mark> ' + parameterSpaceData['min_color'];
-					$('#endColorLabel')[0].innerHTML = '<mark>Maximum</mark> ' + parameterSpaceData['max_color'];
-					
-					var status = parameterSpaceData['status'];
-					if (status == "started") {
-	            		var timeout = setTimeout("PSE_mainDraw('"+parametersCanvasId+"','"+backPage+"')", 3000);
-	            	}
+            		$('#' + parametersCanvasId).html(r);
             	},
             error: function(r) {
                 displayMessage("Could not refresh with the new metrics.", "errorMessage");

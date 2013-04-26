@@ -464,8 +464,43 @@ function switch_top_level_visibility(currentVisibleSelection) {
 	if (currentVisibleSelection) {
 		$("" + currentVisibleSelection).show();
 	}
-	minimizeColumn(document.getElementById('button-maximize-pse'), 'section-pse');
+	if (document.getElementById('button-maximize-flot')) {
+		minimizeColumn(document.getElementById('button-maximize-flot'), 'section-pse');
+	}
+	if (document.getElementById('button-maximize-iso')) {
+		minimizeColumn(document.getElementById('button-maximize-iso'), 'section-pse');
+	}
 	minimizeColumn(document.getElementById('button-maximize-portlets'), 'section-portlets');
+}
+
+
+function loadGroup(groupId) {
+	// Hide both divs
+	$('#burst-pse-flot').hide();
+	$('#burst-pse-iso').hide();
+	$("#section-portlets-ul li").each(function (listItem) {
+			$(this).removeClass('active');
+		});
+	$.ajax({  	
+		type: "POST", 
+		async: false,
+		url: '/burst/explore/get_default_pse_viewer/' + groupId,
+		success: function(r) { 
+				if (r == 'FLOT') {
+					$('#burst-pse-flot').show();
+					$('#pse-flot').addClass('active')
+				} else if (r == 'ISO') {
+					$('#burst-pse-iso').show();
+					$('#pse-iso').addClass('active')
+				} else {
+					displayMessage("None of the parameter exploration viewers are compatible with range.", "warningMessage");
+				}
+				doParameterSpaceExploration(groupId);
+				doIsoclineSpaceExploration(groupId);
+			},
+		error: function(r) {
+		    displayMessage("Error while loading burst.", "errorMessage");
+		}});
 }
 
 
@@ -476,18 +511,32 @@ function changePSETab(clickedHref, toShow) {
 	$(clickedHref).parent().addClass('active');
 	if (toShow == 'flot') {
 		$('#burst-pse-flot').show();
-		$('#burst-pse-iso').hide()
+		$('#burst-pse-iso').hide();
+		redrawPlot('main_div_pse');
 	} else {
 		$('#burst-pse-flot').hide();
-		$('#burst-pse-iso').show()
+		$('#burst-pse-iso').show();
+		resizeIsoFigures();
 	}
 }
 
+function resizeIsoFigures() {
+	var width = $('#burst-pse-flot').width();
+	var height = $('#burst-pse-flot').height();
+	try {
+		resizeFigures(width - 60, height - 80); // Don't resize quite to full since we have selects under plot and margins to plot
+	}
+	catch(ReferenceError) { // just means we on the error page so no plot to resize
+		}
+}
+
 function doIsoclineSpaceExploration(groupId) {
+	var width = $('#burst-pse-flot').width();
+	var height = $('#burst-pse-flot').height();
 	$('#burst-pse-iso').html('')
 	$.ajax({  	
 	type: "POST", 
-	url: '/burst/explore/draw_isocline_explorer/' + groupId,
+	url: '/burst/explore/draw_isocline_explorer/' + groupId + '/' + width + '/' + height,
 	success: function(r) { 
 			$('#burst-pse-iso').html(r);
 		},
@@ -496,15 +545,27 @@ function doIsoclineSpaceExploration(groupId) {
 	}});
 }
 
+
+function toogleMaximizeBurst(hrefElement) {
+	/*
+	 * Maximize or minimize the left side div on a group burst. Also resize
+	 * plot for the tab that is currently selected.
+	 */
+	toggleMaximizeColumn(hrefElement, 'section-pse');
+	if ($('#pse-iso').hasClass('active')) {
+		resizeIsoFigures();
+	}
+	if ($('#pse-flot').hasClass('active')) {
+		redrawPlot('main_div_pse');
+	}
+}
+
 /**
  * Prepare PSE display for current group.
  */
 function doParameterSpaceExploration(groupId) {
-	
 	switch_top_level_visibility("#section-pse");
-	drawColorPickerComponent('startColorSelector', 'endColorSelector', changeColors);
-	$("#datatype-group-id")[0].value = groupId;
-	PSE_mainDraw('main_div_pse', 'burst');
+	PSE_mainDraw('burst-pse-flot', 'burst', groupId);
 }
 
 function updatePortletsToolbar(state) {
@@ -945,8 +1006,7 @@ function loadBurst(burst_id) {
 				// on the condition if the burst was a group launch or not.
 				loadSimulatorInterface();
 			    if (groupId >= 0) {
-					doParameterSpaceExploration(groupId);
-					doIsoclineSpaceExploration(groupId);
+			    	loadGroup(groupId);
 			    } else if (selectedTab == -1) {
 			    	switch_top_level_visibility();
 			    	$("#section-portlets").show();

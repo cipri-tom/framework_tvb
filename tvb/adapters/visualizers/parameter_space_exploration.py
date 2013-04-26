@@ -30,6 +30,7 @@ from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.pse import ContextPSE
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.mapped_values import DatatypeMeasure
 
 
@@ -41,7 +42,7 @@ class ParameterExplorationAdapter(ABCDisplayer):
     """
     _ui_name = "Parameter Space Exploration"
     _ui_subsection = "pse"
-    
+    MAX_POINTS_PER_DIMENSION = 150
     
     def get_input_tree(self):
         """
@@ -72,29 +73,39 @@ class ParameterExplorationAdapter(ABCDisplayer):
         
     
     @staticmethod
+    def is_compatible(datatype_group_id):
+        """
+        Check if Isocline adapter makes sense for this datatype group.
+        """
+        datatype_group = dao.get_datatype_group_by_id(datatype_group_id)
+        operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
+        range1, range2 = ParameterExplorationAdapter._get_range_values(operation_group)
+        if len(range1[1]) < ParameterExplorationAdapter.MAX_POINTS_PER_DIMENSION and (range2 is None or 
+                                                         len(range2[1]) < ParameterExplorationAdapter.MAX_POINTS_PER_DIMENSION):
+            return True
+        return False
+    
+    
+    @staticmethod
     def prepare_parameters(datatype_group_id, color_metric = None, size_metric = None):
         """
         We suppose that there are max 2 ranges and from each operation results exactly one dataType.
         """
+        if not ParameterExplorationAdapter.is_compatible(datatype_group_id):
+            raise LaunchException("Range values are too wide to display in discrete manner.")
         datatype_group = dao.get_datatype_group_by_id(datatype_group_id)
         if datatype_group is None:
             raise Exception("Selected DataTypeGroup is no longer present in the database. " 
                             "It might have been remove or the specified id is not the correct one.")
             
         operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
-        if operation_group.range1 is None and operation_group.range2 is None:
-            raise Exception("Invalid DataTypeGroup...")
-
-        range1 = json.loads(operation_group.range1)
+        range1, range2 = ParameterExplorationAdapter._get_range_values(operation_group)
+        
         range1_labels = range1[1]
         range1_name = range1[0]
-
-        range2 = operation_group.range2
         range2_labels = ["_"]
         range2_name = "_"
-
         if range2 is not None:
-            range2 = json.loads(range2)
             range2_labels = range2[1]
             range2_name = range2[0]
         
@@ -126,5 +137,16 @@ class ParameterExplorationAdapter(ABCDisplayer):
         pse_context.datatypes_dict = {}
         return pse_context
 
-    
+
+    @staticmethod
+    def _get_range_values(operation_group):
+        if operation_group.range1 is None and operation_group.range2 is None:
+            raise Exception("Invalid DataTypeGroup...")
+
+        range1 = json.loads(operation_group.range1)
+        range2 = operation_group.range2
+
+        if range2 is not None:
+            range2 = json.loads(range2)
+        return range1, range2
     

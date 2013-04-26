@@ -9,20 +9,19 @@
 	<script type="text/javascript" src="/static/js/projectTree.js?4266"></script>
 	<!-- Include after mplh5.js because we want to 'overwrite' some default handlers from mplh5. -->
     <script src="/static_view/isocline_pse/scripts/isocline.js" type="text/javascript"></script>
-
-   	
-	<py:for each="metric in sorted(metrics.keys())">
-		<div id="$metric" style="display:none">
-			<xi:include href="../mplh5/figure_template.html" py:with="figureNumber=figureNumbers[metric]"/>
-			
-			<select onchange="updateMetric(this);">
-				<py:for each="metric in sorted(metrics.keys())">
-					<option value="${metric}">${metric}</option>
-				</py:for>
-			</select>
-		</div>
-	</py:for>
-	
+    
+   	<div id="iso_main">
+   		<py:for each="metric in sorted(metrics.keys())">
+			<div id="$metric" style="display:none">
+				<xi:include href="../mplh5/figure_template.html" py:with="figureNumber=figureNumbers[metric]"/>
+			</div>
+		</py:for>
+		<select onchange="updateMetric(this);">
+			<py:for each="metric in sorted(metrics.keys())">
+				<option value="${metric}">${metric}</option>
+			</py:for>
+		</select>
+   	</div>
 	
 	<script type="text/javascript">
 		 $(document).ready(function() {
