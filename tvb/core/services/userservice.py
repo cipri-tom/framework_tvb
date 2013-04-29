@@ -128,7 +128,7 @@ class UserService:
         if (KEY_EMAIL not in data) or len(data[KEY_EMAIL]) < 1:
             raise UsernameException("Empty Email!")
 
-        old_pass, user = None
+        old_pass, user = None, None
         try:
             user_name = data[KEY_USERNAME]
             email = data[KEY_EMAIL]
