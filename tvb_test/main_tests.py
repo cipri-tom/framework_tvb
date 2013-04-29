@@ -26,7 +26,6 @@ Entry point for all tests.
 """
 
 import os
-import tvb
 from sys import argv
 from coverage import coverage
 
@@ -40,6 +39,7 @@ KEY_COVERAGE = 'coverage'
 KEY_XML = 'xml'
 
 
+
 def generage_excludes(root_folders):
     """
     Specify excludes for Coverage.
@@ -49,41 +49,42 @@ def generage_excludes(root_folders):
         for root, _, files in os.walk(root):
             for file_n in files:
                 full_path = os.path.join(root, file_n)
-                if (full_path.endswith('__init__.py') or 
+                if (full_path.endswith('__init__.py') or
                     os.path.join('interfaces', 'web', 'mplh5') in full_path or
                     os.path.join('interfaces', 'web', 'static') in full_path or
                     os.path.join('interfaces', 'web', 'templates') in full_path or
                     os.path.join('entities', 'model', 'db_update_scripts') in full_path or
-                    os.path.join('tvb', 'simulator') in full_path or
-                    'scientific_library' in full_path):
+                        os.path.join('tvb', 'simulator') in full_path or 'scientific_library' in full_path):
                     excludes.append(full_path)
     return excludes
+
 
 
 if __name__ == "__main__":
     #Start all TVB tests (if in Coverage mode)
     if KEY_COVERAGE in argv:
         import tvb.interfaces as intf
+
         SOURCE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(intf.__file__)))
-        COVERAGE = coverage(source = [SOURCE_DIR], omit = generage_excludes([SOURCE_DIR]), cover_pylib=False)
+        COVERAGE = coverage(source=[SOURCE_DIR], omit=generage_excludes([SOURCE_DIR]), cover_pylib=False)
         COVERAGE.start()
         ## This needs to be executed before any TVB import.
 
+import unittest
+import datetime
 
-import unittest 
-import datetime 
-   
 # Make sure folder for Logging exists.   
 if not os.path.exists(cfg.TVB_STORAGE):
     os.makedirs(cfg.TVB_STORAGE)
 
 import matplotlib
-matplotlib.use('module://tvb.interfaces.web.mplh5.mplh5_backend')        
+matplotlib.use('module://tvb.interfaces.web.mplh5.mplh5_backend')
 from tvb_test.xmlrunner import XMLTestRunner
 from tvb_test.core import core_tests_main
 from tvb_test.adapters import adapters_tests_main
 from tvb_test.analyzers import bct_test
 from tvb_test.interfaces.web import web_tests_main
+
 
 
 def suite():
@@ -98,10 +99,11 @@ def suite():
     return test_suite
 
 
+
 if __name__ == "__main__":
     #Start all TVB tests
     START_TIME = datetime.datetime.now()
-    
+
     if KEY_CONSOLE in argv:
         TEST_RUNNER = unittest.TextTestRunner()
         TEST_SUITE = suite()
@@ -111,12 +113,12 @@ if __name__ == "__main__":
         STREAM = file(FILE_NAME, "w")
         TEST_RUNNER = XMLTestRunner(STREAM)
         TEST_SUITE = suite()
-        TEST_RUNNER.run(TEST_SUITE) 
+        TEST_RUNNER.run(TEST_SUITE)
         STREAM.close()
-        
-    print 'It run tests for %d sec.' % ((datetime.datetime.now() - START_TIME).seconds)
-    
+
+    print 'It run tests for %d sec.' % (datetime.datetime.now() - START_TIME).seconds
+
     if KEY_COVERAGE in argv:
         COVERAGE.stop()
-        COVERAGE.html_report(directory = os.path.join(os.path.dirname(__file__), 'test_coverage_html'))
+        COVERAGE.html_report(directory=os.path.join(os.path.dirname(__file__), 'test_coverage_html'))
 

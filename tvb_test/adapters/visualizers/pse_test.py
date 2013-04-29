@@ -25,11 +25,11 @@
 """
 
 import unittest
-import cherrypy
-from tvb_test.datatypes.datatypes_factory import DatatypesFactory
-from tvb_test.core.base_testcase import TransactionalTestCase
+from tvb.basic.config.settings import TVBSettings as config
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
 from tvb.adapters.visualizers.pse_isocline import IsoclinePSEAdapter
+from tvb_test.datatypes.datatypes_factory import DatatypesFactory
+from tvb_test.core.base_testcase import TransactionalTestCase
 
 
 
@@ -50,11 +50,15 @@ class PSETest(TransactionalTestCase):
         """
         viewer = DiscretePSEAdapter()
         result = viewer.launch(self.group)
+
         expected_keys = ['status', 'size_metric', 'series_array', 'min_shape_size_weight', 'min_color',
-                         'max_shape_size_weight', 'max_color', 'mainContent', 'labels_y', 'labels_x',
-                         'isAdapter', 'has_started_ops', 'group_id', 'datatypes_dict', 'data', 'color_metric']
+                         'max_shape_size_weight', 'max_color', 'mainContent', 'labels_y', 'labels_x', 'isAdapter',
+                         'has_started_ops', 'datatype_group_gid', 'datatypes_dict', 'data', 'color_metric']
         for key in expected_keys:
             self.assertTrue(key in result)
+        self.assertEqual(self.group.gid, result["datatype_group_gid"])
+        self.assertEqual(False, result["has_started_ops"])
+
 
 
     def test_launch_isocline(self):
@@ -62,11 +66,13 @@ class PSETest(TransactionalTestCase):
         Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
         viewer = IsoclinePSEAdapter()
-        try:
-            viewer.launch(self.group)
-            self.fail("Expected redirect for a group 1D only!")
-        except cherrypy.HTTPRedirect:
-            pass
+        result = viewer.launch(self.group)
+        self.assertEqual(viewer._ui_name, result["title"])
+        self.assertEqual(config.SERVER_IP, result["serverIp"])
+        self.assertEqual(config.MPLH5_SERVER_PORT, result["serverPort"])
+        self.assertEqual(0, len(result["figureNumbers"]))
+        self.assertEqual(0, len(result["metrics"]))
+
 
 
 

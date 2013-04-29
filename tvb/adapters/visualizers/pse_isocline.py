@@ -99,7 +99,6 @@ class IsoclinePSEAdapter(ABCMPLH5Displayer):
         Also overwrite launch from ABCDisplayer, since we want to handle a list of figures,
         instead of only one Matplotlib figure.
         """
-        show_full_toolbar = True
         if self.PARAM_FIGURE_SIZE in kwargs:
             figsize = kwargs[self.PARAM_FIGURE_SIZE]
             figsize = ((figsize[0]) / 80, (figsize[1]) / 80)
@@ -121,17 +120,18 @@ class IsoclinePSEAdapter(ABCMPLH5Displayer):
             ## Load proper entity class from DB.
             dt_measure = dao.get_generic_entity(DatatypeMeasure, datatype.id)[0]
         else:
-            dt_measure = dao.get_generic_entity(DatatypeMeasure, datatype.gid, '_analyzed_datatype')[0]
+            dt_measure = dao.get_generic_entity(DatatypeMeasure, datatype.gid, '_analyzed_datatype')
+            if dt_measure:
+                dt_measure = dt_measure[0]
 
         figure_nrs = {}
-        metrics = dt_measure.metrics
+        metrics = dt_measure.metrics if dt_measure else []
         for metric in metrics:
             # Separate plot for each metric.
             self._create_plot(metric, figsize, operation_group, range1_name, range2_name, figure_nrs)
 
-        parameters = dict(title=self._ui_name, figureNumbers=figure_nrs, showFullToolbar=show_full_toolbar,
-                          serverIp=config.SERVER_IP, serverPort=config.MPLH5_SERVER_PORT, metrics=metrics,
-                          figuresJSON=json.dumps(figure_nrs))
+        parameters = dict(title=self._ui_name, serverIp=config.SERVER_IP, serverPort=config.MPLH5_SERVER_PORT,
+                          figureNumbers=figure_nrs, metrics=metrics, figuresJSON=json.dumps(figure_nrs))
 
         if self.EXPORTABLE_FIGURE not in parameters:
             parameters[self.EXPORTABLE_FIGURE] = True
