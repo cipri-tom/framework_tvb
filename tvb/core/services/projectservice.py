@@ -724,7 +724,7 @@ class ProjectService:
                 all_data_in_group = dao.get_datatype_in_group(new_data[context.CommonDetails.CODE_OPERATION_GROUP_ID])
                 if len(all_data_in_group) < 1:
                     raise StructureException("Inconsistent group, can not be updated!")
-                datatype_group = dao.get_generic_entity(model.DataTypeGroup, all_data_in_group[0].fk_datatype_group)
+                datatype_group = dao.get_generic_entity(model.DataTypeGroup, all_data_in_group[0].fk_datatype_group)[0]
                 all_data_in_group.append(datatype_group)
                 for datatype in all_data_in_group:
                     new_data[context.CommonDetails.CODE_GID] = datatype.gid
