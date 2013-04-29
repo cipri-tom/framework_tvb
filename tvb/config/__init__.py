@@ -57,11 +57,11 @@ CONNECTIVITY_CLASS = 'ConnectivityViewer'
 MEASURE_METRICS_MODULE = "tvb.adapters.analyzers.metrics_group_timeseries"
 MEASURE_METRICS_CLASS = "TimeseriesMetricsAdapter"
 
-PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.parameter_space_exploration"
-PSE_ADAPTER_CLASS =  "ParameterExplorationAdapter"
+DISCRETE_PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.pse_discrete"
+DISCRETE_PSE_ADAPTER_CLASS =  "DiscretePSEAdapter"
 
-ISO_PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.isocline_pse"
-ISO_PSE_ADAPTER_CLASS = "IsoclinePseAdapter"
+ISOCLINE_PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.pse_isocline"
+ISOCLINE_PSE_ADAPTER_CLASS = "IsoclinePSEAdapter"
 
 TVB_IMPORTER_MODULE = "tvb.adapters.uploaders.tvb_importer"
 TVB_IMPORTER_CLASS = "TVBImporter"

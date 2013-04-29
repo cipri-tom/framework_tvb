@@ -25,27 +25,28 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import json
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
-from tvb.core.entities.transient.pse import ContextPSE
+from tvb.core.entities.transient.pse import ContextDiscretePSE
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.mapped_values import DatatypeMeasure
 from tvb.basic.filters.chain import FilterChain
 
 
+MAX_NUMBER_OF_POINT_TO_SUPPORT = 200
 
-class ParameterExplorationAdapter(ABCDisplayer):
+
+
+class DiscretePSEAdapter(ABCDisplayer):
     """
     Visualization adapter for Parameter Space Exploration.
     Will be used as a generic visualizer, accessible when input entity is DataTypeGroup.
     Will also be used in Burst as a supplementary navigation layer.
     """
-    _ui_name = "Parameter Space Exploration"
+    _ui_name = "Discrete Parameter Space Exploration"
     _ui_subsection = "pse"
-    MAX_POINTS_PER_DIMENSION = 150
-    
+
+
     def get_input_tree(self):
         """
         Take as Input a Connectivity Object.
@@ -54,8 +55,9 @@ class ParameterExplorationAdapter(ABCDisplayer):
                  'label': 'Datatype Group',
                  'type': model.DataTypeGroup,
                  'required': True,
-                 'conditions': FilterChain(fields=[FilterChain.datatype + ".no_of_ranges"],
-                                           operations=["<="], values=[2])}]
+                 'conditions': FilterChain(fields=[FilterChain.datatype + ".no_of_ranges",
+                                                   FilterChain.datatype + ".count_results"],
+                                           operations=["<=", "<="], values=[2, MAX_NUMBER_OF_POINT_TO_SUPPORT])}]
 
 
     def __init__(self):
@@ -77,21 +79,16 @@ class ParameterExplorationAdapter(ABCDisplayer):
         pse_context = self.prepare_parameters(datatype_group.id, color_metric, size_metric)
         pse_context.prepare_individual_jsons()
 
-        return self.build_display_result('parameter_exploration/view', pse_context)
+        return self.build_display_result('pse_discrete/view', pse_context)
 
 
     @staticmethod
     def is_compatible(datatype_group_id):
         """
-        Check if Isocline adapter makes sense for this datatype group.
+        Check if current visualization makes sense for a given dataTypeGroup.
         """
-        datatype_group = dao.get_datatype_group_by_id(datatype_group_id)
-        operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
-        range1, range2 = ParameterExplorationAdapter._get_range_values(operation_group)
-        if len(range1[1]) < ParameterExplorationAdapter.MAX_POINTS_PER_DIMENSION and\
-                (range2 is None or len(range2[1]) < ParameterExplorationAdapter.MAX_POINTS_PER_DIMENSION):
-            return True
-        return False
+        dt_group = dao.get_datatype_group_by_id(datatype_group_id)
+        return dt_group.no_of_ranges <= 2 and dt_group.count_results <= MAX_NUMBER_OF_POINT_TO_SUPPORT
 
 
     @staticmethod
@@ -99,25 +96,16 @@ class ParameterExplorationAdapter(ABCDisplayer):
         """
         We suppose that there are max 2 ranges and from each operation results exactly one dataType.
         """
-        if not ParameterExplorationAdapter.is_compatible(datatype_group_id):
-            raise LaunchException("Range values are too wide to display in discrete manner.")
         datatype_group = dao.get_datatype_group_by_id(datatype_group_id)
         if datatype_group is None:
             raise Exception("Selected DataTypeGroup is no longer present in the database. "
                             "It might have been remove or the specified id is not the correct one.")
 
         operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
-        range1, range2 = ParameterExplorationAdapter._get_range_values(operation_group)
-        
-        range1_labels = range1[1]
-        range1_name = range1[0]
-        range2_labels = ["_"]
-        range2_name = "_"
-        if range2 is not None:
-            range2_labels = range2[1]
-            range2_name = range2[0]
+        _, range1_name, range1_labels = operation_group.load_range_numbers(operation_group.range1)
+        has_range2, range2_name, range2_labels = operation_group.load_range_numbers(operation_group.range2)
 
-        pse_context = ContextPSE(datatype_group_id, range1_labels, range2_labels, color_metric, size_metric)
+        pse_context = ContextDiscretePSE(datatype_group_id, range1_labels, range2_labels, color_metric, size_metric)
 
         final_dict = dict()
         operations = dao.get_operations_in_group(operation_group.id)
@@ -126,14 +114,16 @@ class ParameterExplorationAdapter(ABCDisplayer):
                 pse_context.has_started_ops = True
             range_values = eval(operation_.range_values)
             key_1 = range_values[range1_name]
-            key_2 = "_"
-            if range2 is not None:
+            key_2 = "-"
+            if has_range2 is not None:
                 key_2 = range_values[range2_name]
+
             datatype = None
             if operation_.status == model.STATUS_FINISHED:
                 datatype = dao.get_results_for_operation(operation_.id)[0]
                 measures = dao.get_generic_entity(DatatypeMeasure, datatype.gid, '_analyzed_datatype')
                 pse_context.prepare_metrics_datatype(measures, datatype)
+
             if key_1 not in final_dict:
                 final_dict[key_1] = {key_2: pse_context.build_node_info(operation_, datatype)}
             else:
@@ -145,16 +135,3 @@ class ParameterExplorationAdapter(ABCDisplayer):
         pse_context.datatypes_dict = {}
         return pse_context
 
-
-    @staticmethod
-    def _get_range_values(operation_group):
-        if operation_group.range1 is None and operation_group.range2 is None:
-            raise Exception("Invalid DataTypeGroup...")
-
-        range1 = json.loads(operation_group.range1)
-        range2 = operation_group.range2
-
-        if range2 is not None:
-            range2 = json.loads(range2)
-        return range1, range2
-    

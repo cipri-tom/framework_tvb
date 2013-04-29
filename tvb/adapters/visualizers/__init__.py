@@ -25,6 +25,6 @@ Listed modules will be introspected and DB filled.
 """
 
 __all__ = ["brain", "connectivity", "cross_correlation", "cross_coherence",
-           "covariance", "histogram", "ica", "isocline_pse", "eeg_monitor",
+           "covariance", "histogram", "ica", "eeg_monitor",
            "mplh5_coherence_spectrum", "mplh5_fourier_spectrum", "mplh5_topographic", "mplh5_wavelet_spectrogram",
-           "parameter_space_exploration", "pca", "time_series"]
+           "pse_discrete", "pse_isocline", "pca", "time_series"]

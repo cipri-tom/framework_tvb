@@ -25,14 +25,15 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from sqlalchemy import Column, Integer
+from sqlalchemy import Column, Integer, Boolean
 from migrate.changeset.schema import create_column, drop_column
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.basic.logger.builder import get_logger
 
 meta = model.Base.metadata
-COL_RANGES = Column('no_of_ranges', Integer, default=0)
+COL_RANGES_1 = Column('no_of_ranges', Integer, default=0)
+COL_RANGES_2 = Column('only_numeric_ranges', Boolean, default=False)
 
 
 
@@ -44,13 +45,18 @@ def upgrade(migrate_engine):
     meta.bind = migrate_engine
 
     table = meta.tables['DATA_TYPES_GROUPS']
-    create_column(COL_RANGES, table)
+    create_column(COL_RANGES_1, table)
+    create_column(COL_RANGES_2, table)
 
     try:
         ## Iterate DataTypeGroups from previous code-versions and try to update value for the new column.
         previous_groups = dao.get_generic_entity(model.DataTypeGroup, "0", "no_of_ranges")
+
         for group in previous_groups:
+
             operation_group = dao.get_operationgroup_by_id(group.fk_operation_group)
+            group.only_numeric_ranges = operation_group.has_only_numeric_ranges
+
             if operation_group.range3 is not None:
                 group.no_of_ranges = 3
             elif operation_group.range2 is not None:
@@ -59,6 +65,7 @@ def upgrade(migrate_engine):
                 group.no_of_ranges = 1
             else:
                 group.no_of_ranges = 0
+
             dao.store_entity(group)
 
     except Exception, excep:
@@ -73,4 +80,6 @@ def downgrade(migrate_engine):
     meta.bind = migrate_engine
 
     table = meta.tables['DATA_TYPES_GROUPS']
-    drop_column(COL_RANGES, table)
+    drop_column(COL_RANGES_1, table)
+    drop_column(COL_RANGES_2, table)
+

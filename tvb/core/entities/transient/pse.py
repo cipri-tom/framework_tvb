@@ -35,7 +35,7 @@ from tvb.basic.config.settings import EnhancedDictionary
 from tvb.core.entities import model
 
 
-class ContextPSE(EnhancedDictionary):
+class ContextDiscretePSE(EnhancedDictionary):
     """
     Entity used for filling a PSE visualizer.
     """
@@ -83,14 +83,14 @@ class ContextPSE(EnhancedDictionary):
     @staticmethod
     def build_node_info(operation, datatype):
         """
-        Build a dictionary with all the required informations to be displayed for a given node.
+        Build a dictionary with all the required information to be displayed for a given node.
         """
         node_info = {}
         if operation.status == model.STATUS_FINISHED and datatype is not None:
             ### Prepare attributes to be able to show overlay and launch further analysis.
-            node_info[ContextPSE.KEY_GID] = datatype.gid
-            node_info[ContextPSE.KEY_NODE_TYPE] = datatype.type
-            node_info[ContextPSE.KEY_OPERATION_ID] = operation.id
+            node_info[ContextDiscretePSE.KEY_GID] = datatype.gid
+            node_info[ContextDiscretePSE.KEY_NODE_TYPE] = datatype.type
+            node_info[ContextDiscretePSE.KEY_OPERATION_ID] = operation.id
             ### Prepare tooltip for quick display.
             datatype_tooltip = str("Operation id: " + str(operation.id) +
                                    "<br/>Datatype gid: " + str(datatype.gid) +
@@ -101,9 +101,10 @@ class ContextPSE(EnhancedDictionary):
             if datatype.summary_info is not None:
                 for key, value in datatype.summary_info.iteritems():
                     datatype_tooltip = datatype_tooltip + "<br/>" + str(key) + ": " + str(value)
-            node_info[ContextPSE.KEY_TOOLTIP] = datatype_tooltip
+            node_info[ContextDiscretePSE.KEY_TOOLTIP] = datatype_tooltip
         else:
-            node_info[ContextPSE.KEY_TOOLTIP] = "No result available. Operation is in status: %s" % (operation.status)
+            node_info[ContextDiscretePSE.KEY_TOOLTIP] = "No result available. Operation is in " \
+                                                        "status: %s" % operation.status
         return node_info
     
     
@@ -112,15 +113,17 @@ class ContextPSE(EnhancedDictionary):
         Update attribute self.datatypes_dict with metric values for this DataType.
         """
         dt_info = {}
-        if (measures is not None and len(measures) > 0):
+        if measures is not None and len(measures) > 0:
             measure = measures[0]
             self.available_metrics = measure.metrics.keys()
+
             # As default we have the first two metrics available is no metrics are passed from the UI
             if self.color_metric is None and self.size_metric is None:
                 if len(self.available_metrics) >= 1:
                     self.color_metric = self.available_metrics[0]
                 if len(self.available_metrics) >= 2:
                     self.size_metric = self.available_metrics[1]
+
             if self.color_metric is not None:
                 color_value = measure.metrics[self.color_metric]
                 if color_value < self.min_color:
@@ -128,6 +131,7 @@ class ContextPSE(EnhancedDictionary):
                 if color_value > self.max_color:
                     self.max_color = color_value
                 dt_info[self.color_metric] = color_value
+
             if self.size_metric is not None:
                 size_value = measure.metrics[self.size_metric]
                 if size_value < self.min_shape_size_weight:
@@ -160,12 +164,12 @@ class ContextPSE(EnhancedDictionary):
                 series_data = [[i, j]]
                 color_weight, shape_type_1 = self.__get_color_weight(self.datatypes_dict, datatype_gid, 
                                                                      self.color_metric)
-                if shape_type_1 != None and datatype_gid != None:
+                if (shape_type_1 is not None) and (datatype_gid is not None):
                     final_dict[key_1][key_2][self.KEY_TOOLTIP] = (final_dict[key_1][key_2][self.KEY_TOOLTIP] +
                                                                   "<br/> Color metric has NaN values")
                 shape_size, shape_type_2 = self.__get_node_size(self.datatypes_dict, datatype_gid, len(self.labels_x), 
                                                                 len(self.labels_y), self.size_metric)
-                if shape_type_2 != None and datatype_gid != None:
+                if (shape_type_2 is not None) and (datatype_gid is not None):
                     final_dict[key_1][key_2][self.KEY_TOOLTIP] = (final_dict[key_1][key_2][self.KEY_TOOLTIP] 
                                                                   + "<br/> Size metric has NaN values")
                 #If either of the shape_types is not none use that
@@ -204,31 +208,29 @@ class ContextPSE(EnhancedDictionary):
         """
         For each data point entry, build the FLOT specific JSON.
         """
-        series = "{\"data\": " + json.dumps(data) + ","
-        series += "\"points\": {"
+        series = '{"data": ' + json.dumps(data) + ', "points": {'
         if symbol is not None:
-            series += "\"symbol\": \"" + symbol + "\", "
-        series += "\"radius\": " + str(radius) + "}"
-        series += "}"
+            series += '"symbol": "' + symbol + '", '
+        series += '"radius": ' + str(radius) + '} }'
         return series
 
 
     @staticmethod
     def __get_color_weight(datatype_indexes, datatype_gid, metric):
         """
-        Returns the color weight of the shape used for representing the dataType with id
-        equal to 'datatype_id'.
+        Returns the color weight of the shape used for representing the dataType with id equal to 'datatype_id'.
 
-        datatype_indexes -  a dictionary which contains as keys a dataType GID and as values
+        :param: datatype_indexes -  a dictionary which contains as keys a dataType GID and as values
                             the index corresponding to the dataType into the list of
                             dataTypes resulted from the same operation group
-        datatype_gid - It should exists into the 'datatype_indexes' dictionary.
-        colors_array - an array of weights.
+        :param: datatype_gid - It should exists into the 'datatype_indexes' dictionary.
+        :param: metric - current metric key.
         """
         if datatype_gid is None:
             return 0, "cross"
         node_info = datatype_indexes[datatype_gid]
         valid_metric = True
+
         if metric in node_info:
             try:
                 if math.isnan(float(node_info[metric])) or math.isinf(float(node_info[metric])):
@@ -256,6 +258,7 @@ class ContextPSE(EnhancedDictionary):
         if datatype_gid is None:
             return max_size / 2.0, "cross"
         node_info = datatype_indexes[datatype_gid]
+
         if metric in node_info:
             valid_metric = True
             try:
@@ -263,10 +266,12 @@ class ContextPSE(EnhancedDictionary):
                     valid_metric = False
             except ValueError, _:
                 valid_metric = False
+
             if valid_metric:
                 shape_weight = node_info[metric]
-                return (min_size + ((shape_weight - self.min_shape_size_weight) / float((self.max_shape_size_weight 
-                                            - self.min_shape_size_weight))) * (max_size - min_size)), None
+                return (min_size + ((shape_weight - self.min_shape_size_weight) /
+                                    float((self.max_shape_size_weight - self.min_shape_size_weight))) *
+                        (max_size - min_size)), None
             else:
                 return max_size / 2.0, "cross"
         return max_size / 2.0, None

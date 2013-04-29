@@ -1,6 +1,6 @@
 <py:def function="generateFramePSE(available_metrics, back_page, dataTypeGroupID)" xmlns:py="http://genshi.edgewall.org/">
 
-	<script type="text/javascript" src="/static/js/parameterSpace.js?4266"></script>
+	<script type="text/javascript" src="/static/js/parameterSpace.js"></script>
 	<!--We need projectTree.js for launching algorithm methods, from overlay. -->
 	<script type="text/javascript" src="/static/js/projectTree.js?4266"></script>
 	<script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
@@ -32,7 +32,7 @@
 		</li>
 		
 		<li>
-		<a href="#" onclick="PSE_mainDraw('main_div_pse', '$back_page')" title="Refresh..." class="action action-view">Refresh</a>
+		<a href="#" onclick="PSE_mainDraw('main_div_pse', '$back_page')" title="Refresh..." class="action action-refresh">Refresh</a>
 		</li>
 	</ul>
 

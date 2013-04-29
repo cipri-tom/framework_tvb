@@ -1,11 +1,11 @@
-<div class="flex-wrapper" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+<div class="flex-wrapper" xmlns:xi="http://www.w3.org/2001/XInclude">
 	<xi:include href="./function_pse.html"/>
 	${generateFramePSE(available_metrics, 'burst', group_id)}
 	
 	<script type="text/javascript">
 		$(document).ready(function(){
     		PSE_previewBurst('burst-pse-flot', '${labels_x}', '${labels_y}', '${series_array}', '${data}', 
-						    '${min_color}', '${max_color}', 'burst', '${color_metric}', '${size_metric}', '${status}');
+						     '${min_color}', '${max_color}', 'burst', '${color_metric}', '${size_metric}', '${status}');
 		});
 	</script>
 </div>

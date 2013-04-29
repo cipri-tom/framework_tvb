@@ -18,104 +18,118 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
-from tvb.core.adapters.exceptions import LaunchException
+
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import json
 import urllib
 import cherrypy
-from tvb.config import PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS, ISO_PSE_ADAPTER_CLASS, ISO_PSE_ADAPTER_MODULE
+from tvb.config import DISCRETE_PSE_ADAPTER_MODULE, DISCRETE_PSE_ADAPTER_CLASS, ISOCLINE_PSE_ADAPTER_CLASS, ISOCLINE_PSE_ADAPTER_MODULE
 from tvb.core.services import projectservice
-from tvb.interfaces.web.controllers.basecontroller import ajax_call
-from tvb.interfaces.web.controllers import basecontroller as bc
+from tvb.core.adapters.exceptions import LaunchException
+from tvb.interfaces.web.controllers.basecontroller import BaseController, ajax_call, using_template
 
 
-class ParameterExplorationController(bc.BaseController):
+PSE_FLOT = "FLOT"
+PSE_ISO = "ISO"
+
+REDIRECT_MSG = '/burst/explore/pse_error?adapter_name=%s&message=%s'
+
+
+class ParameterExplorationController(BaseController):
     """
     Controller to handle PSE actions.
     """
 
 
     def __init__(self):
-        bc.BaseController.__init__(self)
+        BaseController.__init__(self)
         self.project_service = projectservice.ProjectService()
-        
-        
+
+
     @cherrypy.expose
     @ajax_call(False)
     def get_default_pse_viewer(self, datatype_group_id):
         """
-        For a given datatype group, check first the discrete PSE is compatible.
-        If this is not the case fallback to the continous one. If none are available
-        return None.
+        For a given DataTypeGroup, check first if the discrete PSE is compatible.
+        If this is not the case fallback to the continos PSE viewer.
+        If none are available return: None.
         """
-        algo_group = self.flow_service.get_algorithm_by_module_and_class(PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS)[1]
-        param_explore_discrete = self.flow_service.build_adapter_instance(algo_group)
-        if param_explore_discrete.is_compatible(datatype_group_id):
-            return "FLOT"
-        algo_group = self.flow_service.get_algorithm_by_module_and_class(ISO_PSE_ADAPTER_MODULE, ISO_PSE_ADAPTER_CLASS)[1]
-        param_explore_continous = self.flow_service.build_adapter_instance(algo_group)
-        if param_explore_continous.is_compatible(datatype_group_id):
-            return "ISO"
+        group = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
+                                                                    DISCRETE_PSE_ADAPTER_CLASS)[1]
+        adapter = self.flow_service.build_adapter_instance(group)
+        if adapter.is_compatible(datatype_group_id):
+            return PSE_FLOT
+
+        group = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                    ISOCLINE_PSE_ADAPTER_CLASS)[1]
+        adapter = self.flow_service.build_adapter_instance(group)
+        if adapter.is_compatible(datatype_group_id):
+            return PSE_ISO
+
         return None
-    
+
 
     @cherrypy.expose
-    @ajax_call(False)
-    def draw_parameter_exploration(self, datatype_group_id, color_metric=None, size_metric=None):
+    @using_template('visualizers/pse_discrete/burst_preview')
+    def draw_discrete_exploration(self, datatype_group_id, color_metric=None, size_metric=None):
         """
         Create new data for when the user chooses to refresh from the UI.
         """
-        if color_metric == 'None': color_metric = None
-        if size_metric == 'None': size_metric = None
-        algo_group = self.flow_service.get_algorithm_by_module_and_class(PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS)[1]
-        param_explore_adapter = self.flow_service.build_adapter_instance(algo_group)
-        if param_explore_adapter.is_compatible(datatype_group_id):
-            return self._get_flot_html_result(param_explore_adapter, datatype_group_id, color_metric, size_metric)
+        if color_metric == 'None':
+            color_metric = None
+        if size_metric == 'None':
+            size_metric = None
+
+        group = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
+                                                                    DISCRETE_PSE_ADAPTER_CLASS)[1]
+        adapter = self.flow_service.build_adapter_instance(group)
+        if adapter.is_compatible(datatype_group_id):
+            try:
+                params = adapter.prepare_parameters(datatype_group_id, color_metric, size_metric)
+                for key in ['labels_x', 'labels_y', 'data']:
+                    params[key] = json.dumps(params[key])
+                return params
+            except LaunchException, ex:
+                error_msg = urllib.quote(ex.message)
         else:
-            return self._display_error_page('Discrete Explorer', 
-                                            "Discrete explorer can only handle a max of %i values per dimension."%(
-                                                                    param_explore_adapter.MAX_POINTS_PER_DIMENSION,))
-        
-    @bc.using_template('visualizers/parameter_exploration/burst_preview')
-    def _get_flot_html_result(self, adapter, datatype_group_id, color_metric, size_metric):
-        try:
-            params = adapter.prepare_parameters(datatype_group_id, color_metric, size_metric)
-            for key in ['labels_x', 'labels_y', 'data']:
-                params[key] = json.dumps(params[key])
-            return params
-        except LaunchException, ex:
-            error_msg = urllib.quote(ex.message)
-            raise cherrypy.HTTPRedirect('/burst/explore/_display_error_page?adapter_name="Discrete+viewer"&message="%s"'%(error_msg,))
-    
+            error_msg = urllib.quote("Discrete explorer can only handle a max of %i values per "
+                                     "dimension." % adapter.MAX_POINTS_PER_DIMENSION)
+
+        name = urllib.quote(adapter._ui_name)
+        raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
+
+
     @cherrypy.expose
-    @ajax_call(False)
-    def draw_isocline_explorer(self, datatype_group_id, width=None, height=None):
-        if width is not None: width = int(width)
-        if height is not None: height = int(height)
-        algo_group = self.flow_service.get_algorithm_by_module_and_class(ISO_PSE_ADAPTER_MODULE, ISO_PSE_ADAPTER_CLASS)[1]
-        iso_param_expore = self.flow_service.build_adapter_instance(algo_group)
-        if iso_param_expore.is_compatible(datatype_group_id):
-            return self._get_iso_pse_html(iso_param_expore, datatype_group_id, width, height)
+    @using_template('visualizers/pse_isocline/burst_preview')
+    def draw_isocline_exploration(self, datatype_group_id, width=None, height=None):
+
+        if width is not None:
+            width = int(width)
+        if height is not None:
+            height = int(height)
+
+        group = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                    ISOCLINE_PSE_ADAPTER_CLASS)[1]
+        adapter = self.flow_service.build_adapter_instance(group)
+
+        if adapter.is_compatible(datatype_group_id):
+            try:
+                return adapter.burst_preview(datatype_group_id, width, height)
+            except LaunchException, ex:
+                error_msg = urllib.quote(ex.message)
         else:
-            return self._display_error_page('Continous Explorer', "Continous PSE requires a 2D range of floating point values.")
-    
-    
-    @bc.using_template('visualizers/isocline_pse/view')
-    def _get_iso_pse_html(self, adapter, datatype_group_id, width, height):
-        """
-        Generate the HTML for the isocline visualizers.
-        """
-        try:
-            return adapter.burst_preview(datatype_group_id, width, height)
-        except LaunchException, ex:
-            error_msg = urllib.quote(ex.message)
-            raise cherrypy.HTTPRedirect('/burst/explore/_display_error_page?adapter_name="Isocline+viewer"&message="%s"'%(error_msg,))
-    
+            error_msg = urllib.quote("Isocline PSE requires a 2D range of floating point values.")
+
+        name = urllib.quote(adapter._ui_name)
+        raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
+
+
     @cherrypy.expose
-    @bc.using_template('burst/burst_pse_error')
-    def _display_error_page(self, adapter_name, message):
-        return {'adapter_name' : adapter_name, 'message' : message}
+    @using_template('burst/burst_pse_error')
+    def pse_error(self, adapter_name, message):
+        return {'adapter_name': adapter_name, 'message': message}
                 

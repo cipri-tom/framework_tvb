@@ -247,6 +247,45 @@ class OperationGroup(Base, Exportable):
         self.name = new_name
 
 
+    @staticmethod
+    def load_range_numbers(range_value):
+        """
+        Parse the range values for a given json-like string.
+
+        :return (Boolean_are_all_numbers, range_field_name, array_range_values)
+        """
+        if range_value is None:
+            return None, "-", ["-"]
+
+        loaded_json = json.loads(range_value)
+        range_name = loaded_json[0]
+        range_values = loaded_json[1]
+        can_interpolate_range = True  # Assume this is a numeric range that we can interpolate
+        for idx, entry in enumerate(range_values):
+            try:
+                range_values[idx] = float(entry)
+            except ValueError:
+                # It's a DataType range
+                can_interpolate_range = False
+        return can_interpolate_range, range_name, range_values
+
+
+    @property
+    def has_only_numeric_ranges(self):
+        """
+        :returns True when all range fields are either None or could be parsed into a numeric array.
+        """
+        is_numeric = [self.load_range_numbers(self.range1)[0],
+                      self.load_range_numbers(self.range2)[0],
+                      self.load_range_numbers(self.range3)[0]]
+
+        for num in is_numeric:
+            if num is False:
+                return False
+        return True
+
+
+
 #Possible values for Operation.status field
 STATUS_STARTED = "STARTED"
 STATUS_FINISHED = "FINISHED"
@@ -286,11 +325,9 @@ class Operation(Base, Exportable):
     user = relationship(User, primaryjoin=(fk_launched_by == User.id), lazy='joined')
 
 
-    def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo,
-                 parameters, meta='', method_name='', status=STATUS_STARTED,
-                 start_date=None, completion_date=None,
-                 op_group_id=None, additional_info='', user_group=None,
-                 range_values=None, result_disk_size=0):
+    def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo, parameters, meta='', method_name='',
+                 status=STATUS_STARTED, start_date=None, completion_date=None, op_group_id=None, additional_info='',
+                 user_group=None, range_values=None, result_disk_size=0):
         self.fk_launched_by = fk_launched_by
         self.fk_launched_in = fk_launched_in
         self.fk_from_algo = fk_from_algo
@@ -311,9 +348,8 @@ class Operation(Base, Exportable):
 
     def __repr__(self):
         return "<Operation(%s,%s,'%s','%s','%s','%s','%s,'%s','%s',%s, '%s')>" \
-               % (self.fk_launched_by, self.fk_launched_in, self.fk_from_algo,
-                  self.parameters, self.meta_data, self.method_name,
-                  self.start_date, self.completion_date, self.status,
+               % (self.fk_launched_by, self.fk_launched_in, self.fk_from_algo, self.parameters,
+                  self.meta_data, self.status, self.method_name, self.start_date, self.completion_date,
                   self.fk_operation_group, self.user_group)
 
 
@@ -362,7 +398,7 @@ class Operation(Base, Exportable):
         Add specific attributes from a input dictionary.
         """
 
-        # If user id was specified try to load it, otherwhise use System account
+        # If user id was specified try to load it, otherwise use System account
         user = dao.get_system_user() if user_id is None else dao.get_user_by_id(user_id)
         self.fk_launched_by = user.id
 
@@ -438,7 +474,7 @@ class Operation(Base, Exportable):
 
 class OperationProcessIdentifier(Base):
     """
-    Class for storing for each operation the process idientifier under which
+    Class for storing for each operation the process identifier under which
     it was launched so any operation can be stopped from tvb.
     """
     __tablename__ = "OPERATION_PROCESS_IDENTIFIERS"

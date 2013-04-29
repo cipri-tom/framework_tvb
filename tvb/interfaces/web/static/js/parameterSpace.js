@@ -191,7 +191,7 @@ function PSE_mainDraw(parametersCanvasId, backPage, groupId, selectedColorMetric
 		// We didn't get parameter, so try to get group id from page
 		groupId = document.getElementById("datatype-group-id").value
 	}
-	var url = '/burst/explore/draw_parameter_exploration/' + groupId
+	var url = '/burst/explore/draw_discrete_exploration/' + groupId
 	
 	if (selectedColorMetric == undefined) {
 		selectedColorMetric = $('#color_metric_select').val()
@@ -236,5 +236,108 @@ function changeColors() {
 }
 
 
+/*************************************************************************************************************************
+ * 			ISOCLINE PSE BELLOW
+ *************************************************************************************************************************/
+
+
+var serverIp = null;
+var serverPort = null;
+var figuresDict = null;
+var currentFigure = null;
+var width = null;
+var height = null;
+
+/*
+ * If for some reason we change the plot size for one of the images,
+ * store it so we can resize all other plots on the onchange event.
+ */
+function resizeFigures(newWidth, newHeight) {
+
+	width = newWidth;
+	height = newHeight;
+	resizePlot(currentFigure, width, height);
+}
+
+/*
+ * Do the actual resize, given a figure id, width and height.
+ */
+function resizePlot(id, width, height) {
+
+	if (currentFigure != null) {
+		resize = id;
+	    do_resize(currentFigure, width, height);
+	    resize = -1;
+	}
+}
+
+/*
+ * Store all needed data as js variables so we can use later on.
+ */
+function initISOData(metric, figDict, servIp, servPort) {
+
+	figuresDict = $.parseJSON(figDict);
+	serverIp = servIp;
+	serverPort = servPort;
+	currentFigure = figuresDict[metric];
+	connect_manager(serverIp, serverPort, figuresDict[metric]);
+	$('#' + metric).show();
+}
+
+/*
+ * On plot change upldate metric and do any required changes liek resize on new selected plot.
+ */
+function updateMetric(selectComponent) {
+
+	var newMetric = $(selectComponent).find(':selected').val();
+	showMetric(newMetric);
+	if (width != null && height != null) {
+		waitOnConnection(currentFigure, 'resizePlot(currentFigure, width, height)', 200, 50);
+	}
+}
+
+/*
+ * Update html to show the new metric. Also connect to backend mplh5 for this new image.
+ */
+function showMetric(newMetric) {
+
+	for (var key in figuresDict) {
+		$('#' + key).hide();
+	}
+	currentFigure = figuresDict[newMetric];
+	connect_manager(serverIp, serverPort, figuresDict[newMetric]);
+	$('#' + newMetric).show();
+}
+
+/*
+ * This is the callback that will get evaluated by an onClick event on the canvas through the mplh5 backend.
+ */
+function clickedDatatype(datatypeGid) {
+
+	displayNodeDetails(datatypeGid);
+}
+
+/*
+ * Update info on mouse over. This event is passed as a callback from the isocline python adapter.
+ */
+function hoverPlot(id, x, y, val) {
+
+	document.getElementById('cursor_info_' + id).innerHTML = 'x axis:' + x + ' y axis:' + y + ' value:' + val;
+}
+
+
+function Isocline_MainDraw(groupId, divId, width, height) {
+
+	$('#' + divId).html('')
+	$.ajax({
+            type: "POST",
+            url: '/burst/explore/draw_isocline_exploration/' + groupId + '/' + width + '/' + height,
+            success: function(r) {
+                    $('#' + divId).html(r);
+                },
+            error: function(r) {
+                displayMessage("Could not refresh with the new metrics.", "errorMessage");
+	}});
+}
 
 

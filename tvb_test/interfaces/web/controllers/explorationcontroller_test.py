@@ -19,44 +19,43 @@
 #
 #
 """
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import json
 import unittest
-from tvb.config import PSE_ADAPTER_MODULE, PSE_ADAPTER_CLASS
-from tvb.core.services.flowservice import FlowService
+import cherrypy
 from tvb.interfaces.web.controllers.burst.explorationcontroller import ParameterExplorationController
 from tvb_test.core.base_testcase import TransactionalTestCase
 from tvb_test.interfaces.web.controllers.basecontroller_test import BaseControllersTest
 from tvb_test.datatypes.datatypes_factory import DatatypesFactory
 
 
+
 class ExplorationContollerTest(TransactionalTestCase, BaseControllersTest):
-    """ Unit tests for burstcontroller """
-    
+    """
+    Unit tests for BurstController
+    """
+
+
     def setUp(self):
         BaseControllersTest.init(self)
-        self.datatype_group = DatatypesFactory().create_datatype_group()
-        self.param_c =  ParameterExplorationController()
-    
-    
+        self.dt_group = DatatypesFactory().create_datatype_group()
+        self.controller = ParameterExplorationController()
+
+
     def tearDown(self):
         BaseControllersTest.cleanup(self)
-            
-            
-    def test_draw_parameter_exploration(self):
-        flow_service = FlowService()
-        algo_group = flow_service.get_algorithm_by_module_and_class(PSE_ADAPTER_MODULE, 
-                                                                    PSE_ADAPTER_CLASS)[1]
-        param_explore_adapter = flow_service.build_adapter_instance(algo_group)
-        result = self.param_c._get_flot_html_result(param_explore_adapter, 
-                                                               self.datatype_group.id, 
-                                                               None, None)
+
+
+    def test_draw_discrete_exploration(self):
+        """
+        Test that Discrete PSE is getting launched.
+        """
+        result = self.controller.draw_discrete_exploration(self.dt_group.id, None, None)
         self.assertTrue(result['available_metrics'] == [])
         self.assertEqual(result['color_metric'], None)
         self.assertEqual(result['size_metric'], None)
-        # TODO: This latter checks are strictly tied to data generated
-        # in the datatypes_factory. Try and move them here?
         self.assertEqual(json.loads(result['labels_x']), ['a', 'b', 'c'])
         self.assertEqual(json.loads(result['labels_y']), ['_'])
         data = json.loads(result['data'])
@@ -65,7 +64,20 @@ class ExplorationContollerTest(TransactionalTestCase, BaseControllersTest):
             self.assertEqual(entry[0]['dataType'], 'Datatype2')
             for key in ['Gid', 'color_weight', 'operationId', 'tooltip']:
                 self.assertTrue(key in entry[0])
-            
+
+
+    def test_draw_isocline_exploration(self):
+        """
+        Test that isocline PSE does not get launched for 1D groups.
+        """
+        try:
+            self.controller.draw_isocline_exploration(self.dt_group.id, 50, 50)
+            self.fail("It should have thrown an exception because ")
+        except cherrypy.HTTPRedirect:
+            pass
+
+
+
 def suite():
     """
     Gather all the tests in a test suite.
@@ -73,6 +85,7 @@ def suite():
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(ExplorationContollerTest))
     return test_suite
+
 
 
 if __name__ == "__main__":

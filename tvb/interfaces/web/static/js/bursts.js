@@ -495,8 +495,12 @@ function loadGroup(groupId) {
 				} else {
 					displayMessage("None of the parameter exploration viewers are compatible with range.", "warningMessage");
 				}
-				doParameterSpaceExploration(groupId);
-				doIsoclineSpaceExploration(groupId);
+
+				switch_top_level_visibility("#section-pse");
+				var isoWidth = $('#section-pse').width();
+	            var isoHeight = $('#section-pse').height();
+	            PSE_mainDraw('burst-pse-flot', 'burst', groupId);
+                Isocline_MainDraw(groupId, 'burst-pse-iso', isoWidth, isoHeight)
 			},
 		error: function(r) {
 		    displayMessage("Error while loading burst.", "errorMessage");
@@ -527,22 +531,7 @@ function resizeIsoFigures() {
 		resizeFigures(width - 60, height - 80); // Don't resize quite to full since we have selects under plot and margins to plot
 	}
 	catch(ReferenceError) { // just means we on the error page so no plot to resize
-		}
-}
-
-function doIsoclineSpaceExploration(groupId) {
-	var width = $('#burst-pse-flot').width();
-	var height = $('#burst-pse-flot').height();
-	$('#burst-pse-iso').html('')
-	$.ajax({  	
-	type: "POST", 
-	url: '/burst/explore/draw_isocline_explorer/' + groupId + '/' + width + '/' + height,
-	success: function(r) { 
-			$('#burst-pse-iso').html(r);
-		},
-	error: function(r) {
-	    displayMessage("Could not refresh with the new metrics.", "errorMessage");
-	}});
+	}
 }
 
 
@@ -560,13 +549,6 @@ function toogleMaximizeBurst(hrefElement) {
 	}
 }
 
-/**
- * Prepare PSE display for current group.
- */
-function doParameterSpaceExploration(groupId) {
-	switch_top_level_visibility("#section-pse");
-	PSE_mainDraw('burst-pse-flot', 'burst', groupId);
-}
 
 function updatePortletsToolbar(state) {
 	
@@ -1153,57 +1135,5 @@ function launchNewBurst(launchMode) {
             });	
 }
 
-
-/*
- * Bind specific events for the PSE launched from the burst page.
- * TODO This is no longer used, should be removed soon
- */
-function bindParameterSpaceEvents(GID) {
-	
-	$("#main_div_pse").bind("plotclick", function (event, pos, item) {
-        if (item) {
-            var dataPoint = item.datapoint;
-            var dataInfo = PSE_nodesInfo[dataPoint[0]][dataPoint[1]];
-            if (dataInfo['Gid'] != undefined) {
-            	var extra_menu_entry = {'Launch configured portlets' : {label: 'Launch configured portlets', 
-            															_class: "context-menu-portlet",
-            															action: function(obj) {
-            																if ($('.' + ACTIVE_BURST_CLASS)[0] != undefined) {
-            																	// Not sure how to handle the case where the burst is canceled by user
-            																	$('.' + ACTIVE_BURST_CLASS)[0].className = $('.' + ACTIVE_BURST_CLASS)[0].className + ' ' + GROUP_BURST_CLASS;
-            																} 
-            																var opId = dataInfo['operationId'];
-            																loadWorflowWithOperation(opId);
-            															},
-            															"separator_before": true
-            															}
-            							}
-            	//buildDataTypeMenu(this, dataInfo['dataType'], dataInfo['Gid'], item.pageX, item.pageY, 'burst', extra_menu_entry);
-            }
-        }
-    });
-}
-
-/*
- * Load the data for a specific workflow in case of a group parameter exploration.
- */
-function loadWorflowWithOperation(operationId) {
-	
-	switch_top_level_visibility("#section-portlets");
-	cancelPortletConfig();
-	var portletsDisplay = $("#portlets-display")[0];
-	var width = portletsDisplay.clientWidth;
-	var height = portletsDisplay.clientHeight;
-	$.ajax({  	
-			type: "POST", 
-			url: '/burst/get_visualizers_for_operation_id/' + operationId + '/' + width + '/' + height,
-	        success: function(r) {    
-				$("#portlets-display").replaceWith(r);
-	        } ,
-	        error: function(r) {
-	            displayMessage("Selection was not saved properly.", "errorMessage");
-	        }
-		});
-}
 
 

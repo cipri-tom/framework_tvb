@@ -18,57 +18,58 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
+
 """
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import unittest
-from tvb.core.entities.file.fileshelper import FilesHelper
+import cherrypy
 from tvb_test.datatypes.datatypes_factory import DatatypesFactory
 from tvb_test.core.base_testcase import TransactionalTestCase
-from tvb.adapters.visualizers.parameter_space_exploration import ParameterExplorationAdapter
-from tvb.core.services.flowservice import FlowService
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes.surfaces import CorticalSurface
-from tvb.datatypes.connectivity import Connectivity
-from tvb_test.core.test_factory import TestFactory
+from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
+from tvb.adapters.visualizers.pse_isocline import IsoclinePSEAdapter
+
 
 
 class PSETest(TransactionalTestCase):
     """
     Unit-tests for BrainViewer.
     """
+
+
     def setUp(self):
         self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
-        self.test_user = self.datatypeFactory.get_user()
-        
-        TestFactory.import_cff(test_user = self.test_user, test_project=self.test_project)
-        self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
-        self.assertTrue(self.connectivity is not None)
-        self.surface = TestFactory.get_entity(self.test_project, CorticalSurface())
-        self.assertTrue(self.surface is not None)
-                
-    def tearDown(self):
+        self.group = self.datatypeFactory.create_datatype_group()
+
+
+    def test_launch_discrete(self):
         """
-        Clean-up tests data
+        Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
-        FilesHelper().remove_project_structure(self.test_project.name)
-    
-    
-    def test_launch(self):
-        """
-        Check that all required keys are present in output from BrainViewer launch.
-        """
-        conn_measure = self.datatypeFactory.create_datatype_group()
-        viewer = ParameterExplorationAdapter()
-        result = viewer.launch(conn_measure)
+        viewer = DiscretePSEAdapter()
+        result = viewer.launch(self.group)
         expected_keys = ['status', 'size_metric', 'series_array', 'min_shape_size_weight', 'min_color',
                          'max_shape_size_weight', 'max_color', 'mainContent', 'labels_y', 'labels_x',
-                         'isAdapter', 'has_started_ops', 'group_id', 'datatypes_dict', 'data', 'color_metric'] 
+                         'isAdapter', 'has_started_ops', 'group_id', 'datatypes_dict', 'data', 'color_metric']
         for key in expected_keys:
             self.assertTrue(key in result)
-    
-    
+
+
+    def test_launch_isocline(self):
+        """
+        Check that all required keys are present in output from PSE Discrete Adapter launch.
+        """
+        viewer = IsoclinePSEAdapter()
+        try:
+            viewer.launch(self.group)
+            self.fail("Expected redirect for a group 1D only!")
+        except cherrypy.HTTPRedirect:
+            pass
+
+
+
 def suite():
     """
     Gather all the tests in a test suite.
@@ -76,6 +77,7 @@ def suite():
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(PSETest))
     return test_suite
+
 
 
 if __name__ == "__main__":
