@@ -186,6 +186,8 @@ class Algorithm(Base):
                                                                self.outputlist)
 
 
+RANGE_MISSING_STRING = "-"
+
 
 class OperationGroup(Base, Exportable):
     """
@@ -255,7 +257,7 @@ class OperationGroup(Base, Exportable):
         :return (Boolean_are_all_numbers, range_field_name, array_range_values)
         """
         if range_value is None:
-            return None, "-", ["-"]
+            return None, RANGE_MISSING_STRING, [RANGE_MISSING_STRING]
 
         loaded_json = json.loads(range_value)
         range_name = loaded_json[0]

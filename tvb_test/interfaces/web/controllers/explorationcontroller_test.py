@@ -25,6 +25,7 @@
 import json
 import unittest
 import cherrypy
+import tvb.core.entities.model as model
 from tvb.interfaces.web.controllers.burst.explorationcontroller import ParameterExplorationController
 from tvb_test.core.base_testcase import TransactionalTestCase
 from tvb_test.interfaces.web.controllers.basecontroller_test import BaseControllersTest
@@ -57,7 +58,7 @@ class ExplorationContollerTest(TransactionalTestCase, BaseControllersTest):
         self.assertEqual(result['color_metric'], None)
         self.assertEqual(result['size_metric'], None)
         self.assertEqual(json.loads(result['labels_x']), ['a', 'b', 'c'])
-        self.assertEqual(json.loads(result['labels_y']), ['-'])
+        self.assertEqual(json.loads(result['labels_y']), [model.RANGE_MISSING_STRING])
         data = json.loads(result['data'])
         self.assertEqual(len(data), 3)
         for entry in data:

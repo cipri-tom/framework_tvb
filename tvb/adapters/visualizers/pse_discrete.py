@@ -105,7 +105,7 @@ class DiscretePSEAdapter(ABCDisplayer):
                 pse_context.has_started_ops = True
             range_values = eval(operation_.range_values)
             key_1 = range_values[range1_name]
-            key_2 = "-"
+            key_2 = model.RANGE_MISSING_STRING
             if has_range2 is not None:
                 key_2 = range_values[range2_name]
 
