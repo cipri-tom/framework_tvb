@@ -43,6 +43,7 @@ class ContextDiscretePSE(EnhancedDictionary):
     KEY_NODE_TYPE = "dataType"
     KEY_OPERATION_ID = "operationId"
     KEY_TOOLTIP = "tooltip"
+    LINE_SEPARATOR = "<br/>"
     
     
     def __init__(self, datatype_group_gid, labels_x, labels_y, color_metric, size_metric):
@@ -79,32 +80,30 @@ class ContextDiscretePSE(EnhancedDictionary):
         """
         return json.dumps(self)
     
-    
-    @staticmethod
-    def build_node_info(operation, datatype):
+
+    def build_node_info(self, operation, datatype):
         """
         Build a dictionary with all the required information to be displayed for a given node.
         """
         node_info = {}
         if operation.status == model.STATUS_FINISHED and datatype is not None:
             ### Prepare attributes to be able to show overlay and launch further analysis.
-            node_info[ContextDiscretePSE.KEY_GID] = datatype.gid
-            node_info[ContextDiscretePSE.KEY_NODE_TYPE] = datatype.type
-            node_info[ContextDiscretePSE.KEY_OPERATION_ID] = operation.id
+            node_info[self.KEY_GID] = datatype.gid
+            node_info[self.KEY_NODE_TYPE] = datatype.type
+            node_info[self.KEY_OPERATION_ID] = operation.id
             ### Prepare tooltip for quick display.
-            datatype_tooltip = str("Operation id: " + str(operation.id) +
-                                   "<br/>Datatype gid: " + str(datatype.gid) +
-                                   "<br/>Datatype type: " + str(datatype.type) +
-                                   "<br/>Datatype subject: " + str(datatype.subject) +
-                                   "<br/>Datatype invalid: " + str(datatype.invalid))
+            datatype_tooltip = str("Operation id: " + str(operation.id) + self.LINE_SEPARATOR +
+                                   "Datatype gid: " + str(datatype.gid) + self.LINE_SEPARATOR +
+                                   "Datatype type: " + str(datatype.type) + self.LINE_SEPARATOR +
+                                   "Datatype subject: " + str(datatype.subject) + self.LINE_SEPARATOR +
+                                   "Datatype invalid: " + str(datatype.invalid))
             ### Add scientific report to the quick details.
             if datatype.summary_info is not None:
                 for key, value in datatype.summary_info.iteritems():
-                    datatype_tooltip = datatype_tooltip + "<br/>" + str(key) + ": " + str(value)
-            node_info[ContextDiscretePSE.KEY_TOOLTIP] = datatype_tooltip
+                    datatype_tooltip = datatype_tooltip + self.LINE_SEPARATOR + str(key) + ": " + str(value)
+            node_info[self.KEY_TOOLTIP] = datatype_tooltip
         else:
-            node_info[ContextDiscretePSE.KEY_TOOLTIP] = "No result available. Operation is in " \
-                                                        "status: %s" % operation.status
+            node_info[self.KEY_TOOLTIP] = "No result available. Operation is in status: %s" % operation.status
         return node_info
     
     
@@ -166,12 +165,12 @@ class ContextDiscretePSE(EnhancedDictionary):
                                                                      self.color_metric)
                 if (shape_type_1 is not None) and (datatype_gid is not None):
                     final_dict[key_1][key_2][self.KEY_TOOLTIP] = (final_dict[key_1][key_2][self.KEY_TOOLTIP] +
-                                                                  "<br/> Color metric has NaN values")
+                                                                  self.LINE_SEPARATOR + " Color metric has NaN values")
                 shape_size, shape_type_2 = self.__get_node_size(self.datatypes_dict, datatype_gid, len(self.labels_x), 
                                                                 len(self.labels_y), self.size_metric)
                 if (shape_type_2 is not None) and (datatype_gid is not None):
-                    final_dict[key_1][key_2][self.KEY_TOOLTIP] = (final_dict[key_1][key_2][self.KEY_TOOLTIP] 
-                                                                  + "<br/> Size metric has NaN values")
+                    final_dict[key_1][key_2][self.KEY_TOOLTIP] = (final_dict[key_1][key_2][self.KEY_TOOLTIP] +
+                                                                  self.LINE_SEPARATOR + " Size metric has NaN values")
                 #If either of the shape_types is not none use that
                 shape_type = shape_type_1 or shape_type_2
                 series = self.__get_node_json(series_data, shape_type, shape_size)

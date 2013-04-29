@@ -132,16 +132,14 @@ function applyHoverEvent(canvasId) {
                 previousPoint = item.dataIndex;
                 $("#tooltip").remove();
                 var dataPoint = item.datapoint;
-                var dataIndex = item.dataIndex;
-
                 var dataInfo = PSE_nodesInfo[dataPoint[0]][dataPoint[1]];
-                $('<div id="tooltip">' + dataInfo["tooltip"] + '</div>').css({ position: 'absolute', display: 'none',
-							                						top: item.pageY + 5, left: item.pageX + 5,
-							                						border: '1px solid #fdd', padding: '2px',
-							                						'background-color': '#C0C0C0', opacity: 0.80
-							            						   }).appendTo("body").fadeIn(200);
+                var tooltipText = ("" + dataInfo["tooltip"]).split("&amp;").join("&").split("&lt;").join("<").split("&gt;").join(">");
+
+                $('<div id="tooltip"> </div>').html(tooltipText
+                    ).css({ position: 'absolute', display: 'none', top: item.pageY + 5, left: item.pageX + 5,
+						   border: '1px solid #fdd', padding: '2px', 'background-color': '#C0C0C0', opacity: 0.80 }
+                    ).appendTo('body').fadeIn(200);
             }
-//            plot.unhighlight(item.series, item.datapoint);
         } else {
             $("#tooltip").remove();
             previousPoint = null;
