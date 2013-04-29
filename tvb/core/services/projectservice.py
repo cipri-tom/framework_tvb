@@ -542,9 +542,9 @@ class ProjectService:
             datatype = dao.get_datatype_by_gid(gid)
             links = dao.get_links_for_datatype(datatype.id)
             if links:
+                was_link = False
                 for link in links:
                     #This means it's only a link and we need to remove it
-                    was_link = False
                     if link.fk_from_datatype == datatype.id and link.fk_to_project == project.id:
                         dao.remove_link(link)
                         was_link = True
@@ -619,7 +619,7 @@ class ProjectService:
                 if adata.fk_from_operation not in operations_set:
                     operations_set.append(adata.fk_from_operation)
 
-            datatype_group = dao.get_datatype_group_by_id(datatype.id)
+            datatype_group = dao.get_datatype_group_by_gid(datatype.gid)
             dao.remove_datatype(datatype_gid)
             correct = correct and dao.remove_entity(model.OperationGroup, datatype_group.fk_operation_group)
 
@@ -718,13 +718,13 @@ class ProjectService:
             new_data[context.CommonDetails.CODE_OPERATION_TAG] = None
         try:
             if (context.CommonDetails.CODE_OPERATION_GROUP_ID in new_data
-                and new_data[context.CommonDetails.CODE_OPERATION_GROUP_ID]
-                and new_data[context.CommonDetails.CODE_OPERATION_GROUP_ID] != ''):
+                    and new_data[context.CommonDetails.CODE_OPERATION_GROUP_ID]
+                    and new_data[context.CommonDetails.CODE_OPERATION_GROUP_ID] != ''):
                 # We need to edit a group
                 all_data_in_group = dao.get_datatype_in_group(new_data[context.CommonDetails.CODE_OPERATION_GROUP_ID])
                 if len(all_data_in_group) < 1:
                     raise StructureException("Inconsistent group, can not be updated!")
-                datatype_group = dao.get_datatype_group_by_id(all_data_in_group[0].fk_datatype_group)
+                datatype_group = dao.get_generic_entity(model.DataTypeGroup, all_data_in_group[0].fk_datatype_group)
                 all_data_in_group.append(datatype_group)
                 for datatype in all_data_in_group:
                     new_data[context.CommonDetails.CODE_GID] = datatype.gid
@@ -901,9 +901,9 @@ class ProjectService:
 
 
     @staticmethod
-    def get_datatypegroup_by_id(datatypegroup_id):
-        """ Returns the DataTypeGroup with the specified id. """
-        return dao.get_datatype_group_by_id(datatypegroup_id)
+    def get_datatypegroup_by_gid(datatypegroup_gid):
+        """ Returns the DataTypeGroup with the specified gid. """
+        return dao.get_datatype_group_by_gid(datatypegroup_gid)
 
 
     @staticmethod

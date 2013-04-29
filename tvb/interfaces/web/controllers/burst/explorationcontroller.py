@@ -27,9 +27,12 @@
 import json
 import urllib
 import cherrypy
-from tvb.config import DISCRETE_PSE_ADAPTER_MODULE, DISCRETE_PSE_ADAPTER_CLASS, ISOCLINE_PSE_ADAPTER_CLASS, ISOCLINE_PSE_ADAPTER_MODULE
+from tvb.config import DISCRETE_PSE_ADAPTER_MODULE, DISCRETE_PSE_ADAPTER_CLASS
+from tvb.config import ISOCLINE_PSE_ADAPTER_CLASS, ISOCLINE_PSE_ADAPTER_MODULE
 from tvb.core.services import projectservice
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.transient.filtering import FilterChain
 from tvb.interfaces.web.controllers.basecontroller import BaseController, ajax_call, using_template
 
 
@@ -37,6 +40,7 @@ PSE_FLOT = "FLOT"
 PSE_ISO = "ISO"
 
 REDIRECT_MSG = '/burst/explore/pse_error?adapter_name=%s&message=%s'
+
 
 
 class ParameterExplorationController(BaseController):
@@ -52,30 +56,42 @@ class ParameterExplorationController(BaseController):
 
     @cherrypy.expose
     @ajax_call(False)
-    def get_default_pse_viewer(self, datatype_group_id):
+    def get_default_pse_viewer(self, datatype_group_gid):
         """
         For a given DataTypeGroup, check first if the discrete PSE is compatible.
-        If this is not the case fallback to the continos PSE viewer.
+        If this is not the case fallback to the continous PSE viewer.
         If none are available return: None.
         """
-        group = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
-                                                                    DISCRETE_PSE_ADAPTER_CLASS)[1]
-        adapter = self.flow_service.build_adapter_instance(group)
-        if adapter.is_compatible(datatype_group_id):
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
+                                                                        DISCRETE_PSE_ADAPTER_CLASS)[0]
+        if self._is_compatible(algorithm, datatype_group_gid):
             return PSE_FLOT
 
-        group = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
-                                                                    ISOCLINE_PSE_ADAPTER_CLASS)[1]
-        adapter = self.flow_service.build_adapter_instance(group)
-        if adapter.is_compatible(datatype_group_id):
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                        ISOCLINE_PSE_ADAPTER_CLASS)[0]
+        if self._is_compatible(algorithm, datatype_group_gid):
             return PSE_ISO
 
         return None
 
 
+    def _is_compatible(self, algorithm, datatype_group_gid):
+        """
+        Check if PSE view filters are compatible with current DataType.
+        :param algorithm: Algorithm instance to get filters from it.
+        :param datatype_group_gid: Current DataTypeGroup to validate against.
+        :return: True when DataTypeGroup can be displayed with current algorithm, False when incompatible.
+        """
+        datatype_group = ABCAdapter.load_entity_by_gid(datatype_group_gid)
+        filter_chain = FilterChain.from_json(algorithm.datatype_filter)
+        if not filter_chain or filter_chain.get_python_filter_equivalent(datatype_group):
+            return True
+        return False
+
+
     @cherrypy.expose
     @using_template('visualizers/pse_discrete/burst_preview')
-    def draw_discrete_exploration(self, datatype_group_id, color_metric=None, size_metric=None):
+    def draw_discrete_exploration(self, datatype_group_gid, color_metric=None, size_metric=None):
         """
         Create new data for when the user chooses to refresh from the UI.
         """
@@ -84,12 +100,12 @@ class ParameterExplorationController(BaseController):
         if size_metric == 'None':
             size_metric = None
 
-        group = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
-                                                                    DISCRETE_PSE_ADAPTER_CLASS)[1]
+        algorithm, group = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
+                                                                               DISCRETE_PSE_ADAPTER_CLASS)
         adapter = self.flow_service.build_adapter_instance(group)
-        if adapter.is_compatible(datatype_group_id):
+        if self._is_compatible(algorithm, datatype_group_gid):
             try:
-                params = adapter.prepare_parameters(datatype_group_id, color_metric, size_metric)
+                params = adapter.prepare_parameters(datatype_group_gid, color_metric, size_metric)
                 for key in ['labels_x', 'labels_y', 'data']:
                     params[key] = json.dumps(params[key])
                 return params
@@ -105,20 +121,19 @@ class ParameterExplorationController(BaseController):
 
     @cherrypy.expose
     @using_template('visualizers/pse_isocline/burst_preview')
-    def draw_isocline_exploration(self, datatype_group_id, width=None, height=None):
+    def draw_isocline_exploration(self, datatype_group_gid, width=None, height=None):
 
         if width is not None:
             width = int(width)
         if height is not None:
             height = int(height)
 
-        group = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
-                                                                    ISOCLINE_PSE_ADAPTER_CLASS)[1]
+        algorithm, group = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                               ISOCLINE_PSE_ADAPTER_CLASS)
         adapter = self.flow_service.build_adapter_instance(group)
-
-        if adapter.is_compatible(datatype_group_id):
+        if self._is_compatible(algorithm, datatype_group_gid):
             try:
-                return adapter.burst_preview(datatype_group_id, width, height)
+                return adapter.burst_preview(datatype_group_gid, width, height)
             except LaunchException, ex:
                 error_msg = urllib.quote(ex.message)
         else:

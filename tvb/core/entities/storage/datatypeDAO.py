@@ -55,12 +55,12 @@ class DatatypeDAO(RootDAO):
         return result
 
 
-    def get_datatype_group_by_id(self, datatype_group_id):
+    def get_datatype_group_by_gid(self, datatype_group_gid):
         """
-        Returns the DataTypeGroup with the specified id.
+        Returns the DataTypeGroup with the specified gid.
         """
         try:
-            result = self.session.query(model.DataTypeGroup).filter_by(id=datatype_group_id).one()
+            result = self.session.query(model.DataTypeGroup).filter_by(gid=datatype_group_gid).one()
             return result
         except Exception, excep:
             self.logger.exception(excep)

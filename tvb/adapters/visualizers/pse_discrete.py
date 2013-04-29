@@ -76,27 +76,18 @@ class DiscretePSEAdapter(ABCDisplayer):
         """
         Launch the visualizer.
         """
-        pse_context = self.prepare_parameters(datatype_group.id, color_metric, size_metric)
+        pse_context = self.prepare_parameters(datatype_group.gid, color_metric, size_metric)
         pse_context.prepare_individual_jsons()
 
         return self.build_display_result('pse_discrete/view', pse_context)
 
 
     @staticmethod
-    def is_compatible(datatype_group_id):
-        """
-        Check if current visualization makes sense for a given dataTypeGroup.
-        """
-        dt_group = dao.get_datatype_group_by_id(datatype_group_id)
-        return dt_group.no_of_ranges <= 2 and dt_group.count_results <= MAX_NUMBER_OF_POINT_TO_SUPPORT
-
-
-    @staticmethod
-    def prepare_parameters(datatype_group_id, color_metric=None, size_metric=None):
+    def prepare_parameters(datatype_group_gid, color_metric=None, size_metric=None):
         """
         We suppose that there are max 2 ranges and from each operation results exactly one dataType.
         """
-        datatype_group = dao.get_datatype_group_by_id(datatype_group_id)
+        datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
         if datatype_group is None:
             raise Exception("Selected DataTypeGroup is no longer present in the database. "
                             "It might have been remove or the specified id is not the correct one.")
@@ -105,7 +96,7 @@ class DiscretePSEAdapter(ABCDisplayer):
         _, range1_name, range1_labels = operation_group.load_range_numbers(operation_group.range1)
         has_range2, range2_name, range2_labels = operation_group.load_range_numbers(operation_group.range2)
 
-        pse_context = ContextDiscretePSE(datatype_group_id, range1_labels, range2_labels, color_metric, size_metric)
+        pse_context = ContextDiscretePSE(datatype_group_gid, range1_labels, range2_labels, color_metric, size_metric)
 
         final_dict = dict()
         operations = dao.get_operations_in_group(operation_group.id)

@@ -18,9 +18,11 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
+
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import sys
 import numpy
 import json
@@ -78,7 +80,7 @@ class IsoclinePSEAdapter(ABCMPLH5Displayer):
         return -1
 
 
-    def burst_preview(self, datatype_group_id, width, height):
+    def burst_preview(self, datatype_group_gid, width, height):
         """
         Generate the preview for the burst page.
         """
@@ -87,18 +89,9 @@ class IsoclinePSEAdapter(ABCMPLH5Displayer):
         figure_size = (700, 700)
         if width and height:
             figure_size = (width, height)
-        datatype_group = dao.get_datatype_group_by_id(datatype_group_id)
+        datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
         result_dict = self.launch(datatype_group=datatype_group, figure_size=figure_size)
-        result_dict['isPreview'] = True
         return result_dict
-
-
-    def is_compatible(self, datatype_group_id):
-        """
-        Check if current visualizer makes sense for a given dataTypeGroup.
-        """
-        dt_group = dao.get_datatype_group_by_id(datatype_group_id)
-        return dt_group.only_numeric_ranges and dt_group.no_of_ranges == 2
 
 
     def launch(self, datatype_group, **kwargs):

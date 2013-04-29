@@ -45,9 +45,9 @@ class ContextDiscretePSE(EnhancedDictionary):
     KEY_TOOLTIP = "tooltip"
     
     
-    def __init__(self, datatype_group_id, labels_x, labels_y, color_metric, size_metric):
+    def __init__(self, datatype_group_gid, labels_x, labels_y, color_metric, size_metric):
         
-        self.group_id = datatype_group_id
+        self.datatype_group_gid = datatype_group_gid
         self.min_color = sys.float_info.max
         self.max_color = sys.float_info.min
         self.min_shape_size_weight = sys.float_info.max

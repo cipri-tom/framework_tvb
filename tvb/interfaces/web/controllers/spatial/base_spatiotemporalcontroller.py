@@ -110,7 +110,7 @@ class SpatioTemporalController(base.BaseController):
                 (second_range is not None and str(second_range).startswith(MODEL_PARAMETERS))):
             base.set_error_message("When configuring model parameters you are not allowed to specify range values.")
             raise cherrypy.HTTPRedirect("/burst/")
-        _, group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[1]
         simulator_adapter = self.flow_service.build_adapter_instance(group)
         try:
             params_dict = simulator_adapter.convert_ui_inputs(burst_configuration.get_all_simulator_values()[0], False)
@@ -189,7 +189,7 @@ class SpatioTemporalController(base.BaseController):
         The interface is prepared for rendering, it is populated with existent data, in case of a
         parameter of type DataType. The name of the attributes are also prefixed to identify groups.
         """
-        _, algo_group = self.flow_service.get_algorithm_by_module_and_class(creator_module, creator_class)
+        algo_group = self.flow_service.get_algorithm_by_module_and_class(creator_module, creator_class)[1]
         group, _ = self.flow_service.prepare_adapter(base.get_current_project().id, algo_group)
 
         #I didn't use the interface(from the above line) returned by the method 'prepare_adapter' from flow service

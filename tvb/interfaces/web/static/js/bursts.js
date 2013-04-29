@@ -474,7 +474,7 @@ function switch_top_level_visibility(currentVisibleSelection) {
 }
 
 
-function loadGroup(groupId) {
+function loadGroup(groupGID) {
 	// Hide both divs
 	$('#burst-pse-flot').hide();
 	$('#burst-pse-iso').hide();
@@ -484,7 +484,7 @@ function loadGroup(groupId) {
 	$.ajax({  	
 		type: "POST", 
 		async: false,
-		url: '/burst/explore/get_default_pse_viewer/' + groupId,
+		url: '/burst/explore/get_default_pse_viewer/' + groupGID,
 		success: function(r) { 
 				if (r == 'FLOT') {
 					$('#burst-pse-flot').show();
@@ -499,8 +499,8 @@ function loadGroup(groupId) {
 				switch_top_level_visibility("#section-pse");
 				var isoWidth = $('#section-pse').width();
 	            var isoHeight = $('#section-pse').height();
-	            PSE_mainDraw('burst-pse-flot', 'burst', groupId);
-                Isocline_MainDraw(groupId, 'burst-pse-iso', isoWidth, isoHeight)
+	            PSE_mainDraw('burst-pse-flot', 'burst', groupGID);
+                Isocline_MainDraw(groupGID, 'burst-pse-iso', isoWidth, isoHeight)
 			},
 		error: function(r) {
 		    displayMessage("Error while loading burst.", "errorMessage");
@@ -974,21 +974,21 @@ function loadBurst(burst_id) {
         success: function(r) {  
 	        	var result = $.parseJSON(r);
 	        	selectedTab = result['selected_tab'];
-	        	var groupId = result['group_id'];
+	        	var groupGID = result['group_gid'];
 				selectedBurst = $("#burst_id_"+burst_id)[0]
 				// This is for the back-button issue with Chrome. Should be removed after permanent solution.
 				if (selectedBurst != undefined) {
 					selectedBurst.className = selectedBurst.className + ' ' + ACTIVE_BURST_CLASS;
 					sessionStoredBurst.isFinished = (result['status']=='finished');
-					sessionStoredBurst.isRange = (groupId > 0);
+					sessionStoredBurst.isRange = (groupGID != null && groupGID != "None");
 					fill_burst_name(selectedBurst.children[0].text, true, false);
 					updatePortletsToolbar(3);
 				}
 				// Now load simulator interface and the corresponding right side div depending
 				// on the condition if the burst was a group launch or not.
 				loadSimulatorInterface();
-			    if (groupId >= 0) {
-			    	loadGroup(groupId);
+			    if (groupGID != null && groupGID != "None") {
+			    	loadGroup(groupGID);
 			    } else if (selectedTab == -1) {
 			    	switch_top_level_visibility();
 			    	$("#section-portlets").show();

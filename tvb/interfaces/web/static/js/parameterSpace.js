@@ -185,13 +185,13 @@ function PSE_previewBurst(parametersCanvasId, labelsXJson, labelsYJson, series_a
 /*
  * Take currently selected metrics and refresh the plot. 
  */
-function PSE_mainDraw(parametersCanvasId, backPage, groupId, selectedColorMetric, selectedSizeMetric) {
+function PSE_mainDraw(parametersCanvasId, backPage, groupGID, selectedColorMetric, selectedSizeMetric) {
 	
-	if (groupId == undefined) {
+	if (groupGID == undefined) {
 		// We didn't get parameter, so try to get group id from page
-		groupId = document.getElementById("datatype-group-id").value
+		groupGID = document.getElementById("datatype-group-gid").value
 	}
-	var url = '/burst/explore/draw_discrete_exploration/' + groupId
+	var url = '/burst/explore/draw_discrete_exploration/' + groupGID
 	
 	if (selectedColorMetric == undefined) {
 		selectedColorMetric = $('#color_metric_select').val()
@@ -326,12 +326,12 @@ function hoverPlot(id, x, y, val) {
 }
 
 
-function Isocline_MainDraw(groupId, divId, width, height) {
+function Isocline_MainDraw(groupGID, divId, width, height) {
 
-	$('#' + divId).html('')
+	$('#' + divId).html('');
 	$.ajax({
             type: "POST",
-            url: '/burst/explore/draw_isocline_exploration/' + groupId + '/' + width + '/' + height,
+            url: '/burst/explore/draw_isocline_exploration/' + groupGID + '/' + width + '/' + height,
             success: function(r) {
                     $('#' + divId).html(r);
                 },

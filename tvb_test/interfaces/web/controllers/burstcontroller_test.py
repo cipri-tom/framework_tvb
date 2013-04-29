@@ -47,19 +47,21 @@ from tvb_test.interfaces.web.controllers.basecontroller_test import BaseControll
 from tvb_test.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
+
 class BurstContollerTest(BaseControllersTest):
     """ Unit tests for burstcontroller """
-    
+
+
     def setUp(self):
         BaseControllersTest.init(self)
-        self.burst_c =  BurstController()
-    
-    
+        self.burst_c = BurstController()
+
+
     def tearDown(self):
         BaseControllersTest.cleanup(self)
         self.reset_database()
-            
-            
+
+
     def test_index(self):
         """
         Test that index returns a dict with all required keys. Also check
@@ -81,23 +83,23 @@ class BurstContollerTest(BaseControllersTest):
                 else:
                     self.assertEqual(value, [-1, "None"])
         self.assertTrue(result_dict['draw_hidden_ranges'])
-        
-        
+
+
     def test_load_burst_history(self):
         """
         Create two burst, load the burst and check that we get back
         the same stored bursts.
         """
-        self._store_burst(self.test_project.id, 'started', {'test' : 'test'}, 'burst1')
-        burst = self._store_burst(self.test_project.id, 'started', {'test' : 'test'}, 'burst2')
+        self._store_burst(self.test_project.id, 'started', {'test': 'test'}, 'burst1')
+        burst = self._store_burst(self.test_project.id, 'started', {'test': 'test'}, 'burst2')
         cherrypy.session[b_c.KEY_BURST_CONFIG] = burst
         result_dict = self.burst_c.load_burst_history()
         burst_history = result_dict['burst_list']
         self.assertEqual(len(burst_history), 2)
         for burst in burst_history:
             self.assertTrue(burst.name in ('burst1', 'burst2'))
-            
-            
+
+
     def test_get_selected_burst(self):
         """
         Create burst, add it to session, then check that get_selected_burst
@@ -108,12 +110,12 @@ class BurstContollerTest(BaseControllersTest):
         cherrypy.session[b_c.KEY_BURST_CONFIG] = burst_entity
         stored_id = self.burst_c.get_selected_burst()
         self.assertEqual(stored_id, 'None')
-        burst_entity = dao.store_entity(burst_entity)  
-        cherrypy.session[b_c.KEY_BURST_CONFIG] = burst_entity  
+        burst_entity = dao.store_entity(burst_entity)
+        cherrypy.session[b_c.KEY_BURST_CONFIG] = burst_entity
         stored_id = self.burst_c.get_selected_burst()
         self.assertEqual(str(stored_id), str(burst_entity.id))
-    
-    
+
+
     def test_get_portlet_configurable_interface(self):
         """
         Look up that an AdapterConfiguration is returned for the default
@@ -129,8 +131,8 @@ class BurstContollerTest(BaseControllersTest):
         # adapter_config to be a list of AdapterConfiguration with one element
         self.assertEqual(len(adapter_config), 1)
         self.assertTrue(isinstance(adapter_config[0], AdapterConfiguration))
-          
-            
+
+
     def test_portlet_tab_display(self):
         """
         Update the default portlet configuration, by storing a TimeSeries
@@ -140,13 +142,13 @@ class BurstContollerTest(BaseControllersTest):
         portlet_id = dao.get_portlet_by_identifier("TimeSeries").id
         one_tab = [[portlet_id, "TimeSeries"] for _ in range(NUMBER_OF_PORTLETS_PER_TAB)]
         full_tabs = [one_tab for _ in range(BurstConfiguration.nr_of_tabs)]
-        data = {'tab_portlets_list' : json.dumps(full_tabs)}
+        data = {'tab_portlets_list': json.dumps(full_tabs)}
         result = self.burst_c.portlet_tab_display(**data)
         selected_portlets = result['portlet_tab_list']
         for entry in selected_portlets:
             self.assertEqual(entry.id, portlet_id)
-            
-            
+
+
     def test_get_configured_portlets_no_session(self):
         """
         Test that if we have no burst stored in session, an empty
@@ -155,8 +157,8 @@ class BurstContollerTest(BaseControllersTest):
         result = self.burst_c.get_configured_portlets()
         self.assertTrue('portlet_tab_list' in result)
         self.assertTrue(result['portlet_tab_list'] == [])
-        
-        
+
+
     def test_get_configured_portlets_default(self):
         """
         Check that the default configuration holds one portlet
@@ -168,8 +170,8 @@ class BurstContollerTest(BaseControllersTest):
         portlets_list = result['portlet_tab_list']
         self.assertEqual(len(portlets_list), 1)
         self.assertTrue(portlets_list[0].algorithm_identifier == 'TimeSeries')
-        
-        
+
+
     def test_get_portlet_session_configuration(self):
         """
         Test that the default portlet session sonciguration is generated
@@ -177,15 +179,15 @@ class BurstContollerTest(BaseControllersTest):
         """
         self.burst_c.index()
         result = json.loads(self.burst_c.get_portlet_session_configuration())
-        portlet_id = dao.get_portlet_by_identifier("TimeSeries").id 
+        portlet_id = dao.get_portlet_by_identifier("TimeSeries").id
         for tab_idx, tab in enumerate(result):
             for index_in_tab, value in enumerate(tab):
                 if tab_idx == 0 and index_in_tab == 0:
                     self.assertEqual(value, [portlet_id, "TimeSeries"])
                 else:
                     self.assertEqual(value, [-1, "None"])
-                    
-                    
+
+
     def test_save_parameters_no_relaunch(self):
         """
         Test the save parameters for the default TimeSeries portlet and
@@ -194,19 +196,19 @@ class BurstContollerTest(BaseControllersTest):
         """
         self.burst_c.index()
         self.assertEqual('noRelaunch', self.burst_c.save_parameters(0))
-    
-            
+
+
     def test_rename_burst(self):
         """
         Create and store a burst, then rename it and check that it
         works as expected.
         """
-        burst = self._store_burst(self.test_project.id, 'started', {'test' : 'test'}, 'burst1')
+        burst = self._store_burst(self.test_project.id, 'started', {'test': 'test'}, 'burst1')
         self.burst_c.rename_burst(burst.id, "test_new_burst_name")
         renamed_burst = dao.get_burst_by_id(burst.id)
         self.assertEqual(renamed_burst.name, "test_new_burst_name")
-    
-    
+
+
     def test_launch_burst(self):
         """
         
@@ -229,56 +231,56 @@ class BurstContollerTest(BaseControllersTest):
         if burst_config.status != BurstConfiguration.BURST_FINISHED:
             BurstService().stop_burst(burst_config)
             self.fail("Burst should have finished succesfully.")
-            
-            
+
+
     def test_load_burst(self):
         """
         Test loading and burst and checking you get expected dictionary.
         """
         self.burst_c.index()
-        burst = self._store_burst(self.test_project.id, 'started', {'test' : 'test'}, 'burst1')
+        burst = self._store_burst(self.test_project.id, 'started', {'test': 'test'}, 'burst1')
         result = json.loads(self.burst_c.load_burst(burst.id))
         self.assertEqual(result["status"], "started")
         self.assertEqual(result['group_id'], -1)
         self.assertEqual(result['selected_tab'], 0)
-        
-        
+
+
     def test_load_burst_removed(self):
         """
         Add burst to session, then remove burst from database. Try to load
         burst and check that it will raise exception and remove it from session.
         """
-        burst = self._store_burst(self.test_project.id, 'started', {'test' : 'test'}, 'burst1')
+        burst = self._store_burst(self.test_project.id, 'started', {'test': 'test'}, 'burst1')
         cherrypy.session[b_c.KEY_BURST_CONFIG] = burst
         burst_id = burst.id
         BurstService().remove_burst(burst_id)
         self.assertRaises(Exception, self.burst_c.load_burst, burst_id)
         self.assertTrue(b_c.KEY_BURST_CONFIG not in cherrypy.session)
-        
-        
+
+
     def test_remove_burst_not_session(self):
         """
         Test removing a burst that is not the one currently stored in 
         session. SHould just remove and return a 'done' string.
         """
-        burst = self._store_burst(self.test_project.id, 'finished', {'test' : 'test'}, 'burst1')
+        burst = self._store_burst(self.test_project.id, 'finished', {'test': 'test'}, 'burst1')
         cherrypy.session[b_c.KEY_BURST_CONFIG] = burst
-        another_burst = self._store_burst(self.test_project.id, 'finished', {'test' : 'test'}, 'burst1')
+        another_burst = self._store_burst(self.test_project.id, 'finished', {'test': 'test'}, 'burst1')
         result = self.burst_c.remove_burst_entity(another_burst.id)
         self.assertEqual(result, 'done')
-        
-        
+
+
     def test_remove_burst_in_session(self):
         """
         Test that if we remove the burst that is the current one from the
         session, we get a 'reset-new' string as result.
         """
-        burst = self._store_burst(self.test_project.id, 'finished', {'test' : 'test'}, 'burst1')
+        burst = self._store_burst(self.test_project.id, 'finished', {'test': 'test'}, 'burst1')
         cherrypy.session[b_c.KEY_BURST_CONFIG] = burst
         result = self.burst_c.remove_burst_entity(burst.id)
         self.assertEqual(result, 'reset-new')
-        
-        
+
+
     def _store_burst(self, proj_id, status, sim_config, name):
         """
         Create and store a burst entity, for the project given project_id, having the
@@ -287,21 +289,20 @@ class BurstContollerTest(BaseControllersTest):
         burst = BurstConfiguration(proj_id, status, sim_config, name)
         burst.prepare_before_save()
         return dao.store_entity(burst)
-        
-        
-            
+
+
     def _burst_create_connectivity(self):
         """
         Create a connectivity that will be used in "non-dummy" burst launches (with the actual simulator).
         TODO: This is duplicate code from burstservice_test. Should go into the 'generic' DataType factory
         once that is done.
         """
-        meta = {DataTypeMetaData.KEY_SUBJECT : "John Doe", DataTypeMetaData.KEY_STATE : "RAW"}
-        algo_id, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        self.operation = model.Operation(self.test_user.id, self.test_project.id, algo_group.id, 
-                                         json.dumps(''), 
-                                         meta = json.dumps(meta), status="STARTED",
-                                         method_name = ABCAdapter.LAUNCH_METHOD)
+        meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW"}
+        algorithm, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        self.operation = model.Operation(self.test_user.id, self.test_project.id, algo_group.id,
+                                         json.dumps(''),
+                                         meta=json.dumps(meta), status="STARTED",
+                                         method_name=ABCAdapter.LAUNCH_METHOD)
         self.operation = dao.store_entity(self.operation)
         storage_path = FilesHelper().get_project_folder(self.test_project, str(self.operation.id))
         connectivity = Connectivity(storage_path=storage_path)
@@ -309,11 +310,10 @@ class BurstContollerTest(BaseControllersTest):
         connectivity.centres = numpy.ones((74, 3))
         adapter_instance = StoreAdapter([connectivity])
         OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
-        return algo_id, connectivity
-        
-        
-    
-            
+        return algorithm.id, connectivity
+
+
+
 def suite():
     """
     Gather all the tests in a test suite.
@@ -321,6 +321,7 @@ def suite():
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(BurstContollerTest))
     return test_suite
+
 
 
 if __name__ == "__main__":

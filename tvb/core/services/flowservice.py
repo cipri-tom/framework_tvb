@@ -194,7 +194,7 @@ class FlowService:
         """
         group = dao.find_group(module, classname)
         algo = dao.get_algorithm_by_group(group.id)
-        return algo.id, group
+        return algo, group
     
     
     def get_available_datatypes(self, project_id, data_name, filters=None):

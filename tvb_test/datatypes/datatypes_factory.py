@@ -177,12 +177,12 @@ class DatatypesFactory():
         Create a operation entity. Return the operation, algo_id and the storage path.
         """
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW"}
-        algo_id, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        algorithm, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
         operation = model.Operation(self.user.id, self.project.id, algo_group.id, json.dumps(''),
                                     meta=json.dumps(meta), status="STARTED", method_name=ABCAdapter.LAUNCH_METHOD)
         operation = dao.store_entity(operation)
         storage_path = FilesHelper().get_project_folder(self.project, str(operation.id))
-        return operation, algo_id, storage_path
+        return operation, algorithm.id, storage_path
 
 
     def create_connectivity(self):

@@ -66,7 +66,7 @@ class BurstService():
         From a portlet_id and a project_id, first build the portlet
         entity then get it's configurable interface. 
         
-        :param portlet_config: a portlet configuration entity. It holds at the
+        :param portlet_configuration: a portlet configuration entity. It holds at the
             least the portlet_id, and in case any default parameters were saved
             they can be rebuilt from the analyzers // visualizer parameters
         :param project_id: the id of the current project   
@@ -84,7 +84,7 @@ class BurstService():
         portlet_entity = dao.get_portlet_by_id(portlet_configuration.portlet_id)
         if portlet_entity is None:
             raise InvalidPortletConfiguration("No portlet entity located in database with id=%s. "
-                                              "Portlet configuration %s is not valid."%(
+                                              "Portlet configuration %s is not valid." % (
                                               portlet_configuration.portlet_id, portlet_configuration))
         portlet_configurer = PortletConfigurer(portlet_entity)
         portlet_interface = portlet_configurer.get_configurable_interface()
@@ -137,8 +137,8 @@ class BurstService():
             for sel_idx, portlet_identifier in value.items():
                 portlet = BurstService.get_portlet_by_identifier(portlet_identifier)
                 if portlet is not None:
-                    portlet_configuration = BurstService.new_portlet_configuration(portlet.id, tab_idx,
-                        sel_idx, portlet.algorithm_identifier)
+                    portlet_configuration = BurstService.new_portlet_configuration(portlet.id, tab_idx, sel_idx,
+                                                                                   portlet.algorithm_identifier)
                     burst_configuration.set_portlet(tab_idx, sel_idx, portlet_configuration)
 
 
@@ -157,7 +157,7 @@ class BurstService():
         """
         Return all the burst for the current project.
         """
-        bursts = dao.get_bursts_for_project(project_id, page_end = MAX_BURSTS_DISPLAYED) or []
+        bursts = dao.get_bursts_for_project(project_id, page_end=MAX_BURSTS_DISPLAYED) or []
         for burst in bursts:
             burst.prepare_after_load()
         return bursts
@@ -191,7 +191,7 @@ class BurstService():
         burst.reset_tabs()
         burst_workflows = dao.get_workflows_for_burst(burst.id)
         
-        group_id = -1
+        group_gid = None
         if len(burst_workflows) == 1:
             # A simple burst with no range parameters
             burst = self.__populate_tabs_from_workflow(burst, burst_workflows[0])
@@ -200,12 +200,12 @@ class BurstService():
             # to launch parameter space exploration with the resulted group
             self.__populate_tabs_from_workflow(burst, burst_workflows[0])
             executed_steps = dao.get_workflow_steps(burst_workflows[0].id)
-            workflow_group = None
+
             operation = dao.get_operation_by_id(executed_steps[0].fk_operation)
             if operation.operation_group:
                 workflow_group = dao.get_datatypegroup_by_op_group_id(operation.operation_group.id)
-                group_id = workflow_group.id
-        return burst, group_id
+                group_gid = workflow_group.gid
+        return burst, group_gid
     
     @staticmethod
     def __populate_tabs_from_workflow(burst_entity, workflow):
@@ -247,7 +247,7 @@ class BurstService():
         """
         portlet_entity = dao.get_portlet_by_id(portlet_id)
         if portlet_entity is None:
-            raise InvalidPortletConfiguration("No portlet entity located in database with id=%s."%(portlet_id))
+            raise InvalidPortletConfiguration("No portlet entity located in database with id=%s." % portlet_id)
         portlet_configurer = PortletConfigurer(portlet_entity)
         configuration = portlet_configurer.create_new_portlet_configuration(portlet_name)
         for wf_step in configuration.analyzers:
@@ -304,7 +304,7 @@ class BurstService():
             simulation_state = dao.get_generic_entity(SIMULATION_DATATYPE_MODULE + "." + SIMULATION_DATATYPE_CLASS,
                                                       burst_config.id, "fk_parent_burst")
             if simulation_state is None or len(simulation_state) < 1:
-                exc = BurstServiceException("Simulation state not found for burst_id %s" % (burst_config.id))
+                exc = BurstServiceException("Simulation state not found for burst_id %s" % burst_config.id)
                 self.logger.error(exc)
                 raise exc
             
@@ -319,11 +319,11 @@ class BurstService():
         if launch_mode in ['new', 'branch']:
             ## New Burst entry in the history
             burst_id = self._store_burst_config(burst_config)
-            thread = threading.Thread(target = self._async_launch_and_prepare, 
-                                      kwargs = {'burst_config' : burst_config, 
-                                                'simulator_index' : simulator_index,
-                                                'simulator_id' : simulator_id,
-                                                'user_id' : user_id})
+            thread = threading.Thread(target=self._async_launch_and_prepare,
+                                      kwargs={'burst_config': burst_config,
+                                              'simulator_index': simulator_index,
+                                              'simulator_id': simulator_id,
+                                              'user_id': user_id})
             thread.start()
             return burst_id, burst_config.name
         else:
@@ -359,7 +359,7 @@ class BurstService():
                 ### For each portlet configuration stored, update the step index ###
                 ### and also change the dynamic parameters step indexes to point ###
                 ### to the simulator outputs.                                     ##
-                if portlet_cfg != None:
+                if portlet_cfg is not None:
                     analyzers = portlet_cfg.analyzers
                     visualizer = portlet_cfg.visualizer
                     for entry in analyzers:
@@ -369,17 +369,17 @@ class BurstService():
                         starting_index += 1
                     ### Change the dynamic parameters to point to the last adapter from this portlet execution.
                     visualizer.step_visible = False
-                    if (len(workflow_step_list) > 0 and isinstance(workflow_step_list[-1], model.WorkflowStep)):
+                    if len(workflow_step_list) > 0 and isinstance(workflow_step_list[-1], model.WorkflowStep):
                         self.workflow_service.set_dynamic_step_references(visualizer, workflow_step_list[-1].step_index)
                     else:
                         self.workflow_service.set_dynamic_step_references(visualizer, simulator_index)
                     workflow_step_list.append(visualizer)
-                
+
         if group_launched:
             ###  For a group of operations, make sure the metric for PSE view 
             ### is also computed, immediately after the simulation.
-            metric_id, metric_group = FlowService().get_algorithm_by_module_and_class(MEASURE_METRICS_MODULE, 
-                                                                                      MEASURE_METRICS_CLASS)
+            metric_algo, metric_group = FlowService().get_algorithm_by_module_and_class(MEASURE_METRICS_MODULE,
+                                                                                        MEASURE_METRICS_CLASS)
             _, metric_interface = FlowService().prepare_adapter(project_id, metric_group)
             dynamics = {}
             for entry in metric_interface:
@@ -389,8 +389,8 @@ class BurstService():
                 if entry[ABCAdapter.KEY_TYPE] == 'select':
                     dynamics[entry[ABCAdapter.KEY_NAME]] = {WorkflowStepConfiguration.DATATYPE_INDEX_KEY: 0,
                                                             WorkflowStepConfiguration.STEP_INDEX_KEY: simulator_index}
-            metric_step = model.WorkflowStep(algorithm_id = metric_id, step_index = simulator_index + 1, 
-                                             static_param = {}, dynamic_param = dynamics )
+            metric_step = model.WorkflowStep(algorithm_id=metric_algo.id, step_index=simulator_index + 1,
+                                             static_param={}, dynamic_param=dynamics)
             metric_step.step_visible = False
             workflow_step_list.insert(0, metric_step)
         
@@ -408,7 +408,7 @@ class BurstService():
         """  
         try:  
             operation_ids = self._prepare_operations(burst_config, simulator_index, simulator_id, user_id)
-            self.logger.debug("Starting a total of %s workflows"%(len(operation_ids,)))
+            self.logger.debug("Starting a total of %s workflows" % (len(operation_ids,)))
             wf_errs = 0
             for operation_id in operation_ids:
                 try:
@@ -418,8 +418,8 @@ class BurstService():
                     wf_errs += 1
                     self.workflow_service.mark_burst_finished(burst_config, error=True, error_message=str(excep))
                     
-            self.logger.debug("Finished launching workflows. " + str(len(operation_ids)- wf_errs) +
-                              " were launched successfully, "+ str(wf_errs)+" had error on pre-launch steps")       
+            self.logger.debug("Finished launching workflows. " + str(len(operation_ids) - wf_errs) +
+                              " were launched successfully, " + str(wf_errs) + " had error on pre-launch steps")
         except Exception, excep:
             self.logger.error(excep)
             self.workflow_service.mark_burst_finished(burst_config, error=True, error_message=str(excep))
@@ -443,7 +443,7 @@ class BurstService():
             step_index = dynamic_params[param][WorkflowStepConfiguration.STEP_INDEX_KEY]
             datatype_index = dynamic_params[param][WorkflowStepConfiguration.DATATYPE_INDEX_KEY]
             workflow_step = dao.get_workflow_step_by_step_index(visualization.fk_workflow, step_index)
-            if (type(datatype_index) is IntType):
+            if type(datatype_index) is IntType:
                 ## Entry is the output of a previous step ##
                 operation_id = workflow_step.fk_operation
                 datatypes = dao.get_results_for_operation(operation_id)
@@ -457,9 +457,9 @@ class BurstService():
         prepared_inputs = adapter_instance.prepare_ui_inputs(parameters_dict)
         if frame_width is not None:
             prepared_inputs[ABCDisplayer.PARAM_FIGURE_SIZE] = (frame_width, frame_height)
-        if isinstance(adapter_instance, ABCMPLH5Displayer) and is_preview == True:
+        if isinstance(adapter_instance, ABCMPLH5Displayer) and is_preview is True:
             prepared_inputs[ABCMPLH5Displayer.SHOW_FULL_TOOLBAR] = False
-        result = eval("adapter_instance."+ method_name+"(**prepared_inputs)")
+        result = eval("adapter_instance." + method_name + "(**prepared_inputs)")
         return result, parameters_dict, operation_id
     
     
@@ -473,9 +473,9 @@ class BurstService():
             burst.prepare_after_load()
             if burst is not None:
                 result.append([burst.id, burst.status, burst.is_group,
-                               "Check Operations page for error Message" if burst.status==burst.BURST_ERROR else ''])
+                               "Check Operations page for error Message" if burst.status == burst.BURST_ERROR else ''])
             else:
-                self.logger.debug("Could not find burst with id="+str(b_id)+ ". Might have been deleted by user!!")
+                self.logger.debug("Could not find burst with id=" + str(b_id) + ". Might have been deleted by user!!")
         return result
         
     

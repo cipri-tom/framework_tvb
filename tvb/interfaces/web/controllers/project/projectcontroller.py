@@ -306,7 +306,7 @@ class ProjectController(bc.BaseController):
             return session_filtes
 
         else:
-            _, sim_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+            sim_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[1]
             new_filters = StaticFiltersFactory.build_operations_filters(sim_group, bc.get_logged_user().id)
             bc.add2session(self.KEY_OPERATION_FILTERS, new_filters)
             return new_filters
@@ -819,7 +819,7 @@ class ProjectController(bc.BaseController):
         elif item_type == graph_structures.NODE_DATATYPE_TYPE:
             selected_dt = ABCAdapter.load_entity_by_gid(item_gid)
             if self.project_service.is_datatype_group(item_gid):
-                datatype_group = self.project_service.get_datatypegroup_by_id(selected_dt.id)
+                datatype_group = self.project_service.get_datatypegroup_by_gid(selected_dt.gid)
                 parent_op_group = self.project_service.get_operation_group_by_id(datatype_group.fk_operation_group)
                 dt_inputs = self.project_service.get_datatypes_inputs_for_operation_group(parent_op_group.id,
                                                                                           selected_filter)

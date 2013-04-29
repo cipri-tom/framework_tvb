@@ -304,7 +304,7 @@ class BurstController(base.BaseController):
 
         ## Fill all parameters 
         user_id = base.get_logged_user().id
-        sim_algo_id, _ = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        sim_algo_id = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[0].id
         data[base.KEY_ADAPTER] = sim_algo_id
         burst_config.update_simulator_configuration(data)
         burst_config.fk_project = base.get_current_project().id
@@ -324,10 +324,10 @@ class BurstController(base.BaseController):
         """
         try:
             old_burst = base.get_from_session(base.KEY_BURST_CONFIG)
-            burst, group_id = self.burst_service.load_burst(burst_id)
+            burst, group_gid = self.burst_service.load_burst(burst_id)
             burst.selected_tab = old_burst.selected_tab
             base.add2session(base.KEY_BURST_CONFIG, burst)
-            return {'status': burst.status, 'group_id': group_id, 'selected_tab': burst.selected_tab}
+            return {'status': burst.status, 'group_gid': group_gid, 'selected_tab': burst.selected_tab}
         except Exception, excep:
             ### Most probably Burst was removed. Delete it from session, so that client 
             ### has a good chance to get a good response on refresh
@@ -481,7 +481,7 @@ class BurstController(base.BaseController):
         them so, and with the user filled defaults.
         """
         burst_config = base.get_from_session(base.KEY_BURST_CONFIG)
-        _, algo_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        algo_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[1]
         simulator_input_tree = self.flow_service.prepare_adapter(base.get_current_project().id, algo_group)[1]
 
         default_values, any_checked = burst_config.get_all_simulator_values()
@@ -506,7 +506,7 @@ class BurstController(base.BaseController):
         """
         burst_config = base.get_from_session(base.KEY_BURST_CONFIG)
         simulator_config = burst_config.simulator_configuration
-        _, algo_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        algo_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[1]
         simulator_input_tree = self.flow_service.prepare_adapter(base.get_current_project().id, algo_group)[1]
         ## Fill with stored defaults, and see if any parameter was checked by user ##
         default_values, any_checked = burst_config.get_all_simulator_values()
