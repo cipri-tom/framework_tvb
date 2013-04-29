@@ -521,6 +521,7 @@ class OperationDAO(RootDAO):
                 algo = self.session.query(model.Algorithm).filter_by(fk_algo_group=group_id
                                                                      ).filter_by(identifier=ident).one()
             algo.algo_group
+            algo.algo_group.group_category
             return algo
         except NoResultFound, _:
             return None

@@ -157,7 +157,7 @@ class ProjectStructureTest(TransactionalTestCase):
         Tests if a datatype is group.
         """
         _, dt_group_id, first_dt, _ = self._create_datatype_group()
-        dt_group = dao.get_datatype_group_by_id(dt_group_id)
+        dt_group = dao.get_generic_entity(model.DataTypeGroup, dt_group_id)[0]
         is_dt_group = self.project_service.is_datatype_group(dt_group.gid)
         self.assertTrue(is_dt_group, "The datatype should be a datatype group.")
         is_dt_group = self.project_service.is_datatype_group(first_dt.gid)
@@ -215,7 +215,7 @@ class ProjectStructureTest(TransactionalTestCase):
         Check if the visibility for a datatype group is set correct.
         """
         _, dt_group_id, first_dt, second_dt = self._create_datatype_group()
-        dt_group = dao.get_datatype_group_by_id(dt_group_id)
+        dt_group = dao.get_generic_entity(model.DataTypeGroup, dt_group_id)[0]
 
         self.assertTrue(dt_group.visible, "The data type group should be visible.")
         self.assertTrue(first_dt.visible, "The data type should be visible.")
@@ -464,7 +464,7 @@ class ProjectStructureTest(TransactionalTestCase):
         Tests the deletion of a datatype group.
         """
         project, dt_group_id, first_dt, second_dt = self._create_datatype_group()
-        datatype_group = dao.get_datatype_group_by_id(dt_group_id)
+        datatype_group = dao.get_generic_entity(model.DataTypeGroup, dt_group_id)[0]
 
         self.project_service.remove_datatype(project.id, first_dt.gid)
         self._check_if_datatype_was_removed(first_dt)
@@ -478,7 +478,7 @@ class ProjectStructureTest(TransactionalTestCase):
         Tests the deletion of a datatype group.
         """
         project, dt_group_id, first_dt, second_dt = self._create_datatype_group()
-        datatype_group = dao.get_datatype_group_by_id(dt_group_id)
+        datatype_group = dao.get_generic_entity(model.DataTypeGroup, dt_group_id)[0]
 
         self.project_service.remove_datatype(project.id, datatype_group.gid)
         self._check_if_datatype_was_removed(first_dt)
@@ -600,7 +600,7 @@ class ProjectStructureTest(TransactionalTestCase):
         Checks if the DataTypeGroup and OperationGroup was removed.
         """
         try:
-            dao.get_datatype_group_by_id(datatype_group_id)
+            dao.get_generic_entity(model.DataTypeGroup, datatype_group_id)
             self.fail("The DataTypeGroup entity was not removed.")
         except Exception:
             pass
