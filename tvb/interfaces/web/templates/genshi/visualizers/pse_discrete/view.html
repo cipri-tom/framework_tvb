@@ -1,5 +1,4 @@
-<section id="section-pse" class="parameter-space-exploration view-column" style="width: 100%;">
-	<!--TODO Setting style width:100% and including section_burst.css is an ugly thing to do here. It will require a better fix from Michael!! -->
+<section id="section-pse" class="parameter-space-exploration view-column">
 	<link rel="stylesheet" type="text/css" href="/static/style/section_burst.css"/>
 
     <div class="flex-wrapper" xmlns:xi="http://www.w3.org/2001/XInclude">
@@ -9,10 +8,10 @@
 
         <script type="text/javascript">
             $(document).ready(function() {
+                $("#main").addClass("colscheme-1");
                 drawColorPickerComponent('startColorSelector', 'endColorSelector', changeColors);
                 PSE_mainDraw('main_div_pse', 'none');
             });
         </script>
     </div>
-
 </section>
