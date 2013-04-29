@@ -241,7 +241,7 @@ class BurstContollerTest(BaseControllersTest):
         burst = self._store_burst(self.test_project.id, 'started', {'test': 'test'}, 'burst1')
         result = json.loads(self.burst_c.load_burst(burst.id))
         self.assertEqual(result["status"], "started")
-        self.assertEqual(result['group_id'], -1)
+        self.assertEqual(result['group_gid'], None)
         self.assertEqual(result['selected_tab'], 0)
 
 
