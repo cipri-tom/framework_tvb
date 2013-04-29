@@ -130,7 +130,8 @@ class IsoclinePSEAdapter(ABCMPLH5Displayer):
             # Separate plot for each metric.
             self._create_plot(metric, figsize, operation_group, range1_name, range2_name, figure_nrs)
 
-        parameters = dict(title=self._ui_name, serverIp=config.SERVER_IP, serverPort=config.MPLH5_SERVER_PORT,
+        parameters = dict(title=self._ui_name, showFullToolbar=True,
+                          serverIp=config.SERVER_IP, serverPort=config.MPLH5_SERVER_PORT,
                           figureNumbers=figure_nrs, metrics=metrics, figuresJSON=json.dumps(figure_nrs))
 
         if self.EXPORTABLE_FIGURE not in parameters:
