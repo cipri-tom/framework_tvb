@@ -31,11 +31,10 @@ from inspect import stack
 from tvb.basic.config.settings import TVBSettings as cfg
 from tvb.basic.logger.builder import get_logger
 from tvb.core.utils import synchronized
-from tvb.core.entities import model 
+from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.filesupdatemanager import FilesUpdateManager
-from tvb.core.entities.file.exceptions import FileVersioningException
-from tvb.core.services import sendmail
+from tvb.core.services import emailsender
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.settingsservice import SettingsService
 import tvb.core.services.eventhandler as eventhandler
@@ -50,7 +49,7 @@ the below password and change it to one you can easily remember as soon as \
 possible.\n Thank you.\n\n Password: %s'
 TEXT_DISPLAY = "Thank you! Please check your email for further details!"
 TEXT_CREATE = (',\n\nYour registration has been notified to the administrators '
-               + 'of The Virtual Brain Project; you will receive an mail as ' 
+               + 'of The Virtual Brain Project; you will receive an mail as '
                + 'soon as the administrator has validated your registration.'
                + ' \n\nThank you for registering!\nTVB Team')
 TEXT_CREATE_TO_ADMIN = 'New member requires validation. Go to this url to validate '
@@ -65,17 +64,19 @@ USERS_PAGE_SIZE = 7
 FILE_UPGRADE_LOCK = threading.Lock()
 
 
+
 class UserService:
     """
     CRUD methods for USER entities are here.
     """
     USER_ROLES = model.USER_ROLES
 
+
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-    
-    
-    def create_user(self, username=None, password=None, password2=None, 
+
+
+    def create_user(self, username=None, password=None, password2=None,
                     role=None, email=None, comment=None, email_msg=None, validated=False):
         """
         Service Layer for creating a new user.
@@ -92,22 +93,22 @@ class UserService:
         try:
             user_validated = (role == 'ADMINISTRATOR') or validated
             user = model.User(username, password, email, user_validated, role)
-            if email_msg == None:
+            if email_msg is None:
                 email_msg = 'Hello ' + username + TEXT_CREATE
-            admin_msg = (TEXT_CREATE_TO_ADMIN + username  + ' :\n '+ cfg.BASE_URL + 'user/validate/' + username +  
-                         '\n\n"' + str(comment) + '"')
-            self.logger.info("Registering user "+ username +" !")
+            admin_msg = (TEXT_CREATE_TO_ADMIN + username + ' :\n ' + cfg.BASE_URL +
+                         'user/validate/' + username + '\n\n"' + str(comment) + '"')
+            self.logger.info("Registering user " + username + " !")
             if role != 'ADMINISTRATOR' and email is not None:
                 admins = UserService.get_administrators()
                 admin = admins[randint(0, len(admins) - 1)]
-                if (admin.email is not None 
-                    and (admin.email != cfg.DEFAULT_ADMIN_EMAIL or cfg.SERVER_IP != cfg.LOCALHOST)):
+                if admin.email is not None and (admin.email != cfg.DEFAULT_ADMIN_EMAIL or
+                                                cfg.SERVER_IP != cfg.LOCALHOST):
                     #Do not send validation email in case default admin email 
                     # remained unchanged but TVB in locally deployed....
-                    sendmail.send(FROM_ADDRESS, admin.email, SUBJECT_REGISTER, admin_msg)
-                    self.logger.debug("Email sent to:" + admin.email + " for validating user:" + username +" !")
-                sendmail.send(FROM_ADDRESS, email, SUBJECT_REGISTER, email_msg)
-                self.logger.debug("Email sent to:"+ email + " for notifying new user:" + username +" !")
+                    emailsender.send(FROM_ADDRESS, admin.email, SUBJECT_REGISTER, admin_msg)
+                    self.logger.debug("Email sent to:" + admin.email + " for validating user:" + username + " !")
+                emailsender.send(FROM_ADDRESS, email, SUBJECT_REGISTER, email_msg)
+                self.logger.debug("Email sent to:" + email + " for notifying new user:" + username + " !")
             user = dao.store_entity(user)
             if not SettingsService.is_first_run():
                 eventhandler.handle_event(".".join([self.__class__.__name__, stack()[0][3]]), user)
@@ -116,8 +117,8 @@ class UserService:
             self.logger.error("Could not create user!")
             self.logger.exception(excep)
             raise UsernameException(excep.message)
-        
-        
+
+
     def reset_password(self, **data):
         """
         Service Layer for reseting a password.
@@ -126,40 +127,42 @@ class UserService:
             raise UsernameException("Empty UserName!")
         if (KEY_EMAIL not in data) or len(data[KEY_EMAIL]) < 1:
             raise UsernameException("Empty Email!")
+
+        old_pass, user = None
         try:
-            old_pass = None
             user_name = data[KEY_USERNAME]
             email = data[KEY_EMAIL]
             user = dao.get_user_by_name_email(user_name, email)
             if user is None:
                 raise UsernameException("Given credentials don't match!")
+
             old_pass = user.password
-            new_pass = ''.join(chr(randint(48, 122)) for i in range(DEFAULT_PASS_LENGTH))
+            new_pass = ''.join(chr(randint(48, 122)) for _ in range(DEFAULT_PASS_LENGTH))
             user.password = md5(new_pass).hexdigest()
-            self.edit_user(user, old_pass)            
-            self.logger.info("Setting new password for user " + user_name +" !")
-            sendmail.send(FROM_ADDRESS, email, SUBJECT_RECOVERY, TEXT_RECOVERY%(new_pass,))
+            self.edit_user(user, old_pass)
+            self.logger.info("Setting new password for user " + user_name + " !")
+            emailsender.send(FROM_ADDRESS, email, SUBJECT_RECOVERY, TEXT_RECOVERY % (new_pass,))
             return TEXT_DISPLAY
         except Exception, excep:
-            if old_pass and len(old_pass) > 1:
+            if old_pass and len(old_pass) > 1 and user:
                 user.password = old_pass
                 dao.store_entity(user)
             self.logger.error("Could not change user password!")
             self.logger.exception(excep)
             raise UsernameException(excep.message)
-        
-     
+
+
     @staticmethod
     def is_username_valid(name):
         """
         Service layer for checking if a given UserName is unique or not.
         """
         users_no = dao.count_users_for_name(name)
-        if  users_no > 0:
+        if users_no > 0:
             return False
         return True
-    
-    
+
+
     def validate_user(self, name='', user_id=None):
         """
         Service layer for editing a user and validating the account.
@@ -174,30 +177,30 @@ class UserService:
                 return False
             user.validated = True
             user = dao.store_entity(user)
-            self.logger.debug("Sending validation email for userName="+ name +" to address="+ user.email)
-            sendmail.send(FROM_ADDRESS, user.email, SUBJECT_VALIDATE, 'Hello ' 
-                          + name + TEXT_VALIDATED + cfg.BASE_URL +"user/")
+            self.logger.debug("Sending validation email for userName=" + name + " to address=" + user.email)
+            emailsender.send(FROM_ADDRESS, user.email, SUBJECT_VALIDATE,
+                             'Hello ' + name + TEXT_VALIDATED + cfg.BASE_URL + "user/")
             self.logger.info("User:" + name + " was validated successfully" + " and notification email sent!")
             return True
         except Exception, excep:
             self.logger.warning('Could not validate user:')
-            self.logger.warning('WARNING : '+str(excep))
+            self.logger.warning('WARNING : ' + str(excep))
             return False
-        
-     
-    @staticmethod   
+
+
+    @staticmethod
     def check_login(username, password):
         """
         Service layer to check if given UserName and Password are according to DB.
         """
         user = dao.get_user_by_name(username)
-        if (user is not None and user.password == md5(password).hexdigest() and user.validated):  
+        if user is not None and user.password == md5(password).hexdigest() and user.validated:
             return user
-        else:  
+        else:
             return None
 
 
-    def get_users_for_project(self, user_name, project_id, page = 1):
+    def get_users_for_project(self, user_name, project_id, page=1):
         """
         Return tuple: (All Users except the project administrator, Project Members).
         Parameter "user_name" is the current user. 
@@ -208,8 +211,8 @@ class UserService:
             admin_name = user_name
             if project_id is not None:
                 project = dao.get_project_by_id(project_id)
-                if (project is not None):
-                    admin_name = project.administrator.username 
+                if project is not None:
+                    admin_name = project.administrator.username
             all_users, total_pages = self.retrieve_all_users(admin_name, page)
             members = dao.get_members_of_project(project_id)
             return all_users, members, total_pages
@@ -217,21 +220,21 @@ class UserService:
             self.logger.error("Invalid userName or project identifier")
             self.logger.exception(excep)
             raise UsernameException(excep.message)
-        
-    
+
+
     @staticmethod
-    def retrieve_all_users(username, current_page = 1):
+    def retrieve_all_users(username, current_page=1):
         """
         Return all users from the database except the given user
-        """  
+        """
         start_idx = USERS_PAGE_SIZE * (current_page - 1)
-        total = dao.get_all_users(username, is_count = True)
-        end_idx = (USERS_PAGE_SIZE if total >= start_idx+USERS_PAGE_SIZE else total-start_idx)
-        user_list  = dao.get_all_users(username, start_idx, end_idx)
-        pages_no = total//USERS_PAGE_SIZE + (1 if total %USERS_PAGE_SIZE else 0)
+        total = dao.get_all_users(username, is_count=True)
+        end_idx = (USERS_PAGE_SIZE if total >= start_idx + USERS_PAGE_SIZE else total - start_idx)
+        user_list = dao.get_all_users(username, start_idx, end_idx)
+        pages_no = total // USERS_PAGE_SIZE + (1 if total % USERS_PAGE_SIZE else 0)
         return user_list, pages_no
-    
-    
+
+
     def edit_user(self, edited_user, old_password=None):
         """
         Retrieve a user by and id, then modify it's role and validate status.
@@ -253,8 +256,8 @@ class UserService:
         if user.is_administrator():
             cfg.update_config_file({SettingsService.KEY_ADMIN_EMAIL: user.email,
                                     SettingsService.KEY_ADMIN_PWD: user.password})
-        
-    
+
+
     def delete_user(self, user_id):
         """ 
         Delete a user with a given ID. 
@@ -265,20 +268,20 @@ class UserService:
         except Exception, excep:
             self.logger.exception(excep)
             return False
-        
-    
+
+
     @staticmethod
     def get_administrators():
         """Retrieve system administrators.
         Will be used for sending emails, for example."""
         return dao.get_administrators()
-        
-    
-    @staticmethod  
+
+
+    @staticmethod
     def save_project_to_user(user_id, project_id):
         """
         Mark for current user that the given project is the last one selected.
-        """ 
+        """
         user = dao.get_user_by_id(user_id)
         user.selected_project = project_id
         dao.store_entity(user)
@@ -290,14 +293,15 @@ class UserService:
         Retrieves a user by its id.
         """
         return dao.get_user_by_id(user_id)
-    
+
+
     @synchronized(FILE_UPGRADE_LOCK)
     def upgrade_file_storage(self):
         """
-        For the given user upgrade all datatype files storage.
+        For the given user upgrade all DataType files storage.
         
         @return: a two entry tuple (status, message) where status is a boolean that is True in case
-            the upgrade was successfull for all datatypes and False otherwise, and message is a status
+            the upgrade was successful for all DataTypes and False otherwise, and message is a status
             update message.
         """
         status = None
