@@ -148,8 +148,8 @@ function applyHoverEvent(canvasId) {
 }
 
 
-function PSE_previewBurst(parametersCanvasId, labelsXJson, labelsYJson, series_array, dataJson,
-						 min_color, max_color, backPage, color_metric, size_metric) {
+function PSEDiscreteInitialize(parametersCanvasId, labelsXJson, labelsYJson, series_array, dataJson,
+						       min_color, max_color, backPage, color_metric, size_metric) {
 	drawColorPickerComponent('startColorSelector', 'endColorSelector', changeColors);
 	var labels_x = $.parseJSON(labelsXJson);
 	var labels_y = $.parseJSON(labelsYJson);

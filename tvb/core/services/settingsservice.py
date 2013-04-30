@@ -40,7 +40,7 @@ class SettingsService():
     """
     Handle all TVB Setting related problems, at the service level.
     """
-    
+
     KEY_ADMIN_NAME = cfg.KEY_ADMIN_NAME
     KEY_ADMIN_PWD = cfg.KEY_ADMIN_PWD
     KEY_ADMIN_EMAIL = cfg.KEY_ADMIN_EMAIL
@@ -56,98 +56,100 @@ class SettingsService():
     KEY_MAX_NR_THREADS = cfg.KEY_MAX_THREAD_NR
     KEY_MAX_RANGE = cfg.KEY_MAX_RANGE_NR
     KEY_MAX_NR_SURFACE_VERTEX = cfg.KEY_MAX_NR_SURFACE_VERTEX
-    
+
     #Display order for the keys. None means a separator/new line will be added
     KEYS_DISPLAY_ORDER = [KEY_ADMIN_NAME, KEY_ADMIN_PWD, KEY_ADMIN_EMAIL, None,
                           KEY_STORAGE, KEY_MAX_DISK_SPACE_USR, KEY_MATLAB_EXECUTABLE, KEY_SELECTED_DB, KEY_DB_URL, None,
-                          KEY_IP, KEY_PORT, KEY_PORT_MPLH5, None, KEY_CLUSTER, 
+                          KEY_IP, KEY_PORT, KEY_PORT_MPLH5, None, KEY_CLUSTER,
                           KEY_MAX_NR_THREADS, KEY_MAX_RANGE, KEY_MAX_NR_SURFACE_VERTEX]
-    
-    
+
+
     def __init__(self):
         self.logger = get_logger(__name__)
         self.configurable_keys = {
-                     self.KEY_STORAGE: {'label':'Root folder for all projects', 'value': cfg.TVB_STORAGE,
-                                        'readonly': not self.is_first_run(), 'type': 'text'},
-                     self.KEY_MAX_DISK_SPACE_USR: {'label':'Max hard disk space per user (MBytes)',
-                                                    'value': cfg.MAX_DISK_SPACE / 2 ** 10, 'type': 'text'},
-                     self.KEY_MATLAB_EXECUTABLE: {'label':'Optional Matlab or Octave path', 'type':'text',
-                                                  'value': cfg.MATLAB_EXECUTABLE or get_matlab_executable() or '', 
-                                                  'description': 'Some analyzers will not be available when matlab/octave are not found'},
-                     self.KEY_SELECTED_DB: {'label': 'Select one DB engine', 'value': cfg.SELECTED_DB,
-                                            'type': 'select', 'readonly': not self.is_first_run(),
-                                            'options': cfg.ACEEPTED_DBS },
-                     self.KEY_DB_URL: {'label': "DB connection URL", 'value': cfg.DB_URL,
-                                       'type': 'text', 'readonly': cfg.SELECTED_DB == 'sqlite'},
-                     self.KEY_IP: {'label': 'Server name', 'value': cfg.SERVER_IP, 'type': 'text'},
-                     self.KEY_PORT: {'label':'The port used by Cherrypy',
-                                    'value': cfg.WEB_SERVER_PORT, 'dtype': 'primitive', 'type': 'text'}, 
-                     self.KEY_PORT_MPLH5: {'label': 'Port used by Matplotlib',
-                                           'value': cfg.MPLH5_SERVER_PORT, 'type': 'text', 'dtype': 'primitive'},
-                     self.KEY_MAX_NR_THREADS: {'label' : 'Maximum no. of threads for local installations',
-                                               'value': cfg.MAX_THREADS_NUMBER, 'type': 'text', 'dtype': 'primitive'},
-                     self.KEY_MAX_RANGE: {'label' : 'Maximum no. of operations in one PSE',
-                                          'description': "Parameters Space Exploration (PSE) maximum number of operations",
-                                          'value': cfg.MAX_RANGE_NUMBER, 'type': 'text', 'dtype': 'primitive'},
-                     self.KEY_MAX_NR_SURFACE_VERTEX: {'label' : 'Maximum no. of vertices in a surface', 'type': 'text',
-                                                      'value': cfg.MAX_SURFACE_VERTICES_NUMBER, 'dtype': 'primitive'},
-                     self.KEY_CLUSTER: {'label':'Deploy on cluster', 'value':cfg.DEPLOY_CLUSTER,
-                                        'description': 'Check this only if on the web-server machine OARSUB command is enabled.',
-                                        'dtype':'primitive', 'type':'boolean'},
-                     self.KEY_ADMIN_NAME: {'label': 'Administrator User Name', 'value': cfg.ADMINISTRATOR_NAME,
-                                           'type': 'text', 'readonly': not self.is_first_run(),
-                                           'description':('Password and Email can be edited after first run, '
-                                                          'from the profile page directly.')},
-                     self.KEY_ADMIN_PWD: {'label': 'Password', 
-                                          'value': cfg.ADMINISTRATOR_BLANK_PWD if self.is_first_run() 
-                                                    else cfg.ADMINISTRATOR_PASSWORD,
-                                          'type': 'password', 'readonly': not self.is_first_run()}, 
-                     self.KEY_ADMIN_EMAIL: {'label': 'Administrator Email', 'value': cfg.ADMINISTRATOR_EMAIL,
-                                            'readonly': not self.is_first_run(), 'type': 'text' }}
-        
+            self.KEY_STORAGE: {'label': 'Root folder for all projects', 'value': cfg.TVB_STORAGE,
+                               'readonly': not self.is_first_run(), 'type': 'text'},
+            self.KEY_MAX_DISK_SPACE_USR: {'label': 'Max hard disk space per user (MBytes)',
+                                          'value': cfg.MAX_DISK_SPACE / 2 ** 10, 'type': 'text'},
+            self.KEY_MATLAB_EXECUTABLE: {'label': 'Optional Matlab or Octave path', 'type': 'text',
+                                         'value': cfg.MATLAB_EXECUTABLE or get_matlab_executable() or '',
+                                         'description': 'Some analyzers will not be available when '
+                                                        'matlab/octave are not found'},
+            self.KEY_SELECTED_DB: {'label': 'Select one DB engine', 'value': cfg.SELECTED_DB,
+                                   'type': 'select', 'readonly': not self.is_first_run(),
+                                   'options': cfg.ACEEPTED_DBS},
+            self.KEY_DB_URL: {'label': "DB connection URL", 'value': cfg.DB_URL,
+                              'type': 'text', 'readonly': cfg.SELECTED_DB == 'sqlite'},
+            self.KEY_IP: {'label': 'Server name', 'value': cfg.SERVER_IP, 'type': 'text'},
+            self.KEY_PORT: {'label': 'The port used by Cherrypy',
+                            'value': cfg.WEB_SERVER_PORT, 'dtype': 'primitive', 'type': 'text'},
+            self.KEY_PORT_MPLH5: {'label': 'Port used by Matplotlib',
+                                  'value': cfg.MPLH5_SERVER_PORT, 'type': 'text', 'dtype': 'primitive'},
+            self.KEY_MAX_NR_THREADS: {'label': 'Maximum no. of threads for local installations',
+                                      'value': cfg.MAX_THREADS_NUMBER, 'type': 'text', 'dtype': 'primitive'},
+            self.KEY_MAX_RANGE: {'label': 'Maximum no. of operations in one PSE',
+                                 'description': "Parameters Space Exploration (PSE) maximum number of operations",
+                                 'value': cfg.MAX_RANGE_NUMBER, 'type': 'text', 'dtype': 'primitive'},
+            self.KEY_MAX_NR_SURFACE_VERTEX: {'label': 'Maximum no. of vertices in a surface', 'type': 'text',
+                                             'value': cfg.MAX_SURFACE_VERTICES_NUMBER, 'dtype': 'primitive'},
+            self.KEY_CLUSTER: {'label': 'Deploy on cluster', 'value': cfg.DEPLOY_CLUSTER,
+                               'description': 'Check this only if on the web-server machine OARSUB command is enabled.',
+                               'dtype': 'primitive', 'type': 'boolean'},
+            self.KEY_ADMIN_NAME: {'label': 'Administrator User Name', 'value': cfg.ADMINISTRATOR_NAME,
+                                  'type': 'text', 'readonly': not self.is_first_run(),
+                                  'description': ('Password and Email can be edited after first run, '
+                                                  'from the profile page directly.')},
+            self.KEY_ADMIN_PWD: {'label': 'Password',
+                                 'value': cfg.ADMINISTRATOR_BLANK_PWD if self.is_first_run()
+                                 else cfg.ADMINISTRATOR_PASSWORD,
+                                 'type': 'password', 'readonly': not self.is_first_run()},
+            self.KEY_ADMIN_EMAIL: {'label': 'Administrator Email', 'value': cfg.ADMINISTRATOR_EMAIL,
+                                   'readonly': not self.is_first_run(), 'type': 'text'}}
+
 
     def check_db_url(self, url):
         """Validate DB URL, that a connection can be done."""
         try:
-            engine = create_engine(url)           
+            engine = create_engine(url)
             connection = engine.connect()
             connection.close()
         except Exception, excep:
             self.logger.exception(excep)
-            raise InvalidSettingsException('Could not connect to DB! ' 'Invalid URL:'+ str(url)) 
-        
-        
+            raise InvalidSettingsException('Could not connect to DB! ' 'Invalid URL:' + str(url))
+
+
     @staticmethod
     def is_first_run():
         """
         Check if this is the first time TVB was started.
         """
         file_dict = cfg.read_config_file()
-        return (file_dict is None or len(file_dict) <= 2)
-    
-    
-    @staticmethod   
+        return file_dict is None or len(file_dict) <= 2
+
+
+    @staticmethod
     def get_disk_free_space():
         """
         :return: the available HDD space in KB in TVB_STORAGE folder.
         """
         if sys.platform.startswith('win'):
             import ctypes
+
             drive = unicode(os.getenv("SystemDrive"))
             freeuser = ctypes.c_int64()
             total = ctypes.c_int64()
             free = ctypes.c_int64()
             ctypes.windll.kernel32.GetDiskFreeSpaceExW(drive, ctypes.byref(freeuser),
                                                        ctypes.byref(total), ctypes.byref(free))
-            bytes_value =  freeuser.value
+            bytes_value = freeuser.value
         else:
             mem_stat = os.statvfs(cfg.TVB_STORAGE)
             bytes_value = mem_stat.f_frsize * mem_stat.f_bavail
             ## Occupied memory would be:
             #bytes_value = mem_stat.f_bsize * mem_stat.f_bavail
-        return bytes_value / 2**10
-  
-    
+        return bytes_value / 2 ** 10
+
+
     def save_settings(self, **data):
         """
         Check if new settings are correct. 
@@ -163,19 +165,19 @@ class SettingsService():
         previous_db = cfg.SELECTED_DB
         db_changed = new_db != previous_db
         storage_changed = new_storage != previous_storage
-        
+
         matlab_exec = data[self.KEY_MATLAB_EXECUTABLE]
-        if matlab_exec == 'None': 
-            matlab_exec = ''
+        if matlab_exec == 'None':
+            data[self.KEY_MATLAB_EXECUTABLE] = ''
         #Storage changed but DB didn't, just copy TVB storage to new one.
         if storage_changed and not db_changed:
             if os.path.exists(new_storage):
                 if os.access(new_storage, os.W_OK):
                     shutil.rmtree(new_storage)
                 else:
-                    raise InvalidSettingsException("No Write access on storage folder!!") 
+                    raise InvalidSettingsException("No Write access on storage folder!!")
             shutil.copytree(previous_storage, new_storage)
-            
+
         #Save data to file, all while checking if any data has changed
         first_run = self.is_first_run()
         if first_run:

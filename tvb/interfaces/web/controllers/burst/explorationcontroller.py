@@ -105,10 +105,9 @@ class ParameterExplorationController(BaseController):
         adapter = self.flow_service.build_adapter_instance(group)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
-                params = adapter.prepare_parameters(datatype_group_gid, color_metric, size_metric)
-                for key in ['labels_x', 'labels_y', 'data']:
-                    params[key] = json.dumps(params[key])
-                return params
+                pse_context = adapter.prepare_parameters(datatype_group_gid, color_metric, size_metric)
+                pse_context.prepare_individual_jsons()
+                return pse_context
             except LaunchException, ex:
                 error_msg = urllib.quote(ex.message)
         else:

@@ -9,8 +9,9 @@
         <script type="text/javascript">
             $(document).ready(function() {
                 $("#main").addClass("colscheme-1");
-                drawColorPickerComponent('startColorSelector', 'endColorSelector', changeColors);
-                PSE_mainDraw('main_div_pse', 'none');
+                PSEDiscreteInitialize('section-pse', '${labels_x}', '${labels_y}', '${series_array}', '${data}',
+						              '${min_color}', '${max_color}', 'burst',
+                                      '${color_metric}', '${size_metric}', '${status}');
             });
         </script>
     </div>
