@@ -134,8 +134,8 @@ class SettingsService():
         """
         if sys.platform.startswith('win'):
             import ctypes
-
-            drive = unicode(os.getenv("SystemDrive"))
+            storage = cfg.TVB_STORAGE
+            drive = unicode(storage.split(':')[0] + ':')
             freeuser = ctypes.c_int64()
             total = ctypes.c_int64()
             free = ctypes.c_int64()
