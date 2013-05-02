@@ -150,20 +150,20 @@ class BaseProfile():
     @staticmethod
     def SVN_VERSION():
         """Current SVN version in the package running now."""
+        result = '1'
         try:
             import bin
 
             with open(os.path.join(os.path.dirname(bin.__file__), 'tvb.version'), 'r') as version_file:
                 result = version_file.read()
-                return result
         except Exception:
             pass
         try:
             _proc = Popen(["svnversion", "."], stdout=PIPE)
-            return _proc.communicate()[0]
+            result = _proc.communicate()[0]
         except Exception:
             pass
-        return -1
+        return BaseProfile.parse_svn_version(result)
 
 
     @ClassProperty
@@ -181,7 +181,8 @@ class BaseProfile():
     @settings_loaded()
     def CODE_CHECKED_TO_VERSION():
         """The version up until we done the upgrade properly for the file data storage."""
-        return FrameworkSettings.get_attribute(FrameworkSettings.KEY_LAST_CHECKED_CODE_VERSION, -1, int)
+        version_string = FrameworkSettings.get_attribute(FrameworkSettings.KEY_LAST_CHECKED_CODE_VERSION, '-1', str)
+        return BaseProfile.parse_svn_version(version_string)
 
 
     # Access rights for TVB generated files/folders.
@@ -524,6 +525,17 @@ class BaseProfile():
                 'tools.staticdir.dir': os.path.join('core', 'schema'),
             },
         }
+
+
+    @staticmethod
+    def parse_svn_version(version_string):
+        try:
+            return int(version_string)
+        except ValueError:
+            if ':' in version_string:
+                version_string = version_string.split(':')[1]
+                number = ''.join([ch for ch in version_string if ch.isdigit()])
+                return int(number)
 
 
     @staticmethod
