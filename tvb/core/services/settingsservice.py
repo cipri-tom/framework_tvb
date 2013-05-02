@@ -128,14 +128,13 @@ class SettingsService():
 
 
     @staticmethod
-    def get_disk_free_space():
+    def get_disk_free_space(storage_path):
         """
         :return: the available HDD space in KB in TVB_STORAGE folder.
         """
         if sys.platform.startswith('win'):
             import ctypes
-            storage = cfg.TVB_STORAGE
-            drive = unicode(storage.split(':')[0] + ':')
+            drive = unicode(storage_path.split(':')[0] + ':')
             freeuser = ctypes.c_int64()
             total = ctypes.c_int64()
             free = ctypes.c_int64()
@@ -143,7 +142,7 @@ class SettingsService():
                                                        ctypes.byref(total), ctypes.byref(free))
             bytes_value = freeuser.value
         else:
-            mem_stat = os.statvfs(cfg.TVB_STORAGE)
+            mem_stat = os.statvfs(storage_path)
             bytes_value = mem_stat.f_frsize * mem_stat.f_bavail
             ## Occupied memory would be:
             #bytes_value = mem_stat.f_bsize * mem_stat.f_bavail
@@ -165,6 +164,14 @@ class SettingsService():
         previous_db = cfg.SELECTED_DB
         db_changed = new_db != previous_db
         storage_changed = new_storage != previous_storage
+
+        max_space = data[self.KEY_MAX_DISK_SPACE_USR]
+        available_mem_kb = SettingsService.get_disk_free_space(new_storage)
+        kb_value = max_space * (2 ** 10)
+        if not(0 < kb_value < available_mem_kb):
+            raise InvalidSettingsException("Not enough disk space. There is a maximum of %sMb available on the partition."%(
+                                                                                                available_mem_kb / (2 ** 10),))
+        data[self.KEY_MAX_DISK_SPACE_USR] = kb_value
 
         matlab_exec = data[self.KEY_MATLAB_EXECUTABLE]
         if matlab_exec == 'None':

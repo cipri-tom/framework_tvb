@@ -80,7 +80,7 @@ class SettingsServiceTest(unittest.TestCase):
         Also do a check that returned value is greater than 0. Not most precise check but other
         does not seem possible so far.
         '''
-        disk_space = self.settings_service.get_disk_free_space()
+        disk_space = self.settings_service.get_disk_free_space(cfg.TVB_STORAGE)
         self.assertTrue(disk_space > 0, "Disk space should never be negative.")
     
             

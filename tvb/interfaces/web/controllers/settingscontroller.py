@@ -151,17 +151,9 @@ class DiskSpaceValidator(formencode.FancyValidator):
         """
         try:
             value = long(value)
+            return value
         except Exception:
             raise formencode.Invalid('Invalid disk space %s. Should be number' % value, value, None)
-
-        available_mem_kb = SettingsService.get_disk_free_space()
-        kb_value = value * (2 ** 10)
-        if 0 < kb_value < available_mem_kb:
-            return kb_value
-        else:
-            available_mem_mb = available_mem_kb / (2 ** 10)
-            raise formencode.Invalid('Invalid disk space %s. Should be number between 0 and %s MB (total '
-                                     'available space on your disk)!' % (value, available_mem_mb), value, None)
 
 
 class PortValidator(formencode.FancyValidator):
