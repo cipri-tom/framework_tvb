@@ -32,12 +32,13 @@ import tvb.core.code_versions.code_update_scripts as code_versions
 class CodeUpdateManager(UpdateManager):
     """
     A manager that goes through all the scripts that are newer than the version number 
-    written in the .tvb.basic.config.settingsuration file.
+    written in the .tvb.basic.config.setting configuration file.
     """
-    
+
+
     def __init__(self):
         super(CodeUpdateManager, self).__init__(code_versions, cfg.CODE_CHECKED_TO_VERSION, cfg.SVN_VERSION)
-    
+
 
     def run_update_script(self, script_name):
         """
@@ -46,7 +47,8 @@ class CodeUpdateManager(UpdateManager):
         super(CodeUpdateManager, self).run_update_script(script_name)
         # After each update mark the update in cfg file. 
         # In case one update script fails, the ones before will not be repeated.
-        cfg.add_entries_to_config_file({cfg.KEY_LAST_CHECKED_CODE_VERSION : script_name.split('_')[0]})
+        cfg.add_entries_to_config_file({cfg.KEY_LAST_CHECKED_CODE_VERSION: script_name.split('_')[0]})
+
 
     def update_all(self):
         """
@@ -54,14 +56,14 @@ class CodeUpdateManager(UpdateManager):
         Go through all update scripts with lower SVN version than the current running version.
         """
         file_dict = cfg.read_config_file()
-        if (file_dict is None or len(file_dict) <= 2):
+        if file_dict is None or len(file_dict) <= 2:
             ## We've just started with a clean TVB. No need to upgrade anything.
             return
-        
+
         super(CodeUpdateManager, self).update_all()
-        
+
         if self.checked_version < self.current_version:
-            cfg.add_entries_to_config_file({cfg.KEY_LAST_CHECKED_CODE_VERSION : cfg.SVN_VERSION})
+            cfg.add_entries_to_config_file({cfg.KEY_LAST_CHECKED_CODE_VERSION: cfg.SVN_VERSION})
         
         
         
