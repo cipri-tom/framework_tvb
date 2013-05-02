@@ -819,7 +819,7 @@ class ABCAdapter(object):
             #the following check is made only to improve performance 
             # (to find data in the dictionary with O(1)) on else the data is found in O(n)
             if hasattr(entity, 'shape'):
-                for i in range(len(entity.shape)):
+                for i in xrange(len(entity.shape)):
                     if not i:
                         continue
                     param_key = (row[xml_reader.ATT_NAME] + "_" + row[ATT_PARAMETERS] + "_" + str(i - 1))
@@ -941,9 +941,9 @@ class ABCAdapter(object):
                         selected_values = data[param[ABCAdapter.KEY_NAME]]
                     else:
                         selected_values = [data[param[ABCAdapter.KEY_NAME]]]
-                    for i in range(len(new_options)):
-                        if new_options[i][ABCAdapter.KEY_VALUE] in selected_values:
-                            new_options[i] = ABCAdapter.fill_defaults([new_options[i]], data)[0]
+                    for option in new_options:
+                        if option[ABCAdapter.KEY_VALUE] in selected_values:
+                            option = ABCAdapter.fill_defaults([option], data)[0]
                 new_p[ABCAdapter.KEY_OPTIONS] = new_options
             result.append(new_p)
         return result

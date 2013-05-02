@@ -152,10 +152,8 @@ class ContextDiscretePSE(EnhancedDictionary):
             self.max_color += 1
             
         all_series = []
-        for i in range(len(self.labels_x)):
-            for j in range(len(self.labels_y)):
-                key_1 = self.labels_x[i]
-                key_2 = self.labels_y[j]
+        for i, key_1 in enumerate(self.labels_x):
+            for j, key_2 in enumerate(self.labels_y):
                 datatype_gid = None
                 if self.KEY_GID in final_dict[key_1][key_2]:
                     #This means the operation was finished
@@ -180,10 +178,10 @@ class ContextDiscretePSE(EnhancedDictionary):
         #each shape from the UI corresponds to a dataType. In this matrix we
         #keep information about those dataTypes.
         matrix = []
-        for i in range(len(self.labels_x)):
+        for i, x_label in enumerate(self.labels_x):
             matrix.append([])
             for y_label in self.labels_y:
-                matrix[i].append(final_dict[self.labels_x[i]][y_label])
+                matrix[i].append(final_dict[x_label][y_label])
         
         self.data = matrix
         self.series_array = self.__build_series_json(all_series)
@@ -194,10 +192,10 @@ class ContextDiscretePSE(EnhancedDictionary):
     def __build_series_json(list_of_series):
         """ Given a list with all the data points, build the final FLOT JSON. """
         final_json = "["
-        for i in range(len(list_of_series)):
+        for i, value in enumerate(list_of_series):
             if i:
                 final_json += ","
-            final_json += list_of_series[i]
+            final_json += value
         final_json += "]"
         return final_json
     
@@ -293,8 +291,8 @@ class ContextDiscretePSE(EnhancedDictionary):
         elif max_length >= intervals[len(intervals) - 1]:
             return values[len(values) - 1]
         else:
-            for i in range(len(intervals)):
-                if max_length <= intervals[i]:
+            for i, interval in enumerate(intervals):
+                if max_length <= interval:
                     return values[i - 1]    
        
        

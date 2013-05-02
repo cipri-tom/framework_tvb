@@ -1,4 +1,4 @@
-<py:for each="idx in range(len(uploadAlgorithms))" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<py:for each="idx in xrange(len(uploadAlgorithms))" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
     <py:with vars="algorithm = uploadAlgorithms[idx];
     			   algo_interface_key = 'template_for_algo_' + str(algorithm.id);
                    inputList=algorithmsInterface[algo_interface_key].inputList;

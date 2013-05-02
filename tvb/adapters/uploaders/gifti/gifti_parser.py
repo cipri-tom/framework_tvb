@@ -157,8 +157,7 @@ class GIFTIParser():
             
             
             # Now read time series data
-            for i in range(len(data_arrays)):
-                data_array = data_arrays[i]
+            for data_array in data_arrays:
                 time_series.write_data_slice([data_array.data])
             
             # Close file after writing data

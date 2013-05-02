@@ -286,23 +286,22 @@ class FlowController(base.BaseController):
                         and len(actual_entity.aggregation_functions) == len(array_shape)):
                     #will be a list of lists of aggregation functions
                     defined_functions = actual_entity.aggregation_functions
-                    for i in range(len(defined_functions)):
-                        if not len(defined_functions[i]):
+                    for function in defined_functions:
+                        if not len(function):
                             aggregation_functions.append({})
                         else:
                             func_dict = dict()
-                            for j in range(defined_functions[i]):
-                                function_key = defined_functions[i][j]
+                            for function_key in function:
                                 func_dict[function_key] = default_agg_functions[function_key]
                             aggregation_functions.append(func_dict)
                 else:
-                    for i in range(len(array_shape)):
+                    for _ in array_shape:
                         aggregation_functions.append(default_agg_functions)
                 result = []
-                for i in range(len(array_shape)):
+                for i, shape in enumerate(array_shape):
                     labels = []
                     values = []
-                    for j in range(array_shape[i]):
+                    for j in xrange(shape):
                         labels.append(labels_set[i] + " " + str(j))
                         values.append(entity_gid + "_" + str(i) + "_" + str(j))
                     result.append([labels, values, aggregation_functions[i]])
@@ -320,7 +319,7 @@ class FlowController(base.BaseController):
         and also the shape of the array based on his selections
         """
         current_dim = len(array_shape)
-        for i in range(len(array_shape)):
+        for i in xrange(len(array_shape)):
             if i in selected_items and len(selected_items[i]) > 0:
                 array_shape[i] = len(selected_items[i])
                 if len(selected_items[i]) == 1:
@@ -360,14 +359,12 @@ class FlowController(base.BaseController):
 
         filters = json.loads(filters)
         availablefilter = json.loads(FilterChain.get_filters_for_type(datatype))
-        for i in range(len(filters[FILTER_FIELDS])):
+        for i, filter_ in enumerate(filters[FILTER_FIELDS]):
             #Check for filter input of type 'date' as these need to be converted
-            filter_ = filters[FILTER_FIELDS][i]
             if filter_ in availablefilter and availablefilter[filter_][FILTER_TYPE] == 'date':
-                date_var = filters[FILTER_VALUES][i]
                 try:
-                    date_var = string2date(date_var, False)
-                    filters[FILTER_VALUES][i] = date_var
+                    filter_ = string2date(filter_, False)
+                    filters[FILTER_VALUES][i] = filter_
                 except ValueError, excep:
                     raise excep
         #In order for the filter object not to "stack up" on multiple calls to

@@ -249,9 +249,9 @@ def saveImage(image, filename):
         array_node.setAttribute('DataType', str(GiftiDataType.datatypes_inv[darray.datatype]))
         array_node.setAttribute('ArrayIndexingOrder', "RowMajorOrder")
         array_node.setAttribute('Dimensionality', str(len(darray.dims)))
-        for dim in range(len(darray.dims)):
-            dim_name = 'Dim' + str(dim)
-            array_node.setAttribute(dim_name, str(darray.dims[dim]))
+        for dim_idx, dimension in enumerate(darray.dims):
+            dim_name = 'Dim' + str(dim_idx)
+            array_node.setAttribute(dim_name, str(dimension))
         array_node.setAttribute("Encoding", "ASCII")
         array_node.setAttribute('endian', 'LittleEndian')
         array_node.setAttribute('ExternalFileName', '')

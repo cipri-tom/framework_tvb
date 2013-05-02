@@ -31,7 +31,7 @@
 
     <input type="hidden" name="nodeType" value="${nodeType}"/>
     
-	<fieldset py:for="i in range(len(nodeFields))">
+	<fieldset py:for="i in xrange(len(nodeFields))">
 	<py:with vars="fields_dictionary = nodeFields[i]">
 	
 		<legend py:if="i &gt; 0 or len(nodeFields) == 1">Generic Metadata</legend>

@@ -112,12 +112,12 @@ class NodeStructure():
         if not len(self.adjacencies):
             return "[]"
         json = "["
-        for i in range(len(self.adjacencies)):
+        for i, adjacency in enumerate(self.adjacencies):
             if i:
                 json += ","
             json += "{"
             json += "  \"nodeFrom\": \"" + str(self.id) + "\""
-            json += ", \"nodeTo\": \"" + str(self.adjacencies[i]) + "\""
+            json += ", \"nodeTo\": \"" + str(adjacency) + "\""
             json += ", \"data\": {}"
             json += "}"
         json += "]"

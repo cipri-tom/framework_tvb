@@ -12,7 +12,7 @@
 	<py:def function="drawPortletVisualizer(portlet_entity, width, height, portlet_idx)">
 		<xi:include href="portlet_visualization_template.html" py:with="portlet_idx=portlet_idx"></xi:include>
 	</py:def>
-	<py:for each="i in range(len(portlet_tab_list))">
+	<py:for each="i in xrange(len(portlet_tab_list))">
 		<py:with vars="portlet_width= max_width if (len(portlet_tab_list)==1 or len(portlet_tab_list)==3 and i==2) else max_width/2; 
 					   portlet_height=max_height/2 if (len(portlet_tab_list) &gt; 1) else max_height;">
 		${drawPortletVisualizer(portlet_tab_list[i], portlet_width, portlet_height-38, i)}

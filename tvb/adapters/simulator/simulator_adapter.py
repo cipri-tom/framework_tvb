@@ -259,10 +259,10 @@ class SimulatorAdapter(ABCAsynchronous):
         ### Run simulation
         self.log.debug("%s: Starting simulation..." % str(self))
         for result in self.algorithm(simulation_length=simulation_length):
-            for j in range(len(monitors)):
+            for j, monitor in enumerate(monitors):
                 if result[j] is not None:
-                    result_datatypes[monitors[j]].write_time_slice([result[j][0]])
-                    result_datatypes[monitors[j]].write_data_slice([result[j][1]])
+                    result_datatypes[monitor].write_time_slice([result[j][0]])
+                    result_datatypes[monitor].write_data_slice([result[j][1]])
 
         self.log.debug("%s: Completed simulation, starting to store simulation state " % str(self))
         ### Populate H5 file for simulator state. This step could also be done while running sim, in background.

@@ -62,13 +62,13 @@ class WorkflowService:
         :param operations: a list with the operations created for the simulator steps
         """
         workflows = []
-        for idx in range(len(operations)):
+        for operation in operations:
             new_workflow = model.Workflow(project_id, burst_id)
             new_workflow = dao.store_entity(new_workflow)
             workflows.append(new_workflow)
             simulation_step  = model.WorkflowStep(algorithm_id= simulator_id, workflow_id= new_workflow.id, 
-                                                  step_index= simulator_index, static_param= operations[idx].parameters)
-            simulation_step.fk_operation = operations[idx].id
+                                                  step_index= simulator_index, static_param= operation.parameters)
+            simulation_step.fk_operation = operation.id
             dao.store_entity(simulation_step)
         return workflows
         

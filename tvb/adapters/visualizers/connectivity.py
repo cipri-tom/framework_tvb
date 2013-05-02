@@ -303,7 +303,7 @@ class Connectivity2DViewer():
         x_scale = 2 * x_canvas / (max_x - min_x)
         mid_x_value = (max_x + min_x) / 2
         mid_y_value = (max_y + min_y) / 2
-        for i in range(len(positions)):
+        for i in xrange(len(positions)):
             result_json += self.point2json(labels[i], (positions[i][coord_idx1] - mid_x_value) * x_scale,
                                            (positions[i][coord_idx2] - mid_y_value) * y_scale,
                                            Connectivity2DViewer.get_adjacencies_json(weights[i], labels),
@@ -355,8 +355,7 @@ class Connectivity2DViewer():
         Method used for obtaining a valid JSON which will contain all the edges of a certain node.
         """
         adjacencies = ""
-        for i in range(len(point_weights)):
-            weight = point_weights[i]
+        for i, weight in enumerate(point_weights):
             if weight:
                 if len(adjacencies) > 0:
                     adjacencies += ","
@@ -416,8 +415,8 @@ class Connectivity2DViewer():
         min_value = numpy.min(weights)
         max_value = numpy.max(weights)
         if min_value < self.MIN_WEIGHT_VALUE or max_value > self.MAX_WEIGHT_VALUE:
-            for i in range(len(weights)):
-                for j in range(len(weights[i])):
+            for i, row in enumerate(weights):
+                for j in xrange(len(row)):
                     if min_value == max_value:
                         weights[i][j] = self.MAX_WEIGHT_VALUE
                     else:

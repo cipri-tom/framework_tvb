@@ -172,21 +172,21 @@ class ZIPSurfaceImporter(ABCSynchronous):
         triangles = []
         vertices_files_lengths = []
     
-        for i in range(len(list_of_vertices)):
-            current_vertices = numpy.loadtxt(list_of_vertices[i], dtype=numpy.float32)
-            current_normals = numpy.loadtxt(list_of_normals[i], dtype=numpy.float32)
+        for idx, vertice in enumerate(list_of_vertices):
+            current_vertices = numpy.loadtxt(vertice, dtype=numpy.float32)
+            current_normals = numpy.loadtxt(list_of_normals[idx], dtype=numpy.float32)
             vertices_files_lengths.append(len(current_vertices))
             vertices.extend(current_vertices)
             normals.extend(current_normals)
     
         increment_value = 0
-        for i in range(len(list_of_triangles)):
-            current_triangles = numpy.loadtxt(list_of_triangles[i], dtype=numpy.int32)
+        for i, triangle in enumerate(list_of_triangles):
+            current_triangles = numpy.loadtxt(triangle, dtype=numpy.int32)
             if not i:
                 triangles.extend(current_triangles)
                 continue
             increment_value = increment_value + vertices_files_lengths[i - 1]
-            for j in range(len(current_triangles)):
+            for j in xrange(len(current_triangles)):
                 current_triangles[j] = current_triangles[j] + increment_value
             triangles.extend(current_triangles)
     

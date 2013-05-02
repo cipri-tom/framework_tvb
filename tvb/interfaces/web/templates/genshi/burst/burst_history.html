@@ -5,7 +5,7 @@
 		
 		<ul class="burst-list" id="burst-history">
 			
-			<py:for each="idx in range(len(burst_list))">
+			<py:for each="idx in xrange(len(burst_list))">
 				<li class="burst ${'burst-group' if burst_list[idx].is_group else ''} ${'burst-started' if burst_list[idx].status == 'running' else 'burst-canceled' if burst_list[idx].status == 'canceled' else 'burst-error' if burst_list[idx].status == 'error' else 'burst-finished'}" 
 				    id='burst_id_${burst_list[idx].id}'>
 					<a href="#" onclick="changeBurstHistory(${burst_list[idx].id});" title="Load this simulation">${burst_list[idx].name}</a>

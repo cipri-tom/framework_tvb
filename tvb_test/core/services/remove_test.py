@@ -121,7 +121,7 @@ class RemoveTest(TransactionalTestCase):
         """
         gid_list = self.flow_service.get_available_datatypes(self.test_project.id, data_name)
         self.assertEquals(len(gid_list), before_number)
-        for i in range(len(gid_list)):
+        for i in xrange(len(gid_list)):
             data_gid = gid_list[i][2]
             self.project_service.remove_datatype(self.test_project.id, data_gid)
             res = dao.get_datatype_by_gid(data_gid)

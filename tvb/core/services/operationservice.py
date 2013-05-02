@@ -251,8 +251,7 @@ class OperationService:
             if algo_category is not None:
                 algo_category = algo_category.algo_group.group_category
 
-            for wf_idx in range(len(workflows)):
-                workflow = workflows[wf_idx]
+            for wf_idx, workflow in enumerate(workflows):
                 cloned_w_step = step.clone()
                 cloned_w_step.fk_workflow = workflow.id
                 dynamic_params = cloned_w_step.dynamic_param

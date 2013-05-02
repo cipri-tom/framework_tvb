@@ -169,13 +169,13 @@ class BurstController(base.BaseController):
         tab_portlets_list = json.loads(data['tab_portlets_list'])
         burst_config = base.get_from_session(base.KEY_BURST_CONFIG)
         selected_tab_idx = burst_config.selected_tab
-        for tab_idx in range(len(tab_portlets_list)):
+        for tab_idx in xrange(len(tab_portlets_list)):
             current_tab = burst_config.tabs[tab_idx]
             ### When configuration already exists, and new portlets          #####
             ### are selected, first check if any configuration was saved for #####
             ### each portlet and if that is the case, use it. If none is present #
             ### create a new one.                                              ###
-            for idx_in_tab in range(len(tab_portlets_list[tab_idx])):
+            for idx_in_tab in xrange(len(tab_portlets_list[tab_idx])):
                 portlet_id = tab_portlets_list[tab_idx][idx_in_tab][0]
                 portlet_name = tab_portlets_list[tab_idx][idx_in_tab][1]
                 if portlet_id >= 0:
@@ -190,11 +190,11 @@ class BurstController(base.BaseController):
             #For generating the HTML get for each id the corresponding portlet
         selected_tab_portlets = []
         saved_selected_tab = burst_config.tabs[selected_tab_idx]
-        for idx in range(len(saved_selected_tab.portlets)):
-            if saved_selected_tab.portlets[idx]:
-                portlet_id = int(saved_selected_tab.portlets[idx].portlet_id)
+        for portlet in saved_selected_tab.portlets:
+            if portlet:
+                portlet_id = int(portlet.portlet_id)
                 portlet_entity = self.burst_service.get_portlet_by_id(portlet_id)
-                portlet_entity.name = saved_selected_tab.portlets[idx].name
+                portlet_entity.name = portlet.name
                 selected_tab_portlets.append(portlet_entity)
 
         return {'portlet_tab_list': selected_tab_portlets}

@@ -167,7 +167,7 @@ class PortletConfigurer():
         """
         #Check for any defaults first in analyzer steps
         if portlet_configuration.analyzers:
-            for adapter_idx in range(len(portlet_interface[:-1])):
+            for adapter_idx in xrange(len(portlet_interface[:-1])):
                 saved_configuration = portlet_configuration.analyzers[adapter_idx]
                 replaced_defaults_dict = ABCAdapter.fill_defaults(portlet_interface[adapter_idx].interface, 
                                                                      saved_configuration.static_param)

@@ -352,10 +352,8 @@ class BurstService():
         if group_launched:
             starting_index += 1
     
-        for tab_idx in range(len(burst_config.tabs)):
-            tab = burst_config.tabs[tab_idx]
-            for portlet_idx in range(len(tab.portlets)):
-                portlet_cfg = tab.portlets[portlet_idx]
+        for tab in burst_config.tabs:
+            for portlet_cfg in tab.portlets:
                 ### For each portlet configuration stored, update the step index ###
                 ### and also change the dynamic parameters step indexes to point ###
                 ### to the simulator outputs.                                     ##

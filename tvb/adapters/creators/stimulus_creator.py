@@ -62,8 +62,7 @@ class SurfaceStimulusCreator(ABCSynchronous):
         triangles_indices = kwargs['focal_points_triangles']
         focal_points = []
         fp_triangle_indices = []
-        for i in range(len(triangles_indices)):
-            triangle_index = triangles_indices[i]
+        for triangle_index in triangles_indices:
             focal_points.append(int(stimuli_surface.surface.triangles[triangle_index][0]))
             fp_triangle_indices.append(int(triangle_index))
         stimuli_surface.focal_points_triangles = fp_triangle_indices

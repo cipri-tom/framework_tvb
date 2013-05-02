@@ -219,10 +219,10 @@ class SpatioTemporalController(base.BaseController):
     def build_final_json(list_of_series):
         """ Given a list with all the data points, build the final FLOT json. """
         final_json = "["
-        for i in range(len(list_of_series)):
+        for i, value in enumerate(list_of_series):
             if i:
                 final_json += ","
-            final_json += list_of_series[i]
+            final_json += value
         final_json += "]"
         return final_json
 

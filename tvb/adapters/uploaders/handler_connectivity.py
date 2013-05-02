@@ -66,10 +66,10 @@ def connectivity2networkx(connectivity):
             node_dict[ct.KEY_ORIENTATION_AVG] = connectivity.orientations[i]
         graph.add_node(i, node_dict)
     # Add all edges
-    for i in range(len(connectivity.weights)):
-        for j in range(len(connectivity.weights[i])):
+    for i, weights_row in enumerate(connectivity.weights):
+        for j, value in enumerate(weights_row):
             graph.add_edge(i, j, 
-                           {ct.KEY_WEIGHT: connectivity.weights[i][j], 
+                           {ct.KEY_WEIGHT: value, 
                             ct.KEY_TRACT: connectivity.tract_lengths[i][j]})
 
     uids_dict = get_uids_dict(connectivity)

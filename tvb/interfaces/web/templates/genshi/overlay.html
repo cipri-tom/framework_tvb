@@ -12,7 +12,7 @@
 	</hgroup>
 	
 	<ul class="view-switcher tabswitcher" py:if="len(overlay_tabs)">
-        <py:for each="idx in range(len(overlay_tabs))">
+        <py:for each="idx in xrange(len(overlay_tabs))">
         	<py:with vars="tab = overlay_tabs[idx];
         	               li_class = tab.css_class if (tab.css_class is not None) else '';
         	               li_class = li_class if (tab.enabled) else li_class + ' disabled';

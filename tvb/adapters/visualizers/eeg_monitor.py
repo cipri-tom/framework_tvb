@@ -191,7 +191,7 @@ class EegMonitor(ABCDisplayer):
         """ Replace NAN values with a given values"""
         is_any_value_nan = False
         if not numpy.isfinite(input_data).all():
-            for idx in range(len(input_data)):
+            for idx in xrange(len(input_data)):
                 input_data[idx] = numpy.nan_to_num(input_data[idx])
             is_any_value_nan = True
         return is_any_value_nan
@@ -205,9 +205,9 @@ class EegMonitor(ABCDisplayer):
         for timeseries in list_of_timeseries:
             data_shape = timeseries.read_data_shape()
             resulting_shape = []
-            for idx in range(len(data_shape)):
+            for idx, shape in enumerate(data_shape):
                 if idx in self.selected_dimensions:
-                    resulting_shape.append(data_shape[idx])
+                    resulting_shape.append(shape)
 
             page_chunk_data = timeseries.read_data_page(self.current_page * self.page_size,
                                                         (self.current_page + 1) * self.page_size)

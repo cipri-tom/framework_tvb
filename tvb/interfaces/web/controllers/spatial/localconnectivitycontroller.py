@@ -351,15 +351,11 @@ class LocalConnectivityController(SpatioTemporalController):
 
                 max_y = -1000000000
                 min_y = 10000000000
-                for i in range(len(ideal_case_series)):
-                    if min_y > ideal_case_series[i][1]:
-                        min_y = ideal_case_series[i][1]
-                    if min_y > ideal_case_series[i][1]:
-                        min_y = ideal_case_series[i][1]
-                    if max_y < ideal_case_series[i][1]:
-                        max_y = ideal_case_series[i][1]
-                    if max_y < ideal_case_series[i][1]:
-                        max_y = ideal_case_series[i][1]
+                for case in ideal_case_series:
+                    if min_y > case[1]: min_y = case[1]
+                    if min_y > case[1]: min_y = case[1]
+                    if max_y < case[1]: max_y = case[1]
+                    if max_y < case[1]: max_y = case[1]
                 vertical_line = []
                 vertical_step = (max_y - min_y) / NO_OF_CUTOFF_POINTS
                 for i in xrange(NO_OF_CUTOFF_POINTS):

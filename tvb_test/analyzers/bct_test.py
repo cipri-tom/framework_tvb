@@ -72,7 +72,7 @@ class BCTTest(TransactionalTestCase):
         """
         Iterate all BCT algorithms and execute them.
         """
-        for i in range(len(self.bct_adapters)):
+        for i in xrange(len(self.bct_adapters)):
             for bct_identifier in self.bct_adapters[i].get_algorithms_dictionary():
                 ### Prepare Operation and parameters
                 algorithm = dao.get_algorithm_by_group(self.algo_groups[i].id, bct_identifier)
@@ -106,7 +106,7 @@ class BCTTest(TransactionalTestCase):
         """
         Iterate all BCT algorithms and chech description not empty.
         """
-        for i in range(len(self.bct_adapters)):
+        for i in xrange(len(self.bct_adapters)):
             for bct_identifier in self.bct_adapters[i].get_algorithms_dictionary():
                 ### Prepare Operation and parameters
                 algorithm = dao.get_algorithm_by_group(self.algo_groups[i].id, bct_identifier)

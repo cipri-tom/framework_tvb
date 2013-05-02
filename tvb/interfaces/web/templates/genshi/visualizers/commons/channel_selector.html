@@ -29,7 +29,7 @@
 		                    </tr>
 		                </thead>
 		                <py:if test="len(labels_for_ts) % noOfColumns == 0">
-		                    <py:for each="channel in range(len(labels_for_ts) / noOfColumns)">
+		                    <py:for each="channel in xrange(len(labels_for_ts) / noOfColumns)">
 		                        <tr>
 		                        	<py:for each="iterate in range(noOfColumns)">
 		                                <td id='td_${labels_for_ts[channel * noOfColumns + iterate][1]}'>
@@ -41,7 +41,7 @@
 		                    </py:for>
 		                </py:if>
 		                <py:if test="len(labels_for_ts) % noOfColumns != 0">
-		                    <py:for each="channel in range(len(labels_for_ts) / noOfColumns + 1)">
+		                    <py:for each="channel in xrange(len(labels_for_ts) / noOfColumns + 1)">
 		                        <tr>
 		                        	<py:for each="iterate in range(noOfColumns)">
 		                        		<py:if test="(channel * noOfColumns + iterate) &lt; len(labels_for_ts)">

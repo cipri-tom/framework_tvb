@@ -260,11 +260,10 @@ class BurstConfiguration(Base, Exportable):
         current burst config.
         """
         updated_config = copy.deepcopy(self.DEFAULT_PORTLET_CONFIGURATION)
-        for tab_idx in range(len(self.tabs)):
-            for idx_in_tab in range(len(self.tabs[tab_idx].portlets)):
-                saved_portlet = self.tabs[tab_idx].portlets[idx_in_tab]
-                if saved_portlet is not None:
-                    updated_config[tab_idx][idx_in_tab] = [saved_portlet.portlet_id, saved_portlet.name]
+        for tab_idx, tab_value in enumerate(self.tabs):
+            for idx_in_tab, portlet in enumerate(tab_value.portlets):
+                if portlet is not None:
+                    updated_config[tab_idx][idx_in_tab] = [portlet.portlet_id, portlet.name]
         return updated_config
 
 
@@ -295,8 +294,8 @@ class TabConfiguration():
         """
         Set to None all portlets in current TAB.
         """
-        for i in range(len(self.portlets)):
-            self.portlets[i] = None
+        for idx in xrange(len(self.portlets)):
+            self.portlets[idx] = None
 
 
     def get_portlet(self, portlet_id):
@@ -315,9 +314,9 @@ class TabConfiguration():
         sub-entities (portlets, workflow steps) are persisted in db.
         """
         new_config = TabConfiguration()
-        for portlet_idx in range(len(self.portlets)):
-            if self.portlets[portlet_idx] is not None:
-                new_config.portlets[portlet_idx] = self.portlets[portlet_idx].clone()
+        for portlet_idx, portlet_entity in enumerate(self.portlets):
+            if portlet_entity is not None:
+                new_config.portlets[portlet_idx] = portlet_entity.clone()
             else:
                 new_config.portlets[portlet_idx] = None
         return new_config

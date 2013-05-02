@@ -94,7 +94,7 @@
 	    					<xi:include href="${channelsPage}"/>
 	    					<xi:include href='../commons/state_mode_selector.html'/>
 	    					<py:with vars="keys = labelsForCheckBoxes.keys()">
-	    						<py:for each="key_idx in range(len(keys))">
+	    						<py:for each="key_idx in xrange(len(keys))">
 	    							${drawCheckboxes(noOfChannels, 7, keys[key_idx], labelsForCheckBoxes[keys[key_idx]], 'AG_submitableSelectedChannels')}
 									${drawStateModeSelector(tsStateVars[keys[key_idx]], str(key_idx) + '--statevariableselect', 'State variable', 'changeStateVariable')}
 									${drawStateModeSelector(tsModes[keys[key_idx]], str(key_idx) + '--modeselect', 'Mode', 'changeMode')}
