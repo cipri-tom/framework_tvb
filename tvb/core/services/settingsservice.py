@@ -165,14 +165,6 @@ class SettingsService():
         db_changed = new_db != previous_db
         storage_changed = new_storage != previous_storage
 
-        max_space = data[self.KEY_MAX_DISK_SPACE_USR]
-        available_mem_kb = SettingsService.get_disk_free_space(new_storage)
-        kb_value = max_space * (2 ** 10)
-        if not(0 < kb_value < available_mem_kb):
-            raise InvalidSettingsException("Not enough disk space. There is a maximum of %sMb available on the partition."%(
-                                                                                                available_mem_kb / (2 ** 10),))
-        data[self.KEY_MAX_DISK_SPACE_USR] = kb_value
-
         matlab_exec = data[self.KEY_MATLAB_EXECUTABLE]
         if matlab_exec == 'None':
             data[self.KEY_MATLAB_EXECUTABLE] = ''
@@ -184,6 +176,16 @@ class SettingsService():
                 else:
                     raise InvalidSettingsException("No Write access on storage folder!!")
             shutil.copytree(previous_storage, new_storage)
+            
+        if not os.path.isdir(new_storage):
+            os.makedirs(new_storage)
+        max_space = data[self.KEY_MAX_DISK_SPACE_USR]
+        available_mem_kb = SettingsService.get_disk_free_space(new_storage)
+        kb_value = max_space * (2 ** 10)
+        if not(0 < kb_value < available_mem_kb):
+            raise InvalidSettingsException("Not enough disk space. There is a maximum of %sMb available on the partition."%(
+                                                                                                available_mem_kb / (2 ** 10),))
+        data[self.KEY_MAX_DISK_SPACE_USR] = kb_value
 
         #Save data to file, all while checking if any data has changed
         first_run = self.is_first_run()

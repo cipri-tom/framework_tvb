@@ -150,15 +150,18 @@ class SettingsServiceTest(unittest.TestCase):
         are returned.
         '''
         test_storage = os.path.join(cfg.TVB_STORAGE, 'test_storage')
+        disk_storage = 100
         initial_data = {self.settings_service.KEY_STORAGE: test_storage,
                         self.settings_service.KEY_ADMIN_NAME: 'test_name',
                         self.settings_service.KEY_SELECTED_DB: cfg.SELECTED_DB,
                         self.settings_service.KEY_DB_URL: cfg.DB_URL,
                         self.settings_service.KEY_ADMIN_EMAIL: 'my@yahoo.com',
+                        self.settings_service.KEY_MAX_DISK_SPACE_USR: disk_storage * (2 ** 10),
                         self.settings_service.KEY_PORT: 8081,
                         self.settings_service.KEY_MATLAB_EXECUTABLE: 'test',}
 
         self._write_cfg_file(initial_data)
+        initial_data[self.settings_service.KEY_MAX_DISK_SPACE_USR] = disk_storage
         changes, restart = self.settings_service.save_settings(**initial_data)
         self.assertFalse(changes)
         self.assertFalse(restart)
@@ -182,6 +185,7 @@ class SettingsServiceTest(unittest.TestCase):
                         self.settings_service.KEY_ADMIN_NAME: 'test_name',
                         self.settings_service.KEY_SELECTED_DB: cfg.SELECTED_DB,
                         self.settings_service.KEY_DB_URL: cfg.DB_URL,
+                        self.settings_service.KEY_MAX_DISK_SPACE_USR: 100,
                         self.settings_service.KEY_MATLAB_EXECUTABLE: 'test'}
         self._write_cfg_file(initial_data)
         initial_data[self.settings_service.KEY_STORAGE] = new_storage
