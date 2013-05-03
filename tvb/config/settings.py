@@ -672,7 +672,7 @@ class BaseProfile():
         if self.is_mac():
             return '../MacOS/python'
         if self.is_linux():
-            return os.path.join(os.path.dirname(sys.executable), 'python2.6')
+            return os.path.join(os.path.dirname(sys.executable), 'python')
         raise Exception("Invalid BUILD type found!!!")
 
 
