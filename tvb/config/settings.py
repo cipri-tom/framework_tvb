@@ -672,7 +672,7 @@ class BaseProfile():
         if self.is_mac():
             return '../MacOS/python'
         if self.is_linux():
-            return os.path.join(os.path.dirname(sys.executable), 'python')
+            return os.path.join(os.path.dirname(sys.executable), 'python2.7')
         raise Exception("Invalid BUILD type found!!!")
 
 
@@ -821,7 +821,7 @@ class DeploymentProfile(BaseProfile):
             data_path = os.path.dirname(sys.executable)
             #Add root folder as first in PYTHONPATH so we can find tvb there if we checked out from GIT for contributors
             root_folder = os.path.dirname(data_path)
-            new_python_path = os.path.join(root_folder, 'tvb_simulator_library')
+            new_python_path = os.path.join(root_folder, 'tvb_simulator_library') + os.pathsep + ''
             new_python_path += os.pathsep + os.path.join(data_path, 'lib-tk')
             os.environ['PYTHONPATH'] = new_python_path
             setup_tk_tcl_environ(data_path)
