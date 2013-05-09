@@ -37,7 +37,7 @@ from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.surfaces import CorticalSurface, RegionMapping
 from tvb.datatypes.projections import ProjectionRegionEEG
 
-
+SVG_TEST_SIZE = 100
 
 class ConnectivityViewer(ABCDisplayer):
     """ 
@@ -100,6 +100,16 @@ class ConnectivityViewer(ABCDisplayer):
         result_params.update(_params)
         result_pages.update(_pages)
         result_params[self.EXPORTABLE_FIGURE] = True
+        # --------------------------------- GENERATE DUMMY COLORS ---------------------------------
+        import random
+        colors = []
+        for _ in xrange(SVG_TEST_SIZE):
+            color_line = []
+            for _ in xrange(SVG_TEST_SIZE):
+                f_v = random.random()
+                color_line.append("rgb(" + str(int(255 * f_v)) + ", 0, " + str(int(255 - 255 * f_v)) + ")")
+            colors.append(color_line)
+        result_params['svg_test_colors'] = colors
         return self.build_display_result("connectivity/main_connectivity", result_params, result_pages)
 
 
