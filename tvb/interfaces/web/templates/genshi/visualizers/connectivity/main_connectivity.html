@@ -148,13 +148,12 @@
 		<div id="div-matrix-weights" class="matrix-viewer">
 
 			<!-- The actual matrix -->
-			<!-- <div class="matrix-table">
+			<div class="matrix-table">
 	        	${draw2DConnectivityMatrix('leftHemisphere', 0, weights, pointsLabels, 0, int(len(pointsLabels) / 2), 0, int(len(pointsLabels) / 2), 'w')}
 	        	${draw2DConnectivityMatrix('leftRightQuarter', 2, weights, pointsLabels, 0, int(len(pointsLabels) / 2), int(len(pointsLabels) / 2), len(pointsLabels), 'w')}
 	        	${draw2DConnectivityMatrix('rightLeftQuarter', 1, weights, pointsLabels, int(len(pointsLabels) / 2), len(pointsLabels), 0, int(len(pointsLabels) / 2), 'w')}
 	    		${draw2DConnectivityMatrix('rightHemisphere', 3, weights, pointsLabels, int(len(pointsLabels) / 2), len(pointsLabels), int(len(pointsLabels) / 2), len(pointsLabels), 'w')}
-			</div> -->
-			<xi:include href="svg_generate.html"/>
+			</div>
 			
 			${drawMatrixLegendArea('weights-legend')}
 	    </div>
