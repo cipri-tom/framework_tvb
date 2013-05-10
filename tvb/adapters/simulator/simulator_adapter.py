@@ -74,7 +74,7 @@ class SimulatorAdapter(ABCAsynchronous):
 #                       "Bold": [time_series.TimeSeriesRegion, time_series.TimeSeriesSurface]}
 
     RESULTS_MAP = {time_series.TimeSeriesEEG: ["SphericalEEG", "EEG"],
-                   time_series.TimeSeriesMEG: ["SphericalMEG"], # Add here also "MEG" monitor reference
+                   time_series.TimeSeriesMEG: ["SphericalMEG"],  # Add here also "MEG" monitor reference
                    time_series.TimeSeries: ["GlobalAverage", "SpatialAverage"]}
 
                    # time_series.TimeSeriesVolume: ["Bold"],
@@ -213,7 +213,7 @@ class SimulatorAdapter(ABCAsynchronous):
             sample_period = self.algorithm.monitors[m_ind].period
             # Create the required output for each monitor that was submitted
             if (m_name in self.RESULTS_MAP[time_series.TimeSeriesEEG]
-                and hasattr(self.algorithm.monitors[m_ind], 'sensors')):
+                    and hasattr(self.algorithm.monitors[m_ind], 'sensors')):
                 result_datatypes[m_name] = time_series.TimeSeriesEEG(storage_path=self.storage_path,
                                                                      sensors=self.algorithm.monitors[m_ind].sensors,
                                                                      sample_period=sample_period,
@@ -226,7 +226,7 @@ class SimulatorAdapter(ABCAsynchronous):
                                                                      sample_period=sample_period,
                                                                      title=' ' + m_name, start_time=start_time)
 
-            elif (m_name in self.RESULTS_MAP[time_series.TimeSeries]):
+            elif m_name in self.RESULTS_MAP[time_series.TimeSeries]:
                 result_datatypes[m_name] = time_series.TimeSeries(storage_path=self.storage_path,
                                                                   sample_period=sample_period,
                                                                   title=' ' + m_name, start_time=start_time)
@@ -249,8 +249,8 @@ class SimulatorAdapter(ABCAsynchronous):
             if m_name in self.HAVE_STATE_VARIABLES:
                 selected_state_vars = [self.algorithm.model.state_variables[idx]
                                        for idx in self.algorithm.monitors[m_ind].voi]
-                result_datatypes[m_name].labels_dimensions = {result_datatypes[m_name].labels_ordering[1]:
-                                                                  selected_state_vars}
+                state_variable_dimension_name = result_datatypes[m_name].labels_ordering[1]
+                result_datatypes[m_name].labels_dimensions[state_variable_dimension_name] = selected_state_vars
 
         #### Create Simulator State entity and persist it in DB. H5 file will be empty now.
         simulation_state = SimulationState(storage_path=self.storage_path)
@@ -289,7 +289,7 @@ class SimulatorAdapter(ABCAsynchronous):
                 if len(param_value) == 1:
                     continue
                 if ((surface is not None and len(param_value) != surface.number_of_vertices)
-                    and (connectivity is not None and len(param_value) != connectivity.number_of_regions)):
+                        and (connectivity is not None and len(param_value) != connectivity.number_of_regions)):
                     msg = str(surface.number_of_vertices) + ' or ' + str(connectivity.number_of_regions)
                     msg = self._get_exception_message(param, msg, len(param_value))
                     self.log.error(msg)
