@@ -50,7 +50,7 @@ class IsoclinePSEAdapter(ABCMPLH5Displayer):
     """
 
     _ui_name = "Isocline Parameter Space Exploration"
-    _ui_subsection = "pse"
+    _ui_subsection = "pse_iso"
 
 
     def __init__(self):

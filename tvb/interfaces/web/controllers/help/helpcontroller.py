@@ -18,26 +18,29 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0
 #
 #
+
 """
-Basic Help functionalities
+Basic Help functionality.
 
 .. moduleauthor:: Calin Pavel
 """
 
 import cherrypy
-import tvb.interfaces.web.controllers.basecontroller as basecontroller
-from tvb.interfaces.web.controllers.basecontroller import using_template
+from tvb.interfaces.web.controllers.basecontroller import using_template, BaseController
 from tvb.interfaces.web.controllers.help.help_config import HelpConfig
 
 
-class HelpController(basecontroller.BaseController):
+
+class HelpController(BaseController):
     """
     This class takes care of all requester related to HELP system.
     """
 
+
     def __init__(self):
-        basecontroller.BaseController.__init__(self)
+        BaseController.__init__(self)
         self.config = HelpConfig()
+
 
     @cherrypy.expose
     @using_template('overlay')
@@ -49,8 +52,7 @@ class HelpController(basecontroller.BaseController):
         :param section: section for which to open help
         :param subsection: subsection for which to open help
         """
-        template_specification = self.fill_overlay_attributes(None, "TVB", "Online-Help",
-                                                              "help/online_help", "help")
+        template_specification = self.fill_overlay_attributes(None, "TVB", "Online-Help", "help/online_help", "help")
 
         # Add URL of the help page
         template_specification["helpURL"] = self.config.get_help_url(section, subsection)
