@@ -72,7 +72,7 @@ class BrainViewerTest(TransactionalTestCase):
         viewer = BrainViewer()
         result = viewer.launch(time_series=time_series)
         expected_keys = ['urlVertices', 'urlNormals', 'urlTriangles', 'urlMeasurePointsLabels', 'title', 
-                         'time_series', 'shelfObject', 'pageSize', 'nrOfStateVar', 'nrOfPages', 'nrOfModes',
+                         'time_series', 'shelfObject', 'pageSize', 'labelsStateVar', 'nrOfPages', 'labelsModes',
                          'minActivityLabels', 'minActivity', 'measure_points', 'maxActivity', 'isOneToOneMapping',
                          'isAdapter', 'extended_view', 'base_activity_url', 'alphas_indices']
         for key in expected_keys:
@@ -112,7 +112,7 @@ class BrainViewerTest(TransactionalTestCase):
         viewer = BrainEEG()
         result = viewer.launch(time_series)
         expected_keys = ['urlVertices', 'urlNormals', 'urlTriangles', 'urlMeasurePointsLabels', 'title', 
-                         'time_series', 'shelfObject', 'pageSize', 'nrOfStateVar', 'nrOfPages', 'nrOfModes',
+                         'time_series', 'shelfObject', 'pageSize', 'labelsStateVar', 'nrOfPages', 'labelsModes',
                          'minActivityLabels', 'minActivity', 'measure_points', 'maxActivity', 'isOneToOneMapping',
                          'isAdapter', 'extended_view', 'base_activity_url', 'alphas_indices']
         for key in expected_keys:

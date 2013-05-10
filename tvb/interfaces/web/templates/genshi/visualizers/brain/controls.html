@@ -25,8 +25,8 @@
 
     <fieldset>
 		<xi:include href='../commons/state_mode_selector.html'/>
-		${drawStateModeSelector(nrOfStateVar, 'state-variable-select', 'State variable:', 'changeStateVariable')}
-		${drawStateModeSelector(nrOfModes, 'mode-select', 'Mode:', 'changeMode')}
+		${drawStateModeSelector(labelsStateVar, 'state-variable-select', 'State variable:', 'changeStateVariable')}
+		${drawStateModeSelector(labelsModes, 'mode-select', 'Mode:', 'changeMode')}
         <input id="inTimeRefreshChkId" type="checkbox" onchange="NAV_setInTimeRefresh(this);" tabindex="1" py:if="not extended_view"/>
         <label for="inTimeRefreshChkId" py:if="not extended_view">In time refresh</label>
         <br/>

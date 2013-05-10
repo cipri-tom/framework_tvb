@@ -163,7 +163,7 @@ class BrainViewer(ABCDisplayer):
                     alphas=json.dumps(alphas), alphas_indices=json.dumps(alphas_indices),
                     base_activity_url=base_activity_url, time=json.dumps(time_urls),
                     minActivity=min_val, maxActivity=max_val, minActivityLabels=legend_labels,
-                    nrOfStateVar=state_variables, nrOfModes=range(data_shape[3]), extended_view=False,
+                    labelsStateVar=state_variables, labelsModes=range(data_shape[3]), extended_view=False,
                     shelfObject=face_object, time_series=time_series, pageSize=self.PAGE_SIZE, nrOfPages=nr_of_pages)
 
 
