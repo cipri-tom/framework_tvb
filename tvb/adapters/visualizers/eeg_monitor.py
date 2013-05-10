@@ -137,8 +137,7 @@ class EegMonitor(ABCDisplayer):
         Compute visualizer's page
         """
         params = self.compute_parameters(input_data, data_2, data_3)
-        pages = dict(controlPage="eeg/controls",
-                     channelsPage="commons/channel_selector.html")
+        pages = dict(controlPage="eeg/controls", channelsPage="commons/channel_selector.html")
         return self.build_display_result("eeg/view", params, pages=pages)
 
 
@@ -176,12 +175,8 @@ class EegMonitor(ABCDisplayer):
             channels.append((this_label, starting_index + j))
         ts_name = timeseries.display_name + " [id:" + str(timeseries.id) + "]"
         labels[ts_name] = channels
-        if timeseries.labels_ordering and len(timeseries.labels_dimensions) >= 1:
-            state_vars[ts_name] = timeseries.labels_dimensions.get(timeseries.labels_ordering[1], [])
-            if len(state_vars[ts_name]) <= 1:
-                state_vars[ts_name] = []
-        else:
-            state_vars[ts_name] = []
+        state_vars[ts_name] = timeseries.labels_dimensions.get(timeseries.labels_ordering[1], [])
+
         modes[ts_name] = range(shape[3])
         return shape[0], starting_index + shape[self.selected_dimensions[1]]
 

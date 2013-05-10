@@ -154,12 +154,7 @@ class BrainViewer(ABCDisplayer):
         face_object = json.dumps([face_vertices, face_normals, face_triangles])
 
         data_shape = time_series.read_data_shape()
-        if time_series.labels_ordering and len(time_series.labels_dimensions) >= 1:
-            state_variables = time_series.labels_dimensions.get(time_series.labels_ordering[1], [])
-            if len(state_variables) <= 1:
-                state_variables = []
-        else:
-            state_variables = []
+        state_variables = time_series.labels_dimensions.get(time_series.labels_ordering[1], [])
 
         return dict(title="Cerebral Activity", isOneToOneMapping=one_to_one_map,
                     urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
