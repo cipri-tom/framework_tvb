@@ -62,8 +62,8 @@ class PSETest(TransactionalTestCase):
         timeseries = self.datatypeFactory.create_timeseries(self.connectivity)
         viewer = TimeSeries()
         result = viewer.launch(timeseries)
-        expected_keys = ['t0', 'shape', 'preview', 'nrOfStateVar', 'nrOfModes', 'mainContent', 'labels_array',
-                         'labels', 'figsize', 'dt'] 
+        expected_keys = ['t0', 'shape', 'preview', 'labelsStateVar', 'labelsModes',
+                         'mainContent', 'labels', 'labels_json', 'figsize', 'dt']
         for key in expected_keys:
             self.assertTrue(key in result)
     

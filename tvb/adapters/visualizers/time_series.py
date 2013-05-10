@@ -46,7 +46,7 @@ class TimeSeries(ABCDisplayer):
         """
         return [{"name": "time_series",
                  "type": tsdata.TimeSeries,
-                 "label": "Time series to be viewed",
+                 "label": "Time series to be displayed in a 2D form.",
                  "required": True,
                  "conditions": FilterChain(fields=[FilterChain.datatype + '.type'],
                                            operations=["!="], values=["TimeSeriesVolume"])
@@ -64,39 +64,20 @@ class TimeSeries(ABCDisplayer):
         ts = time_series.get_data('time')
         shape = time_series.read_data_shape1()
 
-        if type(time_series) in (tsdata.TimeSeriesRegion,):
-            conn = time_series.connectivity
-            labels = [l for l in conn.get_data('region_labels')]
-        elif hasattr(time_series, 'sensors') and len(time_series.sensors.labels) > 0:
-            labels = time_series.sensors.labels.tolist()
-        else:
-            labels = [str(i) for i in range(shape[-2])]
-
-        ## Assume that the first dimension is the time since that is the case so far 
-        ## NOTE: maybe doing a max(shape) and assuming that is the time dimension would be better?
+        ## Assume that the first dimension is the time since that is the case so far
         if preview and shape[0] > self.MAX_PREVIEW_DATA_LENGTH:
             shape[0] = self.MAX_PREVIEW_DATA_LENGTH
 
-        if time_series.labels_ordering and len(time_series.labels_dimensions) >= 1:
-            state_variables = time_series.labels_dimensions.get(time_series.labels_ordering[1], [])
-            if state_variables <= 1:
-                state_variables = []
-        else:
-            state_variables = []
+        state_variables = time_series.labels_dimensions.get(time_series.labels_ordering[1], [])
+        labels = time_series.get_space_labels()
 
         pars = {'baseURL': ABCDisplayer.VISUALIZERS_URL_PREFIX + time_series.gid,
-                'labels': json.dumps(labels),
-                'preview': preview,
-                'figsize': figsize,
-                'shape': repr(list(shape)),
-                't0': ts[0],
+                'labels': labels, 'labels_json': json.dumps(labels),
+                'ts_title': time_series.title, 'preview': preview, 'figsize': figsize,
+                'shape': repr(list(shape)), 't0': ts[0],
                 'dt': ts[1] - ts[0] if len(ts) > 1 else 1,
-                # The channels component used by the EEG monitor expects a dictionary where
-                # the keys are the name of the timeseries, and the values a tuple list 
-                'labels_array': {str(time_series.title): [(value, idx) for idx, value in enumerate(labels)]},
                 'channelsPage': '../commons/channel_selector.html' if not preview else None,
-                'nrOfStateVar': state_variables,
-                'nrOfModes': range(shape[3]),
+                'labelsStateVar': state_variables, 'labelsModes': range(shape[3]),
                 }
 
         return self.build_display_result("time_series/view", pars, pages=dict(controlPage="time_series/control"))

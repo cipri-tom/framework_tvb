@@ -68,9 +68,7 @@
 					<div class="extension">
 		    			<div class="dropdown-pane">
 	    					<xi:include href="${channelsPage}" />
-	    					<py:for each="entry in labels_array">
-						    	${drawCheckboxes(shape[0], 7, entry, labels_array[entry], 'TS_SVG_selectedChannels')}
-						    </py:for>
+						    ${drawCheckboxes(shape[0], 7, ts_title, [(value, idx) for idx, value in enumerate(labels)], 'TS_SVG_selectedChannels')}
 		    			</div>
 		    		</div>
 				</nav>
@@ -89,7 +87,7 @@
 	        }
         
 	        $(document).ready(function () {
-	            initTimeseriesViewer("$baseURL", "$preview", "$shape", "$t0", "$dt",$labels)
+	            initTimeseriesViewer("$baseURL", "$preview", "$shape", "$t0", "$dt",$labels_json)
 	        });
 	
 	    </script>
