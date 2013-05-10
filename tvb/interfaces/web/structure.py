@@ -177,7 +177,7 @@ class WebStructure(object):
     ### ID of the HTML generated paragraph, to jump to it directly, in the online help overlay.
     VISUALIZERS_ONLINE_HELP_SHORTCUTS = {
 
-        SUB_SECTION_VIEW_1: "cross",
+        SUB_SECTION_VIEW_1: "brain-activity-visualizer",
         ## Connectivity subsection link will not be needed, as we will have a full section in the help for this.
         ## SUB_SECTION_VIEW_2: "connectivity-visualizer**",
         SUB_SECTION_VIEW_3: "covariance-visualizer",
