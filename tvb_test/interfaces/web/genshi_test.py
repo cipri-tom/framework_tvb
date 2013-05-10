@@ -208,7 +208,7 @@ class GenshiTestSimple(GenshiTest):
         all_inputs = self.soup.findAll('input', attrs=dict(name=exp))
         count_disabled = 0
         for one_entry in all_inputs:
-            if 'disabled' in one_entry:
+            if one_entry.has_key('disabled'):
                 count_disabled += 1
         self.assertEqual(len(all_inputs), 5, "Some inputs not generated or too many inputs generated")
         self.assertEqual(count_disabled, 4, "Disabling input fields was not done correctly")
@@ -366,7 +366,7 @@ class GenshiTestGroup(GenshiTest):
         self.assertTrue(len(sub_algos) == 2, fail_message)
         disabled = 0
         for one_entry in sub_algos:
-            if 'disabled' in one_entry:
+            if one_entry.has_key('disabled'):
                 disabled += 1
         self.assertTrue(disabled == 1, fail_message)
 
