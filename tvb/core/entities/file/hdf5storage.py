@@ -381,7 +381,7 @@ class HDF5StorageManager(object):
 
         except KeyError:
             if not ignore_errors:
-                msg = "Trying to read data from a missing data set: %s" % dataset_name
+                msg = "Trying to read data from a missing data set: %s" % (where + dataset_name)
                 LOG.warning(msg)
                 raise MissingDataSetException(msg)
             else:
