@@ -23,7 +23,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Yann Gordon <yann@invalid.tvb>
 """
-
 import Queue
 import threading
 from subprocess import Popen, PIPE
@@ -32,6 +31,7 @@ from tvb.basic.config.settings import TVBSettings as config
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
+from tvb.core.services.workflowservice import WorkflowService
 import tvb.core.utils as utils
 
 
@@ -107,6 +107,18 @@ class OperationExecutor(threading.Thread):
             launched_process.communicate()
             LOGGER.debug("====================================================")
             LOGGER.debug("Finished with launch of operation %s"%(operation_id,))
+            returned = launched_process.wait()
+            if returned != 0:
+                # Process did not end as expected. (e.g. Segmentation fault)
+                operation = dao.get_operation_by_id(self.operation_id)
+                LOGGER.error("Operation suffered fatal failure with exit code: %s" % returned)
+                message = "Operation failed unexpectedly. Probably untracked segmentation fault."
+                operation.mark_complete(model.STATUS_ERROR, message)
+                dao.store_entity(operation)
+                burst_entity = dao.get_burst_for_operation_id(self.operation_id)
+                if burst_entity:
+                    message = "Error on burst operation. Probably untracked segmentation fault."
+                    WorkflowService().mark_burst_finished(burst_entity, error=True, error_message=message)
             del launched_process
         else:
             operation = dao.get_operation_by_id(self.operation_id)
@@ -115,6 +127,7 @@ class OperationExecutor(threading.Thread):
         #Give back empty spot now that you finished your operation
         CURRENT_ACTIVE_THREADS.remove(self)
         LOCKS_QUEUE.put(1)
+
 
     def stop(self):
         """ Mark current thread for stop"""

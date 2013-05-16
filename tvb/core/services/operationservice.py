@@ -43,7 +43,7 @@ from tvb.core.services.workflowservice import WorkflowService
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.file.fileshelper import FilesHelper
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
-from tvb.core.adapters.backend_client import BACKEND_CLIENT
+from tvb.core.services.backend_client import BACKEND_CLIENT
 import tvb.core.adapters.xml_reader as xml_reader
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.basic.config.settings import TVBSettings as cfg
