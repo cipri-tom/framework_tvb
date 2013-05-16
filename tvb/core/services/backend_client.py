@@ -108,7 +108,7 @@ class OperationExecutor(threading.Thread):
             LOGGER.debug("====================================================")
             LOGGER.debug("Finished with launch of operation %s"%(operation_id,))
             returned = launched_process.wait()
-            if returned != 0:
+            if returned != 0 and not self.stopped():
                 # Process did not end as expected. (e.g. Segmentation fault)
                 operation = dao.get_operation_by_id(self.operation_id)
                 LOGGER.error("Operation suffered fatal failure with exit code: %s" % returned)
