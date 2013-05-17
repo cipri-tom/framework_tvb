@@ -27,6 +27,7 @@ import os
 import unittest
 import demoData.cff as dataset
 from tvb.core.services.flowservice import FlowService
+from tvb.core.entities.storage import dao
 from tvb_test.core.test_factory import TestFactory
 from tvb_test.core.base_testcase import TransactionalTestCase
 
@@ -74,6 +75,13 @@ class CFFUploadTest(TransactionalTestCase):
         ### Check that at one LocalConnectivity was persisted
         gids = flow_service.get_available_datatypes(self.test_project.id, 'tvb.datatypes.surfaces.LocalConnectivity')
         self.assertEquals(len(gids), 1)
+        connectivity = dao.get_datatype_by_gid(gids[0][2])
+        metadata = connectivity.get_metadata()
+        self.assertEqual(metadata['Cutoff'], '40.0')
+        self.assertEqual(metadata['Equation'], 'null')
+        self.assertFalse(metadata['Invalid'])
+        self.assertFalse(metadata['Is_nan'])
+        self.assertEqual(metadata['Type'], 'LocalConnectivity')
         ### Check that at 2 Surfaces were persisted
         gid_list = flow_service.get_available_datatypes(self.test_project.id, 'tvb.datatypes.surfaces_data.SurfaceData')
         self.assertEquals(len(gid_list), 2)
