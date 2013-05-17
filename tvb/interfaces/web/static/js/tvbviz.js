@@ -435,23 +435,47 @@ tv.plot = {
                 y_s = d3.scale.linear().domain([acoh_d.min(), acoh_d.max()]).range([0, -(f.h() - 2 * f.pad() * f.h())]),
                 x_a = d3.svg.axis().orient("bottom").scale(x_s),
                 y_a = d3.svg.axis().orient("left").scale(y_s);
-
+                
             // draw axes and average coherence
-            svg.append("g").classed("axis", true).attr("transform", llxf).call(x_a);
-            svg.append("g").classed("axis", true).attr("transform", llxf).call(y_a);
+            var xAxis = svg.append("g").classed("axis", true).attr("transform", llxf).call(x_a);
+            var yAxis = svg.append("g").classed("axis", true).attr("transform", llxf).call(y_a);
             svg.append("g").classed("line-plot", true)
                 .attr("transform", xl(f.pad() * f.w(), f.h() * (1 - f.pad())))
                 .selectAll("path").data([d3.zip(f_d.map(x_s).data, acoh_d.map(y_s).data)]).enter()
                 .append("path")
                 .attr("d", d3.svg.line())
-
+	
+			// Add axis titles.
+			var xCoordinates = xAxis[0][0].getBoundingClientRect();
+			svg.append("text")
+				    .attr("text-anchor", "middle")
+				    .attr("x", xCoordinates.left + xCoordinates.width / 2)
+				    .attr("y", f.h() - 6)
+				    .text("Frequency (Hz)");
+			var yCoordinates = yAxis[0][0].getBoundingClientRect();
+			svg.append("text")
+			        .attr("transform", "rotate(-90)")
+			        .attr("y", yCoordinates.left - yCoordinates.width - 5)
+			        .attr("x", 0 - (f.h() / 2))
+			        .style("text-anchor", "middle")
+			        .text("Average Cross-Coherence");
+            
             // setup matrix plot, initialized with all freq bands
             var selcoh_d = mean_axis_0(coh_d, 0, coh_d.shape[0])
 
             var mp_pl = tv.plot.mat().w(f.w() / 2 - 1.5 * f.pad() * f.w()).h(f.h() * (1 - 2 * f.pad())).mat(selcoh_d).pad(0)
                 , mp_gp = svg.append("g").attr("transform", "translate(" + f.w() / 2 + ", " + f.pad() * f.h() + ")")
                 ;
-
+            // Implement mat_over method set on mat() function
+			mp_pl.mat_over = function() {
+											var callback = function (d, i) {
+														var matShape = f.coh().shape[1];
+														var yVal = Math.floor(i / matShape);
+														var xVal = i % matShape;
+									                    f.infoelem().text("Value is " + d + " for Node " + xVal + " x Node " + yVal);
+									               };
+									        return callback;
+									    };
             mp_pl(mp_gp);
 
             // add brush to select coherence data to show
@@ -477,10 +501,17 @@ tv.plot = {
             // add the brush to svg
             svg.append("g").attr("transform", xl(f.pad() * f.w(), f.h() * f.pad())).classed("brush", true)
                 .call(brush).selectAll("rect").attr("height", f.h() * (1 - 2 * f.pad()));
-
+                
+            // Add text element which updates with mat hover.
+            var svgCoordinates = svg[0][0].getBoundingClientRect();
+            f.infoelem(svg.append("text")
+								    .attr("text-anchor", "middle")
+								    .attr("x", 3 * svgCoordinates.width / 4)
+								    .attr("y", f.h() - 60)
+								    .text("Hover over nodes for info."));
         }
 
-        f.config_fields = ["f", "coh", "w", "h", "pad", "usage"];
+        f.config_fields = ["f", "coh", "w", "h", "pad", "usage", "infoelem"];
         f.config_fields.forEach(function (name) {
             f[name] = tv.util.gen_access(f, name);
         });
