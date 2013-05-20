@@ -46,8 +46,8 @@ class ContextDiscretePSE(EnhancedDictionary):
     LINE_SEPARATOR = "<br/>"
     
     
-    def __init__(self, datatype_group_gid, labels_x, labels_y, color_metric, size_metric):
-        
+    def __init__(self, datatype_group_gid, labels_x, labels_y, color_metric, size_metric, back_page):
+        super(ContextDiscretePSE, self).__init__()
         self.datatype_group_gid = datatype_group_gid
         self.min_color = sys.float_info.max
         self.max_color = sys.float_info.min
@@ -61,6 +61,7 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.datatypes_dict = {}
         self.color_metric = color_metric
         self.size_metric = size_metric
+        self.pse_back_page = back_page
     
         
     def prepare_individual_jsons(self):

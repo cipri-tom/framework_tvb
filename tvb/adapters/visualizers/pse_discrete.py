@@ -72,18 +72,18 @@ class DiscretePSEAdapter(ABCDisplayer):
         return -1
 
 
-    def launch(self, datatype_group, color_metric=None, size_metric=None):
+    def launch(self, datatype_group):
         """
         Launch the visualizer.
         """
-        pse_context = self.prepare_parameters(datatype_group.gid, color_metric, size_metric)
+        pse_context = self.prepare_parameters(datatype_group.gid, '')
         pse_context.prepare_individual_jsons()
 
         return self.build_display_result('pse_discrete/view', pse_context)
 
 
     @staticmethod
-    def prepare_parameters(datatype_group_gid, color_metric=None, size_metric=None):
+    def prepare_parameters(datatype_group_gid, back_page, color_metric=None, size_metric=None):
         """
         We suppose that there are max 2 ranges and from each operation results exactly one dataType.
         """
@@ -96,8 +96,8 @@ class DiscretePSEAdapter(ABCDisplayer):
         _, range1_name, range1_labels = operation_group.load_range_numbers(operation_group.range1)
         has_range2, range2_name, range2_labels = operation_group.load_range_numbers(operation_group.range2)
 
-        pse_context = ContextDiscretePSE(datatype_group_gid, range1_labels, range2_labels, color_metric, size_metric)
-
+        pse_context = ContextDiscretePSE(datatype_group_gid, range1_labels, range2_labels,
+                                         color_metric, size_metric, back_page)
         final_dict = dict()
         operations = dao.get_operations_in_group(operation_group.id)
         for operation_ in operations:

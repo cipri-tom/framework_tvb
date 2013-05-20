@@ -148,7 +148,7 @@ function applyHoverEvent(canvasId) {
 }
 
 
-function PSEDiscreteInitialize(parametersCanvasId, labelsXJson, labelsYJson, series_array, dataJson,
+function PSEDiscreteInitialize(labelsXJson, labelsYJson, series_array, dataJson,
 						       min_color, max_color, backPage, color_metric, size_metric) {
 	drawColorPickerComponent('startColorSelector', 'endColorSelector', changeColors);
 	var labels_x = $.parseJSON(labelsXJson);
@@ -175,7 +175,7 @@ function PSEDiscreteInitialize(parametersCanvasId, labelsXJson, labelsYJson, ser
 	$('#endColorLabel')[0].innerHTML = '<mark>Maximum</mark> ' + max_color;
 	
 	if (status == "started") {
-		var timeout = setTimeout("PSE_mainDraw('"+parametersCanvasId+"','"+backPage+"')", 3000);
+		var timeout = setTimeout("PSE_mainDraw('main_div_pse','"+backPage+"')", 3000);
 	}
 }
 
@@ -183,27 +183,22 @@ function PSEDiscreteInitialize(parametersCanvasId, labelsXJson, labelsYJson, ser
 /*
  * Take currently selected metrics and refresh the plot. 
  */
-function PSE_mainDraw(parametersCanvasId, backPage, groupGID, selectedColorMetric, selectedSizeMetric) {
+function PSE_mainDraw(parametersCanvasId, backPage, groupGID) {
 	
 	if (groupGID == undefined) {
 		// We didn't get parameter, so try to get group id from page
 		groupGID = document.getElementById("datatype-group-gid").value
 	}
-	var url = '/burst/explore/draw_discrete_exploration/' + groupGID
-	
-	if (selectedColorMetric == undefined) {
-		selectedColorMetric = $('#color_metric_select').val()
-	}
-	if (selectedSizeMetric == undefined) {
-		selectedSizeMetric = $('#size_metric_select').val()
-	}
+	var url = '/burst/explore/draw_discrete_exploration/' + groupGID + '/' + backPage;
+	var selectedColorMetric = $('#color_metric_select').val();
+	var selectedSizeMetric = $('#size_metric_select').val();
 	
 	if (selectedColorMetric != '' && selectedColorMetric != undefined) { 
-			url += '/' + selectedColorMetric;
-			if (selectedSizeMetric != ''  && selectedSizeMetric != undefined) {
-				url += '/' + selectedSizeMetric
-			}
-		 }
+        url += '/' + selectedColorMetric;
+        if (selectedSizeMetric != ''  && selectedSizeMetric != undefined) {
+            url += '/' + selectedSizeMetric
+        }
+	}
 	
 	$.ajax({  	
 			type: "POST", 

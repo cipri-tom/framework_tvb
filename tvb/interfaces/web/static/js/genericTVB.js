@@ -54,6 +54,33 @@ function checkForIE() {
 	 }	
 }
 
+function get_URL_param(param) {
+   var search = window.location.search.substring(1);
+   var compareKeyValuePair = function(pair) {
+      var key_value = pair.split('=');
+      var decodedKey = decodeURIComponent(key_value[0]);
+      var decodedValue = decodeURIComponent(key_value[1]);
+      if(decodedKey == param) return decodedValue;
+      return null;
+   };
+
+   var comparisonResult = null;
+
+   if(search.indexOf('&') > -1) {
+      var params = search.split('&');
+      for(var i = 0; i < params.length; i++) {
+         comparisonResult = compareKeyValuePair(params[i]);
+         if(comparisonResult !== null) {
+            break;
+         }
+      }
+   } else {
+      comparisonResult = compareKeyValuePair(search);
+   }
+
+   return comparisonResult;
+}
+
 // Functions for pagination
 function changeDisplayPage(page, formId) {
     // Change hidden current_page and submit
@@ -341,6 +368,10 @@ function displayNodeDetails(entity_gid, entityType, backPage, excludeTabs) {
 	} else {
 		url = '/project/get_datatype_details/' + entity_gid;
 	}
+
+    if (backPage == undefined || backPage == '') {
+        backPage = get_URL_param('back_page');
+    }
 	if (backPage) {
 		url = url + "/" + backPage;
 	}

@@ -24,7 +24,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import json
 import urllib
 import cherrypy
 from tvb.config import DISCRETE_PSE_ADAPTER_MODULE, DISCRETE_PSE_ADAPTER_CLASS
@@ -84,14 +83,14 @@ class ParameterExplorationController(BaseController):
         """
         datatype_group = ABCAdapter.load_entity_by_gid(datatype_group_gid)
         filter_chain = FilterChain.from_json(algorithm.datatype_filter)
-        if not filter_chain or filter_chain.get_python_filter_equivalent(datatype_group):
+        if datatype_group and (not filter_chain or filter_chain.get_python_filter_equivalent(datatype_group)):
             return True
         return False
 
 
     @cherrypy.expose
     @using_template('visualizers/pse_discrete/burst_preview')
-    def draw_discrete_exploration(self, datatype_group_gid, color_metric=None, size_metric=None):
+    def draw_discrete_exploration(self, datatype_group_gid, back_page, color_metric=None, size_metric=None):
         """
         Create new data for when the user chooses to refresh from the UI.
         """
@@ -105,14 +104,13 @@ class ParameterExplorationController(BaseController):
         adapter = self.flow_service.build_adapter_instance(group)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
-                pse_context = adapter.prepare_parameters(datatype_group_gid, color_metric, size_metric)
+                pse_context = adapter.prepare_parameters(datatype_group_gid, back_page, color_metric, size_metric)
                 pse_context.prepare_individual_jsons()
                 return pse_context
             except LaunchException, ex:
                 error_msg = urllib.quote(ex.message)
         else:
-            error_msg = urllib.quote("Discrete explorer can only handle a max of %i values per "
-                                     "dimension." % adapter.MAX_POINTS_PER_DIMENSION)
+            error_msg = urllib.quote("Discrete PSE is incompatible (most probably due to result size being too large).")
 
         name = urllib.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
@@ -146,4 +144,4 @@ class ParameterExplorationController(BaseController):
     @using_template('burst/burst_pse_error')
     def pse_error(self, adapter_name, message):
         return {'adapter_name': adapter_name, 'message': message}
-                
+

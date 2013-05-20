@@ -53,7 +53,7 @@ class ExplorationContollerTest(TransactionalTestCase, BaseControllersTest):
         """
         Test that Discrete PSE is getting launched.
         """
-        result = self.controller.draw_discrete_exploration(self.dt_group.gid, None, None)
+        result = self.controller.draw_discrete_exploration(self.dt_group.gid, 'burst', None, None)
         self.assertTrue(result['available_metrics'] == [])
         self.assertEqual(result['color_metric'], None)
         self.assertEqual(result['size_metric'], None)
