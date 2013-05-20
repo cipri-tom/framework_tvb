@@ -314,7 +314,7 @@ function _fillSimulatorParametersArea(htmlContent, isConfigure) {
 function loadSimulatorInterface() {
 	
 	doAjaxCall({  	
-			type: "POST", 
+			type: "GET",
 			url: '/burst/get_reduced_simulator_interface',
             success: function(r) { 
             	_fillSimulatorParametersArea(r, false);

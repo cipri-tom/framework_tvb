@@ -45,16 +45,38 @@ PORTLET_STEP_SEPARATOR = "____"
 BURST_NAME = 'burstName'
 
 
+
 class BurstController(base.BaseController):
     """
     Controller class for Burst-Pages.
     """
+
 
     def __init__(self):
         base.BaseController.__init__(self)
         self.burst_service = BurstService()
         self.workflow_service = WorkflowService()
         self.context = SelectedAdapterContext()
+
+        ## Cache simulator Tree, Algorithm and AlgorithmGroup, for performance issues.
+        algorithm, self.cached_simulator_algo_group = self.flow_service.get_algorithm_by_module_and_class(
+            SIMULATOR_MODULE, SIMULATOR_CLASS)
+        self.cached_simulator_algorithm_id = algorithm.id
+        self._cached_simulator_input_tree = None
+
+
+    @property
+    @context_selected()
+    def cached_simulator_input_tree(self):
+        """
+        Cache Simulator's input tree, for performance issues.
+        Anyway, without restart, the introspected tree will not be different on multiple executions.
+        :return: Simulator's Input Tree (copy from cache or just loaded)
+        """
+        if self._cached_simulator_input_tree is None:
+            self._cached_simulator_input_tree = self.flow_service.prepare_adapter(base.get_current_project().id,
+                                                                                  self.cached_simulator_algo_group)[1]
+        return copy.deepcopy(self._cached_simulator_input_tree)
 
 
     @cherrypy.expose
@@ -72,13 +94,13 @@ class BurstController(base.BaseController):
             if session_stored_burst is None:
                 session_stored_burst = self.burst_service.new_burst_configuration(base.get_current_project().id)
                 base.add2session(base.KEY_BURST_CONFIG, session_stored_burst)
-            algo_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[1]
-            adapter_interface = self.flow_service.prepare_adapter(base.get_current_project().id, algo_group)[1]
+
+            adapter_interface = self.cached_simulator_input_tree
             if session_stored_burst is not None:
                 current_data = session_stored_burst.get_all_simulator_values()[0]
                 adapter_interface = ABCAdapter.fill_defaults(adapter_interface, current_data)
                 ### Add simulator tree to session to be available in filters
-                self.context.add_adapter_to_session(algo_group, adapter_interface, current_data)
+                self.context.add_adapter_to_session(self.cached_simulator_algo_group, adapter_interface, current_data)
             template_specification['inputList'] = adapter_interface
 
         selected_portlets = session_stored_burst.update_selected_portlets()
@@ -304,13 +326,13 @@ class BurstController(base.BaseController):
 
         ## Fill all parameters 
         user_id = base.get_logged_user().id
-        sim_algo_id = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[0].id
-        data[base.KEY_ADAPTER] = sim_algo_id
+        data[base.KEY_ADAPTER] = self.cached_simulator_algorithm_id
         burst_config.update_simulator_configuration(data)
         burst_config.fk_project = base.get_current_project().id
 
         ## Do the asynchronous launch
-        burst_id, burst_name = self.burst_service.launch_burst(burst_config, 0, sim_algo_id, user_id, launch_mode)
+        burst_id, burst_name = self.burst_service.launch_burst(burst_config, 0, self.cached_simulator_algorithm_id,
+                                                               user_id, launch_mode)
         return [burst_id, burst_name]
 
 
@@ -481,13 +503,11 @@ class BurstController(base.BaseController):
         them so, and with the user filled defaults.
         """
         burst_config = base.get_from_session(base.KEY_BURST_CONFIG)
-        algo_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[1]
-        simulator_input_tree = self.flow_service.prepare_adapter(base.get_current_project().id, algo_group)[1]
-
         default_values, any_checked = burst_config.get_all_simulator_values()
+        simulator_input_tree = self.cached_simulator_input_tree
         simulator_input_tree = ABCAdapter.fill_defaults(simulator_input_tree, default_values)
         ### Add simulator tree to session to be available in filters
-        self.context.add_adapter_to_session(algo_group, simulator_input_tree, default_values)
+        self.context.add_adapter_to_session(self.cached_simulator_algo_group, simulator_input_tree, default_values)
 
         template_specification = {"inputList": simulator_input_tree,
                                   base.KEY_PARAMETERS_CONFIG: True,
@@ -506,17 +526,16 @@ class BurstController(base.BaseController):
         """
         burst_config = base.get_from_session(base.KEY_BURST_CONFIG)
         simulator_config = burst_config.simulator_configuration
-        algo_group = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[1]
-        simulator_input_tree = self.flow_service.prepare_adapter(base.get_current_project().id, algo_group)[1]
         ## Fill with stored defaults, and see if any parameter was checked by user ##
         default_values, any_checked = burst_config.get_all_simulator_values()
+        simulator_input_tree = self.cached_simulator_input_tree
         simulator_input_tree = ABCAdapter.fill_defaults(simulator_input_tree, default_values)
         ## In case no values were checked just skip tree-cut part and show entire simulator tree ##
         if any_checked:
             simulator_input_tree = self.burst_service.select_simulator_inputs(simulator_input_tree, simulator_config)
 
         ### Add simulator tree to session to be available in filters
-        self.context.add_adapter_to_session(algo_group, simulator_input_tree, default_values)
+        self.context.add_adapter_to_session(self.cached_simulator_algo_group, simulator_input_tree, default_values)
 
         template_specification = {"inputList": simulator_input_tree,
                                   base.KEY_PARAMETERS_CONFIG: False,
@@ -632,6 +651,7 @@ class BurstController(base.BaseController):
             self.logger.error(excep)
             self.logger.exception("Invalid Burst name " + str(burst_name))
             raise excep
+
 
 
 class BurstNameForm(formencode.Schema):
