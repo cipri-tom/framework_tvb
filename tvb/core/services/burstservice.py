@@ -295,7 +295,7 @@ class BurstService():
             ## Fully new entity for new simulation
             burst_config = burst_configuration.clone()
             if burst_config.name is None:
-                new_id = dao.get_max_burst_id()
+                new_id = dao.get_max_burst_id() + 1
                 burst_config.name = 'simulation_' + str(new_id)
         else:
             ## Branch or Continue simulation

@@ -22,25 +22,25 @@
 """
 DAO layer for WorkFlow and Burst entities.
 """
-from tvb.core.entities import model
-from tvb.core.entities.storage.rootDAO import RootDAO
+
 from sqlalchemy import func as func
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import desc, not_
+from tvb.core.entities import model
+from tvb.core.entities.storage.rootDAO import RootDAO
 
-    
+
 class WorkflowDAO(RootDAO):
     """
     DAO layer for WorkFlow and Burst entities.
     """
-        
-        
+
+
     def get_non_validated_entities(self, reference_time):
         """
         Get a list of all categories, portlets and algorithm groups that were not found valid since the reference_time.
         Used in initializer on each start to filter out any entities that for some reason became invalid.
         """
-        all_invalid_entities = []
         try:
             algo_groups = self.session.query(model.AlgorithmGroup
                                         ).filter(model.AlgorithmGroup.last_introspection_check < reference_time).all()
@@ -53,41 +53,42 @@ class WorkflowDAO(RootDAO):
             self.logger.error(ex)
             all_invalid_entities = []
         return all_invalid_entities
-    
-    
+
+
     def get_bursts_for_project(self, project_id, page_start=0, page_end=None, count=False):
         """Get latest 50 BurstConfiguration entities for the current project"""
         try:
             bursts = self.session.query(model.BurstConfiguration
-                                   ).filter_by(fk_project=project_id
-                                   ).order_by(desc(model.BurstConfiguration.id))
-            if count == True:
+                                        ).filter_by(fk_project=project_id
+                                                    ).order_by(desc(model.BurstConfiguration.id))
+            if count:
                 return bursts.count()
             if page_end is not None:
                 bursts = bursts.offset(max(page_start, 0)).limit(page_end)
-            
+
             bursts = bursts.all()
         except Exception, excep:
             self.logger.exception(excep)
             bursts = None
         return bursts
-    
-    
-    def get_max_burst_id(self,):
+
+
+    def get_max_burst_id(self):
         """
-        Return the maximum of the currently stored burst ids to be used as the new burst name.
+        Return the maximum of the currently stored burst IDs to be used as the new burst name.
+        This is not a thread-safe value, but we use it just for a label.
         """
-        max_id = 1
         try:
             max_id = self.session.query(func.max(model.BurstConfiguration.id)).one()
+            if max_id[0] is None:
+                return 0
+            return max_id[0]
         except Exception, excep:
             self.logger.exception(excep)
-            max_id = 1
-        if max_id[0] is None:
-            return 1
-        return max_id[0] + 1
-    
-    
+        return 0
+
+
+
     def count_bursts_with_name(self, burst_name, project_id):
         """
         Return the number of burst already named 'custom_b%' and NOT 'custom_b%_%' in current project.
@@ -97,14 +98,14 @@ class WorkflowDAO(RootDAO):
             count = self.session.query(model.BurstConfiguration
                                        ).filter_by(fk_project=project_id
                                        ).filter(model.BurstConfiguration.name.like(burst_name + '%')
-                                       ).filter(not_(model.BurstConfiguration.name.like(burst_name + '/_%/_%', 
+                                       ).filter(not_(model.BurstConfiguration.name.like(burst_name + '/_%/_%',
                                                                                         escape='/'))
                                        ).count()
         except Exception, excep:
             self.logger.exception(excep)
         return count
-    
-    
+
+
     def get_burst_by_id(self, burst_id):
         """Get the BurstConfiguration entity with the given id"""
         try:
@@ -113,21 +114,21 @@ class WorkflowDAO(RootDAO):
             self.logger.exception(excep)
             burst = None
         return burst
-    
-    
+
+
     def get_visualization_steps(self, workflow_id):
         """Retrieve all the visualization steps for a workflow."""
         try:
             result = self.session.query(model.WorkflowStepView
                                         ).filter(model.WorkflowStepView.fk_workflow == workflow_id
-                                        ).order_by(model.WorkflowStepView.tab_index, 
+                                        ).order_by(model.WorkflowStepView.tab_index,
                                                    model.WorkflowStepView.index_in_tab).all()
             return result
         except Exception, excep:
             self.logger.exception(excep)
             return None
-    
-    
+
+
     def get_workflow_steps(self, workflow_id):
         """Retrieve all the simulation/analyzers steps for a workflow."""
         try:
@@ -141,8 +142,8 @@ class WorkflowDAO(RootDAO):
         except Exception, excep:
             self.logger.exception(excep)
             return None
-    
-    
+
+
     def get_workflows_for_burst(self, burst_id):
         """Returns all the workflows that were launched for this burst id"""
         workflows = []
@@ -150,10 +151,10 @@ class WorkflowDAO(RootDAO):
             workflows = self.session.query(model.Workflow).filter_by(fk_burst=burst_id).all()
         except Exception, excep:
             self.logger.exception(excep)
-            workflows = []
+
         return workflows
-    
-    
+
+
     def get_workflow_by_id(self, workflow_id):
         """"Returns the workflow instance with the given id"""
         workflow = None
@@ -161,27 +162,26 @@ class WorkflowDAO(RootDAO):
             workflow = self.session.query(model.Workflow).filter_by(id=workflow_id).one()
         except Exception, excep:
             self.logger.exception(excep)
-            workflow = None
+
         return workflow
-    
-    
+
+
     def get_workflow_step_by_step_index(self, workflow_id, step_index):
         """
         :return WorkflowStep entity of None.
         """
         step = None
         try:
-            step = self.session.query(model.WorkflowStep).filter_by(fk_workflow=workflow_id, 
+            step = self.session.query(model.WorkflowStep).filter_by(fk_workflow=workflow_id,
                                                                     step_index=step_index).one()
-        except NoResultFound, excep:
-            self.logger.debug(str("No step found for workflow_id=%s and step_index=%s")%(workflow_id, step_index))
-            step = None
+        except NoResultFound:
+            self.logger.debug("No step found for workflow_id=%s and step_index=%s" % (workflow_id, step_index))
         except Exception, excep:
             self.logger.exception(excep)
-            step = None
+
         return step
-    
-    
+
+
     def get_workflow_steps_for_position(self, workflow_id, tab_index, index_in_tab):
         """
         Retrieve a list of analyzers corresponding to current cell in the portlets grid.
@@ -190,15 +190,15 @@ class WorkflowDAO(RootDAO):
         steps = []
         try:
             steps = self.session.query(model.WorkflowStep
-                                       ).filter_by(fk_workflow=workflow_id, 
+                                       ).filter_by(fk_workflow=workflow_id,
                                                    tab_index=tab_index, index_in_tab=index_in_tab
                                        ).order_by(model.WorkflowStep.step_index).all()
         except Exception, excep:
             self.logger.exception(excep)
-            
+
         return steps
-           
-            
+
+
     def get_configured_portlets_for_id(self, portlet_id):
         """
         Get the workflow steps that were generated from the portlet given by portlet_id.
@@ -208,10 +208,10 @@ class WorkflowDAO(RootDAO):
             wf_steps = self.session.query(model.WorkflowStepView).filter_by(fk_portlet=portlet_id).all()
         except Exception, excep:
             self.logger.exception(excep)
-            wf_steps = []
+
         return wf_steps
-            
-    
+
+
     def get_workflow_step_for_operation(self, operation_id):
         """
         Returns the executed workflow step from which resulted
@@ -221,15 +221,13 @@ class WorkflowDAO(RootDAO):
         step = None
         try:
             step = self.session.query(model.WorkflowStep).filter_by(fk_operation=operation_id).one()
-        except NoResultFound, excep:
-            self.logger.debug(str("No step found for operation_id=%s")%(operation_id))
-            step = None
+        except NoResultFound:
+            self.logger.debug("No step found for operation_id=%s" % operation_id)
         except Exception, excep:
             self.logger.exception(excep)
-            step = None
         return step
-    
-    
+
+
     def get_available_portlets(self,):
         """
         Get all the stored portlets form the db.
@@ -239,10 +237,10 @@ class WorkflowDAO(RootDAO):
             portlets = self.session.query(model.Portlet).order_by(model.Portlet.name).all()
         except Exception, excep:
             self.logger.exception(excep)
-            portlets = []
+
         return portlets
-    
-    
+
+
     def get_portlet_by_identifier(self, portlet_identifier):
         """
         Given an identifer retieve the portlet that corresponds to it.
@@ -250,15 +248,14 @@ class WorkflowDAO(RootDAO):
         portlet = None
         try:
             portlet = self.session.query(model.Portlet).filter_by(algorithm_identifier=portlet_identifier).one()
-        except NoResultFound, excep:
-            self.logger.debug(str("No portlet found with id=%s.")%(portlet_identifier,))
-            portlet = None
+        except NoResultFound:
+            self.logger.debug("No portlet found with id=%s." % portlet_identifier)
         except Exception, excep:
             self.logger.exception(excep)
-            portlet = None
+
         return portlet
-    
-    
+
+
     def get_portlet_by_id(self, portlet_id):
         """
         Given an portlet id retieve the portlet entity.
@@ -268,10 +265,10 @@ class WorkflowDAO(RootDAO):
             portlet = self.session.query(model.Portlet).filter_by(id=portlet_id).one()
         except Exception, excep:
             self.logger.exception(excep)
-            portlet = None
+
         return portlet
-    
-    
+
+
     def get_workflow_for_operation_id(self, operation_id):
         """
         Get the workflow from which operation_id was generated.
@@ -279,14 +276,14 @@ class WorkflowDAO(RootDAO):
         workflow = None
         try:
             workflow = self.session.query(model.Workflow).join(model.WorkflowStep
-                                    ).filter(model.WorkflowStep.fk_operation==operation_id).one()
+                                          ).filter(model.WorkflowStep.fk_operation == operation_id).one()
         except NoResultFound, _:
-            self.logger.warning("Operation with id=%s was not generated from any workflow."%(operation_id,))
+            self.logger.warning("Operation with id=%s was not generated from any workflow." % operation_id)
         except Exception, excep:
             self.logger.error(excep)
         return workflow
-        
-    
+
+
     def get_burst_for_operation_id(self, operation_id):
         """
         Get the burst for which this operation was created.
@@ -302,8 +299,8 @@ class WorkflowDAO(RootDAO):
         except Exception, excep:
             self.logger.error(excep)
         return burst
-      
-      
+
+
     def get_all_datatypes_in_burst(self, burst_id):
         """
         Get all dataTypes in burst
@@ -313,13 +310,13 @@ class WorkflowDAO(RootDAO):
         """
         try:
             result = self.session.query(model.DataTypeGroup,
-                           ).join(model.Operation, model.DataTypeGroup.fk_from_operation==model.Operation.id
-                           ).join(model.WorkflowStep, model.Operation.id==model.WorkflowStep.fk_operation
-                           ).join(model.Workflow).filter(model.Workflow.fk_burst==burst_id).all()
+                           ).join(model.Operation, model.DataTypeGroup.fk_from_operation == model.Operation.id
+                           ).join(model.WorkflowStep, model.Operation.id == model.WorkflowStep.fk_operation
+                           ).join(model.Workflow).filter(model.Workflow.fk_burst == burst_id).all()
             datatypes = self.session.query(model.DataType
-                                      ).filter(model.DataType.fk_parent_burst==burst_id
-                                      ).filter(model.DataType.fk_datatype_group==None
-                                      ).filter(model.DataType.type!=self.EXCEPTION_DATATYPE_GROUP).all()
+                                      ).filter(model.DataType.fk_parent_burst == burst_id
+                                      ).filter(model.DataType.fk_datatype_group == None
+                                      ).filter(model.DataType.type != self.EXCEPTION_DATATYPE_GROUP).all()
             result.extend(datatypes)
         except Exception, exc:
             self.logger.debug(exc)
