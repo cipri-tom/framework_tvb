@@ -327,7 +327,7 @@ class OperationServiceTest(BaseTestCase):
         self.assertEqual(len(dts), 0)
 
 
-    def test_stop_operations(self):
+    def test_stop_operation(self):
         """
         Test that an operation is successfully stopped.
         """

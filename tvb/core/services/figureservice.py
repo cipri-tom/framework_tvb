@@ -39,52 +39,52 @@ class FigureService:
     """
     Service layer for Figure entities.
     """
-    
+
+
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
         self.file_helper = FilesHelper()
-        
-         
+
+
     def store_result_figure(self, project, user, img_type, operation_id, export_data):
         """
         Store into a file, Result Image and reference in DB.
         """
         session_name = "Default"
         file_name = "snapshot." + img_type
-        
+
         # Generate path where to store image
-        store_path = self.file_helper.get_images_folder(project.name, operation_id) 
+        store_path = self.file_helper.get_images_folder(project.name, operation_id)
         store_path = utils.get_unique_file_name(store_path, file_name)[0]
         file_name = os.path.split(store_path)[1]
-        
-        if img_type == "jpg": #JPG file from canvas
+
+        if img_type == "jpg":  # JPG file from canvas
             # Store image
             img_data = base64.b64decode(export_data)
             dest = open(store_path, 'wb')
             dest.write(img_data)
             dest.close()
-        elif img_type == 'svg': #SVG file from svg viewer
+        elif img_type == 'svg':  # SVG file from svg viewer
             # Generate path where to store image
             dest = open(store_path, 'w')
             dest.write(export_data)
             dest.close()
-        
+
         # Store entity into DB
-        store_path = self.file_helper.find_relative_path(store_path)
-        entity = model.ResultFigure(operation_id, user.id, project.id, session_name, 
+        entity = model.ResultFigure(operation_id, user.id, project.id, session_name,
                                     "Snapshot-" + operation_id, file_name)
         entity = dao.store_entity(entity)
-        
+
         # Load instance from DB to have lazy fields loaded
         figure = dao.load_figure(entity.id)
         # Write image meta data to disk  
         self.file_helper.write_image_metadata(figure)
-        
+
         # Force writing operation meta data on disk. 
         # This is important later for operation import
         operation = dao.get_operation_by_id(operation_id)
-        self.file_helper.write_operation_metadata(operation)  
-      
+        self.file_helper.write_operation_metadata(operation)
+
 
     def retrieve_result_figures(self, project, user, selected_session_name='all_sessions'):
         """
@@ -107,8 +107,8 @@ class FigureService:
         Loads a stored figure by its id.
         """
         return dao.load_figure(figure_id)
-    
-    
+
+
     def edit_result_figure(self, figure_id, **data):
         """
         Retrieve and edit a previously stored figure.
@@ -117,26 +117,26 @@ class FigureService:
         figure.session_name = data['session_name']
         figure.name = data['name']
         dao.store_entity(figure)
-        
+
         # Load instance from DB to have lazy fields loaded.
         figure = dao.load_figure(figure_id)
         # Store figure meta data in an XML attached to the image.
         self.file_helper.write_image_metadata(figure)
-        
+
 
     def remove_result_figure(self, figure_id):
         """
         Remove figure from DB and file storage.
         """
         figure = dao.load_figure(figure_id)
-        
+
         # Delete all figure related files from disk.
         figures_folder = self.file_helper.get_images_folder(figure.project.name, figure.operation.id)
         path2figure = os.path.join(figures_folder, figure.file_path)
         if os.path.exists(path2figure):
             os.remove(path2figure)
             self.file_helper.remove_image_metadata(figure)
-            
+
         # Remove figure reference from DB.
         result = dao.remove_entity(model.ResultFigure, figure_id)
         return result

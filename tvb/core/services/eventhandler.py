@@ -64,7 +64,7 @@ ELEM_KWARGS = "kwargs"
 ATT_HOOKPOINT = "hookpoint"
 ATT_MODULE = "module"
 ATT_CLASS = "class"
-ATT_IRRELEVANT = "irrelevant"
+ATT_OPERATION_HIDDEN = "operation-hidden"
 ATT_PRIMITIVE = "primitive"
 ATT_UID = OperationService.ATT_UID
 ATT_INSTANCE = "instance"
@@ -174,7 +174,7 @@ class AdapterEventExecutor(GenericEventExecutor):
 
     def __init__(self, events_node, **kwargs):
         GenericEventExecutor.__init__(self, events_node, **kwargs)
-        self.operation_relevant = True
+        self.operation_visible = True
 
 
     def _prepare_custom_parameter(self, arg):
@@ -204,7 +204,7 @@ class AdapterEventExecutor(GenericEventExecutor):
             sleep(self.delay)
         parameters = self._prepare_parameters()
         FlowService().fire_operation(self.callable_object, self.current_user, self.current_project.id,
-                                     method_name=self.call_method, visible=self.operation_relevant, **parameters)
+                                     method_name=self.call_method, visible=self.operation_visible, **parameters)
         LOCKS_QUEUE.put(1)
 
 
@@ -217,7 +217,7 @@ class AdapterEventExecutor(GenericEventExecutor):
             if one_arg.nodeType != Node.ELEMENT_NODE:
                 continue
             if one_arg.nodeName == ELEM_ADAPTER:
-                #TODO: so far there is no need for this, but we should maybe
+                #TODO: so far there is no need for it, but we should maybe
                 #handle cases where same module/class but different init parameter
                 group = dao.find_group(one_arg.getAttribute(ATT_MODULE), one_arg.getAttribute(ATT_CLASS))
                 adapter = ABCAdapter.build_adapter(group)
@@ -229,8 +229,8 @@ class AdapterEventExecutor(GenericEventExecutor):
                 continue
             if one_arg.nodeName == ELEM_METHOD:
                 self.call_method = one_arg.getAttribute(ATT_NAME)
-                if one_arg.getAttribute(ATT_IRRELEVANT):
-                    self.operation_relevant = False
+                if one_arg.getAttribute(ATT_OPERATION_HIDDEN):
+                    self.operation_visible = False
                 continue
             if one_arg.nodeName == ELEM_ARGS:
                 kw_parameters.update(_parse_arguments(one_arg))

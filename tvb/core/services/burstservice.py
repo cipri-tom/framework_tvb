@@ -217,7 +217,6 @@ class BurstService():
         for entry in visualizers:
             ## For each visualize step, also load all of the analyze steps.
             portlet_cfg = PortletConfiguration(entry.fk_portlet)
-            portlet_cfg.name = entry.ui_name
             portlet_cfg.set_visualizer(entry)
             analyzers = dao.get_workflow_steps_for_position(entry.fk_workflow, entry.tab_index, entry.index_in_tab)
             portlet_cfg.set_analyzers(analyzers)
@@ -482,14 +481,15 @@ class BurstService():
         Stop all the entities for the current burst and set the burst status to canceled.
         """ 
         burst_wfs = dao.get_workflows_for_burst(burst_entity.id)
-        operation_ids = []
+        any_stopped = False
         for workflow in burst_wfs:
             wf_steps = dao.get_workflow_steps(workflow.id)
             for step in wf_steps:
                 if step.fk_operation is not None:
-                    operation_ids.append(step.fk_operation)
-        if self.operation_service.stop_operations(operation_ids):
-            if burst_entity.status != burst_entity.BURST_CANCELED:
+                    self.logger.debug("We will stop operation: %d" % step.fk_operation)
+                    any_stopped = self.operation_service.stop_operation(step.fk_operation) or any_stopped
+
+        if any_stopped and burst_entity.status != burst_entity.BURST_CANCELED:
                 self.workflow_service.mark_burst_finished(burst_entity, cancel=True)
         
     

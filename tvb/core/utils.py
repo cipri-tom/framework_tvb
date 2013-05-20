@@ -30,7 +30,6 @@ import json
 import datetime
 import uuid
 import numpy
-import signal
 from scipy import io as scipy_io
 from tvb.basic.config.settings import TVBSettings as configFile
 from tvb.basic.logger.builder import get_logger
@@ -39,7 +38,7 @@ LOGGER = get_logger(__name__)
 
 MATLAB = "matlab"
 OCTAVE = "octave"
- 
+
 CHAR_SEPARATOR = "__"
 CHAR_SPACE = "--"
 CHAR_DRIVE = "-DriVe-"
@@ -49,29 +48,29 @@ COMPLEX_TIME_FORMAT = '%Y-%m-%d,%H-%M-%S.%f'
 # This is only used as a fallback in the string to date conversion.
 LESS_COMPLEX_TIME_FORMAT = '%Y-%m-%d,%H-%M-%S'
 SIMPLE_TIME_FORMAT = "%m-%d-%Y"
- 
-   
+
+
 ################## PATH related methods start here ###############
-   
+
 def path2url_part(file_path):
     """
     Prepare a File System Path for passing into an URL.
     """
     if not os.path.isabs(file_path):
         file_path = os.path.join(configFile.TVB_STORAGE, file_path)
-    return file_path.replace(os.sep, CHAR_SEPARATOR).replace(" ", 
-                            CHAR_SPACE).replace(DRIVE_SEP, CHAR_DRIVE)
-    
-    
+    return file_path.replace(os.sep, CHAR_SEPARATOR).replace(" ", CHAR_SPACE).replace(DRIVE_SEP, CHAR_DRIVE)
+
+
+
 def url2path(encoded_path):
     """
     Retrieve File System Path from encoded URL (inverse of path2url_part).
     """
-    return encoded_path.replace(CHAR_SEPARATOR, os.sep).replace(CHAR_SPACE, 
-                                " ").replace(CHAR_DRIVE, DRIVE_SEP)
+    return encoded_path.replace(CHAR_SEPARATOR, os.sep).replace(CHAR_SPACE, " ").replace(CHAR_DRIVE, DRIVE_SEP)
 
 
-def get_unique_file_name(storage_folder, file_name, try_number=0):   
+
+def get_unique_file_name(storage_folder, file_name, try_number=0):
     """
     Compute non-existent file name, in storage_folder.
     Try file_name, and if already exists, try adding a number.
@@ -89,11 +88,11 @@ def get_unique_file_name(storage_folder, file_name, try_number=0):
         #Try another name, by appending the consecutive try_number
         return get_unique_file_name(storage_folder, file_name, try_number + 1)
     return full_path, file_
- 
- 
+
+
 ################## PATH related methods end here ###############    
-  
-  
+
+
 ################## FILE related methods start here ###############
 
 def read_matlab_data(path, matlab_data_name=None):
@@ -106,8 +105,9 @@ def read_matlab_data(path, matlab_data_name=None):
         LOGGER.error("Could not read Matlab content from: " + path)
         LOGGER.error("Matlab files must be saved in a format <= -V7...")
         raise exc
-    
+
     return matlab_data[matlab_data_name]
+
 
 
 def store_list_data(data_list, file_name, storage_folder, overwrite=False):
@@ -115,31 +115,29 @@ def store_list_data(data_list, file_name, storage_folder, overwrite=False):
     Write a list into a file using CSV writer.
     CSV writer, better than numpy, write also Strings
     """
-    if data_list is None or not (isinstance(data_list, list) or 
-                                isinstance(data_list, numpy.ndarray)):
+    if data_list is None or not (isinstance(data_list, list) or isinstance(data_list, numpy.ndarray)):
         raise Exception("Invalid given type!! " + str(type(data_list)))
     if overwrite:
         full_path = os.path.join(storage_folder, file_name)
         file_name = os.path.split(full_path)[1]
     else:
         full_path, file_name = get_unique_file_name(storage_folder, file_name)
-    
+
     # generic writer, capable to write strings also
     destination = open(full_path, 'wb')
     csv_writer = csv.writer(destination, delimiter=' ')
-    if (isinstance(data_list[0], list) or 
-        isinstance(data_list[0], numpy.ndarray)):
+    if isinstance(data_list[0], list) or isinstance(data_list[0], numpy.ndarray):
         for row in data_list:
             csv_writer.writerow(row)
     else:
         csv_writer.writerow(data_list)
 
     return file_name
-     
+
 
 ################## FILE related methods end here ###############  
-   
-    
+
+
 ################## CONVERT related methods start here ###############
 
 def parse_json_parameters(parameters):
@@ -154,6 +152,7 @@ def parse_json_parameters(parameters):
     return new_params
 
 
+
 def string2date(string_input, complex_format=True, date_format=None):
     """Read date from string, after internal format"""
     if date_format is not None:
@@ -164,20 +163,22 @@ def string2date(string_input, complex_format=True, date_format=None):
         except ValueError:
             # For backwards compatibility with TVB 1.0
             return datetime.datetime.strptime(string_input, LESS_COMPLEX_TIME_FORMAT)
-    return datetime.datetime.strptime(string_input, SIMPLE_TIME_FORMAT)       
+    return datetime.datetime.strptime(string_input, SIMPLE_TIME_FORMAT)
+
 
 
 def date2string(date_input, complex_format=True, date_format=None):
     """Convert date into string, after internal format"""
     if date_input is None:
         return "None"
-    
+
     if date_format is not None:
         return date_input.strftime(date_format)
-    
+
     if complex_format:
         return date_input.strftime(COMPLEX_TIME_FORMAT)
     return date_input.strftime(SIMPLE_TIME_FORMAT)
+
 
 
 def timedelta2string(timedelta):
@@ -200,30 +201,37 @@ def timedelta2string(timedelta):
     if days > 0:
         return str(days) + "d " + str(hours) + "h"
     if hours > 0:
-        return str(hours) +"h " + str(minutes) +"m"
+        return str(hours) + "h " + str(minutes) + "m"
     if minutes > 0:
-        return str(minutes) +"m " + str(seconds) +"s"
+        return str(minutes) + "m " + str(seconds) + "s"
     return str(seconds) + "s"
-    
+
+
 
 def string2bool(string_input):
     """ Convert given string into boolean value."""
-    if string_input is not None: 
+    if string_input is not None:
         if isinstance(string_input, unicode):
             string_input = str(string_input)
-            
+
         if isinstance(string_input, str):
             return string_input.lower() in ("yes", "true", "t", "1")
-    
+
     return False
+
+
 
 def bool2string(bool_value):
     """ Convert boolean value to string """
     return str(bool_value)
-    
+
+
+
 ARRAY_BEGIN = -1
 DATA_UNCONVERTED = 1
 DATA_CONVERTED = 2
+
+
 
 def string2array(input_data_str, split_char, dtype=None):
     """
@@ -241,20 +249,24 @@ def string2array(input_data_str, split_char, dtype=None):
     except ValueError:
         logger = get_logger(__name__)
         logger.warning("Received input array %s is poorly formated and could not be evaluated by Python."
-                       "Falling back to _custom_string2array."%(prepared_input_data_str))
+                       "Falling back to _custom_string2array." % prepared_input_data_str)
         return _custom_string2array(input_data_str, split_char, dtype)
-        
-    
+
+
+
 def _custom_string2array(input_data_str, split_char, dtype=None):
     """
     From a long string, parse a NumPy array.
     """
+
     class HelperData():
         """Helper for parsing arrays"""
+
+
         def __init__(self, data, type_):
             self.data = data
             self.type = type_
-                
+
     input_str = input_data_str.lstrip().rstrip()
     to_replace = split_char + split_char
     while to_replace in input_str:
@@ -263,8 +275,8 @@ def _custom_string2array(input_data_str, split_char, dtype=None):
     input_str = input_str.replace(split_char + ']', ']')
     input_str = input_str.replace(' ' + split_char, split_char)
     input_str = input_str.replace(split_char + ' ', split_char)
-    input_str = input_str.replace('[ ' , '[').replace(' ]', ']')
-                
+    input_str = input_str.replace('[ ', '[').replace(' ]', ']')
+
     str_pos = 0
     data_stack = []
     while str_pos < len(input_str):
@@ -289,15 +301,15 @@ def _custom_string2array(input_data_str, split_char, dtype=None):
             data_stack.pop()
             new_array = HelperData(new_array, 0)
             data_stack.append(new_array)
-            
-        elif (len(data_stack) == 0 or data_stack[-1].type != DATA_UNCONVERTED):
+
+        elif len(data_stack) == 0 or data_stack[-1].type != DATA_UNCONVERTED:
             data_stack.append(HelperData(input_str[str_pos], DATA_UNCONVERTED))
-        else: 
+        else:
             data_stack[-1].data = data_stack[-1].data + input_str[str_pos]
         str_pos += 1
     if len(data_stack) == 0:
         return None
-    
+
     if type(data_stack[0].data) in (str, unicode):
         if dtype is not None:
             if data_stack[-1].data == 'None':
@@ -307,7 +319,7 @@ def _custom_string2array(input_data_str, split_char, dtype=None):
         return data_stack[0].data
     return numpy.array(data_stack[0].data)
 
-     
+
 ################## CONVERT related methods end here ###############
 
 
@@ -342,6 +354,8 @@ def get_matlab_executable():
             return matlab_exe_path
     return matlab_exe_path
 
+
+
 def check_matlab_version(matlab_path):
     """
     Try to get the current version of matlab from a given path.
@@ -363,6 +377,8 @@ def check_matlab_version(matlab_path):
     os.remove(matlab_test_file + '.m')
     return version.replace('\n', '').strip()
 
+
+
 def matlab_cmd(matlab_path, script_name, log_file):
     """
     Called in order to obtain the command for calling MATLAB
@@ -379,8 +395,9 @@ def matlab_cmd(matlab_path, script_name, log_file):
     if OCTAVE in exe_name:
         return exe_name + ' %s.m >> %s' % (script_name, log_file)
 
+
 ################## MATLAB methods end here     ##############
-    
+
 ################## GENERIC  methods start here ###############
 
 def synchronized(lock):
@@ -388,8 +405,12 @@ def synchronized(lock):
     Synchronization annotation. 
     We try to mimic the same behavior as Java has with keyword synchronized, for methods.
     """
+
+
     def wrap(func):
         """Wrap current function with a lock mechanism"""
+
+
         def new_function(*args, **kw):
             """ New function will actually write the Lock."""
             lock.acquire()
@@ -397,32 +418,15 @@ def synchronized(lock):
                 return func(*args, **kw)
             finally:
                 lock.release()
+
+
         return new_function
+
+
     return wrap
- 
- 
-def stop_pid(pid):
-    """
-    Stop a process specified by PID.
-    :return: True when specified Process was stopped in here, False in case of exception(e.g. process stopped in advance).
-    """
-    if sys.platform == 'win32':
-        try:
-            import ctypes
-            handle = ctypes.windll.kernel32.OpenProcess(1, False, int(pid))
-            ctypes.windll.kernel32.TerminateProcess(handle, -1)
-            ctypes.windll.kernel32.CloseHandle(handle)
-        except WindowsError, _:
-            return False
-    else:
-        try:
-            os.kill(int(pid), signal.SIGKILL) 
-        except OSError, _:
-            return False
-        
-    return True
-                        
-    
+
+
+
 def generate_guid():
     """ 
     Generate new Global Unique Identifier.

@@ -49,16 +49,16 @@ class ClusterTimedRotatingFileHandler(MemoryHandler):
 
     def __init__(self, when='h', interval=1, backupCount=0):
         """
+        Constructor for logging formatter.
         """
-        log_file = None
-        # Formatter string
+        # Formatting string
         format_str = '%(asctime)s - %(levelname)s'
         if TVBSettings.OPERATION_EXECUTION_PROCESS:
             log_file = os.path.join(TVBSettings.TVB_LOG_FOLDER, self.CLUSTER_NODES_LOG_FILE)
             if TVBSettings.RUNNING_ON_CLUSTER_NODE:
                 node_name = TVBSettings.CLUSTER_NODE_NAME
                 if node_name is not None:
-                    format_str += ' [node:' + node_name + '] '
+                    format_str += ' [node:' + str(node_name) + '] '
             else:
                 format_str += ' [proc:' + str(os.getpid()) + '] '
         else:

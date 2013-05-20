@@ -51,7 +51,7 @@
     </event>
     <event hookpoint="ProjectService.store_project" type="adapter" delay="8">
         <adapter module="tvb.adapters.uploaders.lookup_table_importer" class="LookupTableImporter"/>
-        <method name="launch" irrelevant="true"/>
+        <method name="launch" operation-hidden="true"/>
         <args>
             <arg name='psi_table_file' value="nerf_int.npz" module='demoData.tables' type="file" /> 
             <arg name='table_type' value='Nerf Table' type='str' />  
@@ -59,7 +59,7 @@
     </event>
     <event hookpoint="ProjectService.store_project" type="adapter" delay="8">
         <adapter module="tvb.adapters.uploaders.lookup_table_importer" class="LookupTableImporter"/>
-        <method name="launch" irrelevant="true"/>
+        <method name="launch" operation-hidden="true"/>
         <args>
             <arg name='psi_table_file' value="psi.npz" module='demoData.tables' type="file" /> 
             <arg name='table_type' value='Psi Table' type='str' />  
@@ -67,7 +67,7 @@
     </event>
     <event hookpoint="ProjectService.store_project" type="adapter" delay="12">
         <adapter module="tvb.adapters.uploaders.zip_surface_importer" class="ZIPSurfaceImporter"/>
-        <method name="launch" irrelevant="true"/>
+        <method name="launch" operation-hidden="true"/>
         <args>
             <arg name='uploaded' value="eeg_skin_surface.zip" module='demoData.surfaceData' type="file" /> 
             <arg name='surface_type' value='EEG Cap' type='str' /> 
@@ -76,7 +76,7 @@
     </event>
     <event hookpoint="ProjectService.store_project" type="adapter" delay="12">
         <adapter module="tvb.adapters.uploaders.zip_surface_importer" class="ZIPSurfaceImporter"/>
-        <method name="launch" irrelevant="true"/>
+        <method name="launch" operation-hidden="true"/>
         <args>
             <arg name='uploaded' value="face-surface.zip" module='demoData.surfaceData' type="file" /> 
             <arg name='surface_type' value='Face' type='str' />  
@@ -85,7 +85,7 @@
     </event>
     <event hookpoint="ProjectService.store_project" type="adapter" delay="16">
         <adapter module="tvb.adapters.uploaders.projection_matrix_importer" class="ProjectionMatrixRegionEEGImporter"/>
-        <method name="launch" irrelevant="true"/>
+        <method name="launch" operation-hidden="true"/>
         <args>
             <arg name='projection_file' value="region_conn_74_eeg_1020_62.mat" module='demoData.projectionMatrix' type="file" /> 
             <arg name='sensors' value='eeg_62' type='uid' />  
@@ -94,7 +94,7 @@
     </event>
     <event hookpoint="ProjectService.store_project" type="adapter" delay="16">
         <adapter module="tvb.adapters.uploaders.projection_matrix_importer" class="ProjectionMatrixSurfaceEEGImporter"/>
-        <method name="launch" irrelevant="true"/>
+        <method name="launch" operation-hidden="true"/>
         <args>
             <arg name='projection_file' value="surface_reg_13_eeg_62.mat" module='demoData.projectionMatrix' type="file" /> 
             <arg name='sensors' value='eeg_62' type='uid' />  
@@ -105,7 +105,7 @@
     
     <event hookpoint="CodeVersionsManager.update.4455" type="adapter" delay="8">
         <adapter module="tvb.adapters.uploaders.lookup_table_importer" class="LookupTableImporter"/>
-        <method name="launch" irrelevant="true"/>
+        <method name="launch" operation-hidden="true"/>
         <args>
             <arg name='psi_table_file' value="nerf_int.npz" module='demoData.tables' type="file" /> 
             <arg name='table_type' value='Nerf Table' type='str' />  
@@ -113,7 +113,7 @@
     </event>
     <event hookpoint="CodeVersionsManager.update.4455" type="adapter" delay="8">
         <adapter module="tvb.adapters.uploaders.lookup_table_importer" class="LookupTableImporter"/>
-        <method name="launch" irrelevant="true"/>
+        <method name="launch" operation-hidden="true"/>
         <args>
             <arg name='psi_table_file' value="psi.npz" module='demoData.tables' type="file" /> 
             <arg name='table_type' value='Psi Table' type='str' />  
@@ -121,7 +121,7 @@
     </event>
     <event hookpoint="CodeVersionsManager.update.4455" type="adapter" delay="12">
         <adapter module="tvb.adapters.uploaders.zip_surface_importer" class="ZIPSurfaceImporter"/>
-        <method name="launch" irrelevant="true"/>
+        <method name="launch" operation-hidden="true"/>
         <args>
             <arg name='uploaded' value="eeg_skin_surface.zip" module='demoData.surfaceData' type="file" /> 
             <arg name='surface_type' value='EEG Cap' type='str' /> 
@@ -130,7 +130,7 @@
     </event>
     <event hookpoint="CodeVersionsManager.update.4455" type="adapter" delay="12">
         <adapter module="tvb.adapters.uploaders.zip_surface_importer" class="ZIPSurfaceImporter"/>
-        <method name="launch" irrelevant="true"/>
+        <method name="launch" operation-hidden="true"/>
         <args>
             <arg name='uploaded' value="face-surface.zip" module='demoData.surfaceData' type="file" /> 
             <arg name='surface_type' value='Face' type='str' />  

@@ -27,15 +27,15 @@ E.g. A list with all the modules where adapters are implemented.
 """
 
 ADAPTERS = {"Analyze": {'modules': ["tvb.adapters.analyzers"],
-                        'launchable': True, 'defaultdatastate': 'INTERMEDIATE', 'order_nr' : '1'},
+                        'launchable': True, 'defaultdatastate': 'INTERMEDIATE', 'order_nr': '1'},
             "Simulate": {'modules': ["tvb.adapters.simulator"],
-                         'defaultdatastate': 'INTERMEDIATE', 'order_nr' : '0'},
+                         'defaultdatastate': 'INTERMEDIATE', 'order_nr': '0'},
             "Upload": {'modules': ["tvb.adapters.uploaders"],
                        'rawinput': True, 'defaultdatastate': 'RAW_DATA'},
-            "View": {'modules': ["tvb.adapters.visualizers"], 
-                     'launchable': True, 'display': True, 'defaultdatastate': 'INTERMEDIATE', 'order_nr' : '3'},
+            "View": {'modules': ["tvb.adapters.visualizers"],
+                     'launchable': True, 'display': True, 'defaultdatastate': 'INTERMEDIATE', 'order_nr': '3'},
             "Create": {'modules': ["tvb.adapters.creators"],
-                       'defaultdatastate': 'RAW_DATA', 'order_nr' : '0'}
+                       'defaultdatastate': 'RAW_DATA', 'order_nr': '0'}
             }
 
 DATATYPES_PATH = ["tvb.datatypes"]
@@ -58,7 +58,7 @@ MEASURE_METRICS_MODULE = "tvb.adapters.analyzers.metrics_group_timeseries"
 MEASURE_METRICS_CLASS = "TimeseriesMetricsAdapter"
 
 DISCRETE_PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.pse_discrete"
-DISCRETE_PSE_ADAPTER_CLASS =  "DiscretePSEAdapter"
+DISCRETE_PSE_ADAPTER_CLASS = "DiscretePSEAdapter"
 
 ISOCLINE_PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.pse_isocline"
 ISOCLINE_PSE_ADAPTER_CLASS = "IsoclinePSEAdapter"

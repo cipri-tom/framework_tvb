@@ -499,50 +499,12 @@ class OperationService:
     ##########################################################################################
     ######## Methods related to stopping and restarting operations start here ################
     ##########################################################################################
+
     def stop_operation(self, operation_id):
         """
         Stop the operation given by the operation id.
         """
-        operation = dao.get_operation_by_id(operation_id)
-        if operation and operation.status == model.STATUS_STARTED:
-            operation_process = dao.get_operation_process_for_operation(operation_id)
-            if cfg.DEPLOY_CLUSTER:
-                ## Try to kill only if operation process was not None
-                result = 0
-                if operation_process is not None:
-                    result = os.system(cfg.CLUSTER_STOP_COMMAND % operation_process.job_id)
-                ## Set operation as canceled, if kill command succeed, otherwise no operation process was found...
-                if result == 0 or operation_process is None:
-                    operation.mark_cancelled()
-                    dao.store_entity(operation)
-                    return True
-            else:
-                ## Set the thread stop flag to true
-                BACKEND_CLIENT.stop_operation(operation_id)
-                if operation_process is not None:
-                    ## Now try to kill the operation if it exists
-                    stopped = utils.stop_pid(operation_process.pid)
-                    if not stopped:
-                        self.logger.debug("This operation was probably killed from it's specific thread.")
-                operation.mark_cancelled()
-                dao.store_entity(operation)
-                return True
-        return False
+        return BACKEND_CLIENT.stop_operation(operation_id)
 
-
-    def stop_operations(self, operation_ids):
-        """
-        Used in case of group launch. Aquire operation thread list lock before beginning stop
-        to make sure no synchronization problems occur.
-        """
-        any_stopped = False
-        if cfg.DEPLOY_CLUSTER:
-            for op_id in operation_ids:
-                any_stopped = any_stopped or self.stop_operation(op_id)
-        else:
-            any_stopped = BACKEND_CLIENT.stop_operations(operation_ids)
-            for op_id in operation_ids:
-                any_stopped = self.stop_operation(op_id) or any_stopped
-        return any_stopped
     
     
