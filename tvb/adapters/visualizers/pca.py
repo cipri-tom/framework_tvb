@@ -25,7 +25,7 @@ A displayer for the principal components analysis.
 .. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
 
 """
-
+import json
 from tvb.datatypes.mode_decompositions import PrincipalComponents
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 
@@ -52,22 +52,15 @@ class PCA(ABCDisplayer):
 
     def launch(self, pca):
         """Construct data for visualization and launch it."""
-
-        # get data from pca datatype, convert to json
-        u = self.dump_prec(pca.get_data('fractions').flat)
-        vt = self.dump_prec(pca.get_data('weights').flat)
-
-        return self.build_display_result("pca/view", dict(u=u, vt=vt))
+        ts_entity = self.load_entity_by_gid(pca.source.gid)
+        labels_data = ts_entity.get_space_labels()
+        fractions_update_url = self.paths2url(pca, 'read_fractions_data')
+        weights_update_url = self.paths2url(pca, 'read_weights_data')
+        return self.build_display_result("pca/view", dict(labels_data=json.dumps(labels_data),
+                                                          fractions_update_url=fractions_update_url,
+                                                          weights_update_url=weights_update_url))
 
 
     def generate_preview(self, pca, figure_size):
         return self.launch(pca)
-
-
-    def dump_prec(self, xs, prec=3):
-        """
-        Dump a list of numbers into a string, each at the specified precision. 
-        """
-
-        return "[" + ",".join(map(lambda x: ("%0." + str(prec) + "g") % (x,), xs)) + "]"
 
