@@ -25,7 +25,7 @@ var BRAIN_CANVAS_ID = "GLcanvas";
  * Variables for displaying Time and computing Frames/Sec
  */
 var lastTime = 0;
-var timeStep = 0;
+var currentTimeValue = 0;
 var TICK_STEP = 50;
 var TIME_STEP = 1;
 var AG_isStopped = false;
@@ -64,12 +64,12 @@ var isLoadStarted = false;
 var currentActivitiesFileIndex = 0;
 var nextActivitiesFileData = [];
 var totalPassedActivitiesData = 0;
-var shouldIncrementTimeStep = true;
+var shouldIncrementTime = true;
 
 var MAX_TIME_STEP = 0;
 var NO_OF_MEASURE_POINTS = 0;
 
-var displayPoints190 = false;
+var displayMeasureNodes = false;
 
 var activityMin = 0, activityMax = 0;
 var isOneToOneMapping = false;
@@ -124,7 +124,7 @@ var doPick = false;
 function customMouseDown(event) {
 	GL_handleMouseDown(event, $("#" + BRAIN_CANVAS_ID));
     NAV_inTimeRefresh = false
-    if (displayPoints190 && isDoubleView) {
+    if (displayMeasureNodes && isDoubleView) {
     	doPick = true;
     }
 }
@@ -156,7 +156,7 @@ function customMouseMove(event) {
  * Update colors for all Positions on the brain.
  */
     
-function updateColors(timeStep) {
+function updateColors(currentTimeValue) {
     // This values are computed at each step, because start/end color might change.
     var nStartColors = [normalizeColor(startColorRGB[0]), 
                         normalizeColor(startColorRGB[1]),
@@ -168,7 +168,7 @@ function updateColors(timeStep) {
     if (colorDiff == 0) {
     	colorDiff = 1;
     }
-    var normalizedStep = timeStep - totalPassedActivitiesData;
+    var currentTimeInFrame = currentTimeValue - totalPassedActivitiesData;
     if (isOneToOneMapping) {
         for (i = 0; i < brainBuffers.length; i++) {
         	// Reset color buffers at each step.
@@ -178,7 +178,7 @@ function updateColors(timeStep) {
             var offset_start = i * 40000;
             if (LEG_clownyFace) {
             	for (var j = 0; j < upperBoarder; j++) {
-	                var diff_activity = (parseFloat(activitiesData[normalizedStep][offset_start + j]) -activityMin) /colorDiff;
+	                var diff_activity = (parseFloat(activitiesData[currentTimeInFrame][offset_start + j]) -activityMin) /colorDiff;
 	                var sub_f32s = colors.subarray(j * 4, (j + 1) * 4);
 	                sub_f32s[0] = nStartColors[0] + diff_activity * nDiffColors[0];
 	                sub_f32s[1] = nStartColors[1] + (diff_activity*1000 - Math.round(diff_activity *1000))  * nDiffColors[1];
@@ -187,7 +187,7 @@ function updateColors(timeStep) {
 	            }
             } else {
             	for (var j = 0; j < upperBoarder; j++) {
-	                var diff_activity = (parseFloat(activitiesData[normalizedStep][offset_start + j]) -activityMin) /colorDiff;
+	                var diff_activity = (parseFloat(activitiesData[currentTimeInFrame][offset_start + j]) -activityMin) /colorDiff;
 	                var sub_f32s = colors.subarray(j * 4, (j + 1) * 4);
 	                sub_f32s[0] = nStartColors[0] + diff_activity * nDiffColors[0];
 	                sub_f32s[1] = nStartColors[1] + diff_activity * nDiffColors[1];
@@ -202,7 +202,7 @@ function updateColors(timeStep) {
         }
     } else {
         for (var i = 0; i < NO_OF_MEASURE_POINTS; i++) {
-        	var diff_activity = (parseFloat(activitiesData[normalizedStep][i]) - activityMin) /colorDiff;
+        	var diff_activity = (parseFloat(activitiesData[currentTimeInFrame][i]) - activityMin) /colorDiff;
         	LEG_setUniform(i, diff_activity, nStartColors, nDiffColors);
         }  
         // default color for a measure point
@@ -233,9 +233,9 @@ function addLight() {
     gl.uniform1f(shaderProgram.materialShininessUniform, 30.0);
 }
 
-function togle190() {
-    displayPoints190 = ! displayPoints190;
-    if (displayPoints190 && isDoubleView) {
+function toogleMeasureNodes() {
+    displayMeasureNodes = ! displayMeasureNodes;
+    if (displayMeasureNodes && isDoubleView) {
         $("input[type=checkbox][id^='channelChk_']").each(function (i) {
             if (this.checked) {
                 var index = this.id.split("channelChk_")[1];
@@ -419,8 +419,8 @@ function drawBuffers(drawMode, buffersSets, useBlending) {
  * Actual scene drawing step.
  */
 function tick() {
-    drawScene();
-    if (isDoubleView && !AG_isStopped) {
+	if (!sliderSel) drawScene();
+    if (isDoubleView && !AG_isStopped && !sliderSel) {
     	drawGraph(true, TIME_STEP);
     }
     if (!isPreview) {
@@ -454,13 +454,13 @@ function drawScene() {
 		    lastTime = timeNow;
 		    document.getElementById("TimeStep").innerHTML = elapsed;
 		    if (timeData.length > 0) {
-		        document.getElementById("TimeNow").innerHTML = (timeData[timeStep] * 10 / 10).toString().substring(0.4);
+		        document.getElementById("TimeNow").innerHTML = (timeData[currentTimeValue] * 10 / 10).toString().substring(0.4);
 		    }
 		    var medianTime = Math.floor(1000 / ((eval(framestime.join("+"))) / framestime.length));
 		    document.getElementById("FramesPerSecond").innerHTML = medianTime;
 		    document.getElementById("slider-value").innerHTML = TIME_STEP;
 		    if (sliderSel == false && !isPreview) {
-		        $("#slider").slider("option", "value", timeStep);
+		        $("#slider").slider("option", "value", currentTimeValue);
 		    }
 		}
 	    // END COMPUTE FR/SEC
@@ -478,20 +478,20 @@ function drawScene() {
 	    mvRotate(180, [0, 0, 1]);
 	
 	    if (AG_isStopped == false) {
-	        updateColors(timeStep);
-	        if (shouldIncrementTimeStep) {
-	            timeStep = timeStep + TIME_STEP;
+	        updateColors(currentTimeValue);
+	        if (shouldIncrementTime) {
+	            currentTimeValue = currentTimeValue + TIME_STEP;
 	        }
-	        if (timeStep > MAX_TIME_STEP) {
-	            timeStep = 0;
+	        if (currentTimeValue > MAX_TIME_STEP) {
+	            currentTimeValue = 0;
 	            totalPassedActivitiesData = 0;
 	        }
 	    } else {
-	    	updateColors(timeStep);
+	    	updateColors(currentTimeValue);
 	    }
 	    drawBuffers(drawingMode, brainBuffers, false);
 	    if (!isPreview) {
-	    	if (displayPoints190) {
+	    	if (displayMeasureNodes) {
 		        drawBuffers(gl.TRIANGLES, measurePointsBuffers, false);
 		    } 
 		    if (!isDoubleView) {
@@ -562,22 +562,22 @@ function drawScene() {
 }
 
 /*
- * Change the currently selected state variable. Get the newly selected value, reset the timeStep to start
+ * Change the currently selected state variable. Get the newly selected value, reset the currentTimeValue to start
  * and read the first page of the new mode/state var combination.
  */
 function changeStateVariable() {
 	selectedStateVar = $('#state-variable-select').val()
-    $("#slider").slider("option", "value", timeStep);
+    $("#slider").slider("option", "value", currentTimeValue);
 	initActivityData();
 }
 
 /*
- * Change the currently selected mode. Get the newly selected value, reset the timeStep to start
+ * Change the currently selected mode. Get the newly selected value, reset the currentTimeValue to start
  * and read the first page of the new mode/state var combination.
  */
 function changeMode() {
 	selectedMode = $('#mode-select').val()
-	$("#slider").slider("option", "value", timeStep);
+	$("#slider").slider("option", "value", currentTimeValue);
 	initActivityData();
 }
 
@@ -585,7 +585,7 @@ function changeMode() {
  * Just read the first slice of activity data and set the time step to 0.
  */
 function initActivityData() {
-	timeStep = 0;
+	currentTimeValue = 0;
     //read the first file
     var fromIdx = 0;
     var toIdx = pageSize;
@@ -721,13 +721,14 @@ function _webGLStart(baseDatatypeURL, onePageSize, nrOfPages, urlTimeList, urlVe
 	                setTimeStep($("#sliderStep").slider("option", "value"));
 	            }});
 	        // Initialize slider for timeLine
-	        $("#slider").slider({ min:0, max: MAX_TIME_STEP, disabled: true,
+	        $("#slider").slider({ min:0, max: MAX_TIME_STEP,
 	            slide: function(event, ui) {
 	                sliderSel = true;
-	                timeStep = $("#slider").slider("option", "value");
+	                currentTimeValue = $("#slider").slider("option", "value");
 	            },
 	            stop: function(event, ui) {
 	                sliderSel = false;
+	                loadFromTimeStep($("#slider").slider("option", "value"));
 	            } });
 	    } else {
 	        $("#fieldSetForSliderSpeed").hide();
@@ -738,9 +739,27 @@ function _webGLStart(baseDatatypeURL, onePageSize, nrOfPages, urlTimeList, urlVe
     setInterval(tick, TICK_STEP);
 }
 
+function loadFromTimeStep(step) {
+	/*
+	 * Load the brainviewer from this given time step.
+	 */
+	var chunkForStep = Math.floor(step / pageSize);
+	currentActivitiesFileIndex = chunkForStep - 1;
+	var nextUrl = getNextActivitiesFileUrl();
+	isLoadStarted = true;
+	readFileData(nextUrl, false);
+	changeCurrentActivitiesFile();
+	currentTimeValue = step;
+	totalPassedActivitiesData = chunkForStep * pageSize;
+	// Also sync eeg monitor if in double view
+	if (isDoubleView) {
+		loadEEGChartFromTimeStep(step);
+	}
+}
+
 function changeCurrentActivitiesFile() {
     if (nextActivitiesFileData == null || nextActivitiesFileData == undefined || nextActivitiesFileData.length == 0) {
-        shouldIncrementTimeStep = false;
+        shouldIncrementTime = false;
         return;
     }
     totalPassedActivitiesData = totalPassedActivitiesData + currentActivitiesFileLength;
@@ -751,8 +770,8 @@ function changeCurrentActivitiesFile() {
     currentActivitiesFileLength = activitiesData.length;
     isLoadStarted = false;
     if (activitiesData != undefined && activitiesData.length > 0) {
-        shouldIncrementTimeStep = true;
-        timeStep = timeStep + TIME_STEP;
+        shouldIncrementTime = true;
+        currentTimeValue = currentTimeValue + TIME_STEP;
     }
     if (currentActivitiesFileIndex == 0) {
         totalPassedActivitiesData = 0;
@@ -762,7 +781,7 @@ function changeCurrentActivitiesFile() {
 function loadNextActivitiesFile() {
     isLoadStarted = true;
     var nextUrl = getNextActivitiesFileUrl();
-    readFileDataAsynchronous(nextUrl);
+    readFileData(nextUrl, true);
 }
 
 function getNextActivitiesFileIndex() {
@@ -781,7 +800,7 @@ function getNextActivitiesFileUrl() {
 }
 
 function shouldLoadNextActivitiesFile() {
-    if (!isLoadStarted && ((timeStep - totalPassedActivitiesData + 100 * TIME_STEP) >= currentActivitiesFileLength)) {
+    if (!isLoadStarted && ((currentTimeValue - totalPassedActivitiesData + 100 * TIME_STEP) >= currentActivitiesFileLength)) {
         if (nrOfSlices > 1 && (nextActivitiesFileData == null || nextActivitiesFileData.length == 0)) {
             return true;
         }
@@ -791,16 +810,17 @@ function shouldLoadNextActivitiesFile() {
 
 function shouldChangeCurrentActivitiesFile() {
     if (nrOfSlices > 1) {
-        if((timeStep - totalPassedActivitiesData + 1) >= currentActivitiesFileLength - TIME_STEP) {
+        if((currentTimeValue - totalPassedActivitiesData + 1) >= currentActivitiesFileLength - TIME_STEP) {
             return true;
         }
     }
     return false;
 }
 
-function readFileDataAsynchronous(fileUrl) {
+function readFileData(fileUrl, sync) {
     $.ajax({
         url: fileUrl,
+        async: sync,
         success: function(data) {
             nextActivitiesFileData = eval(data);
             data = null;

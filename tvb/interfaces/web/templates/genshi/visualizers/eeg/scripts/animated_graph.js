@@ -206,7 +206,7 @@ function drawAnimatedChart(longestChannelLength, channelsPerSet, baseURLS, pageS
     chanDisplayLabels = $.parseJSON(channelLabels);
     noOfChannelsPerSet = $.parseJSON(channelsPerSet);
     timeSetUrls = $.parseJSON(timeSetPaths);
-    maxChannelLength = parseInt(longestChannelLength);
+    maxChannelLength = parseInt(pageSize);
     AG_normalizationSteps = $.parseJSON(normalizations);
     setMaxDataFileIndex(nrOfPagesSet);
     AG_numberOfVisiblePoints = parseInt(number_of_visible_points);
@@ -483,7 +483,7 @@ function drawGraph(executeShift, shiftNo) {
         loadNextDataFile();
     }
 	var direction = 1;
-	if (isSmallPreview == false) {
+	if (isSmallPreview == false && !isDoubleView) {
 		if ($('#ctrl-input-speed').slider("option", "value") < 0) direction = -1;
 	}
 	
@@ -624,7 +624,7 @@ function AG_addTranslationStep(value, index) {
 
 function getTimeoutBasedOnSpeed() {
 	var currentAnimationSpeedValue = 40;
-	if (isSmallPreview == false) {
+	if (isSmallPreview == false && !isDoubleView) {
 		var currentAnimationSpeedValue = $("#ctrl-input-speed").slider("option", "value");
 	}
     if (currentAnimationSpeedValue == 0) {
@@ -644,6 +644,78 @@ function getTimeoutBasedOnSpeed() {
 }
 
 
+function loadEEGChartFromTimeStep(step) {
+	/*
+	 * Load the data from a given step and center plot around that step.
+	 */
+	var chunkForStep = Math.floor(step / dataPageSize);
+	$.ajax({
+        url: readDataPageURL(baseDataURLS[0], chunkForStep * dataPageSize, (chunkForStep + 1) * dataPageSize, tsStates[0], tsModes[0]),
+        async: false,
+        success: function(data) {
+        	data = $.parseJSON(data);
+            nextData = parseData(data, 0);
+        }
+    });
+    $.ajax({
+        url: timeSetUrls[0][chunkForStep],
+        async: false,
+        success: function(data) {
+            nextTimeData = $.parseJSON(data);
+            isNextTimeDataLoaded = true;
+        }
+    });
+    totalPassedData = chunkForStep * dataPageSize;
+    AG_displayedPoints = [];
+    AG_allPoints = getDisplayedChannels(nextData, 0).slice(0);
+	AG_time = nextTimeData.slice(0);
+	var indexInPage = step % dataPageSize;
+	var fromIdx = 0;
+	var toIdx = AG_numberOfVisiblePoints;
+	if (indexInPage <= AG_numberOfVisiblePoints / 2) {
+		// We are at the beginning of the graph, line did not reach middle point yet, and we are still displaying the first
+		// AG_numberOfVisiblePoints values
+		fromIdx = 0;
+		toIdx = AG_numberOfVisiblePoints;
+		AG_currentIndex = AG_numberOfVisiblePoints;
+		currentLinePosition = indexInPage;
+	} else {
+		if (indexInPage >= totalTimeLength - AG_numberOfVisiblePoints / 2) {
+			// We are at the end of the graph. The line is starting to move further right from the middle position. We are just
+			// displaying the last AG_numberOfVisiblePoints from the last page
+			if (AG_time.length > AG_numberOfVisiblePoints) {
+				fromIdx = AG_time.length - 1 - AG_numberOfVisiblePoints;
+			} else {
+				fromIdx = 0;
+			}
+			toIdx = AG_time.length - 1;
+			AG_currentIndex = toIdx;
+			currentLinePosition = AG_numberOfVisiblePoints - (AG_time.length - 1 - indexInPage); 
+			
+		} else {
+				// We are somewhere in the middle of the graph. 
+				fromIdx = indexInPage - AG_numberOfVisiblePoints / 2;
+				toIdx = indexInPage + AG_numberOfVisiblePoints / 2;
+				AG_currentIndex = toIdx;
+				currentLinePosition = AG_numberOfVisiblePoints / 2;
+				}
+	} 
+	
+	for (var idx = 0; idx < AG_allPoints.length; idx++) {
+		var oneLine = [];
+		for (var idy = fromIdx; idy < toIdx; idy++) {
+			oneLine.push([ AG_time[idy], AG_addTranslationStep(AG_allPoints[idx][idy], idx) ])
+		}
+		AG_displayedPoints.push(oneLine);
+	}
+	AG_displayedTimes = AG_time.slice(fromIdx, toIdx)
+    currentDataFileIndex = chunkForStep;
+    isLoadStarted = false;
+    isNextDataLoaded = false;
+    isNextTimeDataLoaded = false;
+}
+
+
 function loadNextDataFile() {
 	/*
 	 * Read the next data file asyncronously. Also get the corresponding time data file.
@@ -660,7 +732,7 @@ function changeCurrentDataFile() {
         return;
     }
     var speed = 100;
-    if (isSmallPreview == false) {
+    if (isSmallPreview == false && !isDoubleView) {
     	speed = $("#ctrl-input-speed").slider("option", "value");
     }
     if (cachedFileIndex != getNextDataFileIndex()) {
@@ -706,8 +778,8 @@ function changeCurrentDataFile() {
 function shouldLoadNextDataFile() {
     if (!isLoadStarted && maxDataFileIndex > 0) {
         var nextFileIndex = getNextDataFileIndex();
-        var speed = 100;
-        if (isSmallPreview == false) {
+        var speed = 1; // Assume left to right pass of data
+        if (isSmallPreview == false && !isDoubleView) {
         	speed = $("#ctrl-input-speed").slider("option", "value");
         }
         if ((speed > 0) && (currentDataFileIndex != nextFileIndex) && (maxChannelLength - AG_currentIndex < threshold * AG_numberOfVisiblePoints)) {
@@ -739,7 +811,7 @@ function getNextDataFileIndex() {
 	 * Return the index of the next data file that should be loaded.
 	 */
 	var speed = 100;
-	if (isSmallPreview == false) {
+	if (isSmallPreview == false && !isDoubleView) {
 		var speed = $("#ctrl-input-speed").slider("option", "value");
 	}
     var nextIndex;
@@ -776,6 +848,7 @@ function AG_readFileDataAsynchronous(nrOfPages, noOfChannelsPerSet, currentFileI
         }
         longestChannelIndex = channelLengths.indexOf(Math.max.apply(Math, channelLengths));
         nextData = selectedData;
+        channelLengths = []
         return;
     }
     if (nrOfPages[dataSetIndex] - 1 < currentFileIndex) {

@@ -64,7 +64,7 @@ function EX_changeColorBufferForMeasurePoint(measurePointIndex, isPicked) {
  * Internal method, to reset all variable, for the Brain visualizer activity to be started from 0.
  */
 function resetBrainToStart() {
-	timeStep = 0;
+	currentTimeInFrame = 0;
 	if (activitiesDataUrls.length > 0) {
         //read the first file
         activitiesData = HLPR_readJSONfromFile(activitiesDataUrls[0]);
