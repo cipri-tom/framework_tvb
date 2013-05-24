@@ -403,11 +403,12 @@ function submitSelectedChannels(isEndOfData) {
  * This method decides if we are at the beginning or end of the graph, in which case we only need
  * to move the vertical line, or in between, where vertical line is not moving, instead arrays are shifted.
  */
-function shouldMoveLine(direction) {
+function shouldMoveLine(direction, shiftNo) {
+	var shiftNo = shiftNo || 1;
 	var isEndOfGraph = false;
 	var isStartOfGraph = false
 	if (direction == 1) {
-		isEndOfGraph = ((totalPassedData + AG_currentIndex + noOfShiftedPoints >= totalTimeLength) && (currentLinePosition < AG_numberOfVisiblePoints));	
+		isEndOfGraph = ((totalPassedData + AG_currentIndex + noOfShiftedPoints >= totalTimeLength) && (currentLinePosition < AG_numberOfVisiblePoints + shiftNo));	
 		isStartOfGraph = (currentLinePosition < targetVerticalLinePosition);		
 		if (AG_displayedTimes[currentLinePosition] >= AG_displayedPoints[longestChannelIndex][AG_displayedPoints[longestChannelIndex].length - 1][0]) {
 	    	isEndOfGraph = false;
@@ -487,13 +488,13 @@ function drawGraph(executeShift, shiftNo) {
 		if ($('#ctrl-input-speed').slider("option", "value") < 0) direction = -1;
 	}
 	
-	var moveLine = shouldMoveLine(direction);
+	var moveLine = shouldMoveLine(direction, noOfShiftedPoints);
 	//Increment line position in case we need to move the line
 	if (moveLine && executeShift && !AG_isSpeedZero) {
 	    currentLinePosition = currentLinePosition + noOfShiftedPoints * direction;	
     }
 
-    if (currentLinePosition + 1 >= AG_numberOfVisiblePoints) {
+    if (currentLinePosition >= AG_numberOfVisiblePoints + noOfShiftedPoints) {
         isEndOfData = true;
     }
 
@@ -674,7 +675,7 @@ function loadEEGChartFromTimeStep(step) {
 			addFromPreviousPage(indexInPage, chunkForStep);
 		}
 	} else {
-		if (indexInPage >= pageSize - AG_numberOfVisiblePoints / 2) {
+		if ((indexInPage >= pageSize - AG_numberOfVisiblePoints / 2) || (nrOfPagesSet[0] == 1 && indexInPage + AG_numberOfVisiblePoints / 2 > AG_time.length)) {
 			if (chunkForStep >= nrOfPagesSet[0] - 1) {
 				// We are at the end of the graph. The line is starting to move further right from the middle position. We are just
 				// displaying the last AG_numberOfVisiblePoints from the last page
@@ -693,7 +694,7 @@ function loadEEGChartFromTimeStep(step) {
 				addFromNextPage(indexInPage, chunkForStep);
 			}
 		} else {
-				// We are somewhere in the middle of the graph. 
+ 				// We are somewhere in the middle of the graph. 
 				fromIdx = indexInPage - AG_numberOfVisiblePoints / 2;
 				toIdx = indexInPage + AG_numberOfVisiblePoints / 2;
 				AG_currentIndex = toIdx;

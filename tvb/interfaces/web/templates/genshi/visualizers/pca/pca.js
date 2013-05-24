@@ -160,7 +160,7 @@ PCAViewer.prototype.drawVectorsPlot = function(root) {
     labels.append("text")
     				.classed("node-labels", true)
 	                .attr("transform", function (d) {
-	                    return "translate(" + (w / linesSpace / nrNodes) * (d - nrNodes / 3) + ", " + -h / 2.4 + ") rotate(-60) ";
+	                    return "translate(" + (w / linesSpace / nrNodes) * (d - nrNodes / 3) + ", " + -h / 2.6 + ") rotate(-60) ";
 	                })
 	                .text(function (d) {
 	                	if (self.labelsData.length > 0) {
@@ -169,33 +169,39 @@ PCAViewer.prototype.drawVectorsPlot = function(root) {
 	                    return "node " + d;
 	                })
 
+	var lineVertTranslate = (-h / 3); // Translate vertical to make room for labels
+	var gridHeight = 2 * h / 3; // The height of the vector grid
     // draw vertical grid lines
-    var gridLines = root.append("g").attr("transform", "translate(" + -w / 4.5 + "," + (-h / 3 - 15) + ")")
+    var gridLines = root.append("g").attr("transform", "translate(" + -w / 4.5 + "," + lineVertTranslate + ")")
     									.selectAll("line").data(tv.ndar.range(nrNodes).data).enter();
     gridLines.append("line").attr("x1",function (d) { return w / linesSpace / nrNodes * d })
     						.attr("x2", function (d) { return w / linesSpace / nrNodes * d })
-        					.attr("y2", 2 * h / 3)
-        					.attr("y1", -15)
+        					.attr("y2", gridHeight)
+        					.attr("y1", 0)
         					.attr("stroke", function (d) { return d % 5 === 0 ? "#ccc" : "#eee"; });
 
     // process the raw weights data to display as separate channels
     var weightsRaw = this.weightsRaw;
     var weightsData = [];
     var weightsScl = Math.max(-weightsRaw.min(), weightsRaw.max());
+    var nrOfLines = (this.toChan - this.fromChan);
 
     for (var i = 0; i < (this.toChan - this.fromChan); i++) {
         weightsData[i] = [];
         for (var j = 0; j < this.nComp; j++) {
+        	var normalizedValue = weightsRaw.data[i * this.nComp + j] / weightsScl;
             weightsData[i][j] = [ j * w / linesSpace / nrNodes, 
-            					  ( 2 * h / 3 / (this.toChan - this.fromChan) / 2 / weightsScl) * weightsRaw.data[i * this.nComp + j]
+            					  (gridHeight / nrOfLines / 2) * normalizedValue
             					  ];
         }
     }
-
+	
+	var channelHeight = gridHeight / nrOfLines; // This is how much should separate each channel
+	var plotTranslation = -gridHeight / 2 + channelHeight / 2; // Translation to get from center to top of plot
     // setup axes groups
     this.axesPlot = root.append("g").selectAll("g").data(weightsData).enter()
     						.append("g").attr("transform", function (d, i) {
-            return "translate(" + -w / 4.5 + ", " + (i / (self.toChan - self.fromChan) * 2 * h / 3 - h / 3) + ")";
+            return "translate(" + -w / 4.5 + ", " + (plotTranslation + i * channelHeight) + ")";
         });
     // add zero lines
     this.axesPlot.append("line").attr("x2", w / linesSpace).style("stroke", "black");
@@ -207,7 +213,7 @@ PCAViewer.prototype.drawVectorsPlot = function(root) {
 							  	.attr("stroke", self.colorMap(idx))
 								.selectAll("circle").data(weightsData[idx]).enter().append("circle")
 																	.attr("cx", function (d, i) { return d[0]; })
-																	.attr("cy", function (d, i) { return d[1]; })
+																	.attr("cy", function (d, i) { return -d[1]; }) // Negative x since neg translation bring circle top
 																	.attr("r", this.barCircleRadius)
 																	.attr("fill", self.colorMap(idx))
     }
