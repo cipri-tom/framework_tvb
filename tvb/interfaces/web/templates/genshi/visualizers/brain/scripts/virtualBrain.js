@@ -77,6 +77,152 @@ var isDoubleView = false;
 
 var drawingMode;
 
+
+function _webGLPortletPreview(baseDatatypeURL, onePageSize, nrOfPages, urlVerticesList, urlTrianglesList, urlNormalsList, urlAlphasList, urlAlphasIndicesList, minActivity, maxActivity, oneToOneMapping) {
+	isPreview = true;
+	GL_DEFAULT_Z_POS = 250;
+	GL_zTranslation = GL_DEFAULT_Z_POS;
+	nrOfSlices = parseInt(nrOfPages);
+	pageSize = onePageSize;
+	urlBase = baseDatatypeURL
+	var fromIdx = 0;
+    var toIdx = pageSize;
+    activitiesData = HLPR_readJSONfromFile(readDataPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode, TIME_STEP));
+    if (oneToOneMapping == 'True') {
+        isOneToOneMapping = true;
+    }
+    activityMin = parseFloat(minActivity);
+    activityMax = parseFloat(maxActivity);
+    var canvas = document.getElementById(BRAIN_CANVAS_ID);
+    //needed for the export/save canvas operation
+    canvas.webGlCanvas = true;
+    customInitGL(canvas);
+    initShaders();
+	brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList), 
+    						   $.parseJSON(urlAlphasList), $.parseJSON(urlAlphasIndicesList), false);
+    LEG_generateLegendBuffers();
+    
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    // Enable keyboard and mouse interaction
+    canvas.onkeydown = GL_handleKeyDown;
+    canvas.onkeyup = GL_handleKeyUp;
+    canvas.onmousedown = customMouseDown;
+    document.onmouseup = NAV_customMouseUp;
+    document.onmousemove = customMouseMove;
+    setInterval(tick, TICK_STEP);
+}
+
+function _webGLStart(baseDatatypeURL, onePageSize, nrOfPages, urlTimeList, urlVerticesList, urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
+                     urlAlphasList, urlAlphasIndicesList, minActivity, maxActivity, oneToOneMapping, doubleView, shelfObject, urlMeasurePointsLabels) {
+	isPreview = false;
+    isDoubleView = doubleView;
+    GL_DEFAULT_Z_POS = 250;
+    if (isDoubleView) {
+    	GL_currentRotationMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(270, [0, 0, 1]));
+    	GL_DEFAULT_Z_POS = 300;
+    	$("#displayFaceChkId").trigger('click');
+    }
+    GL_zTranslation = GL_DEFAULT_Z_POS;
+    
+    if (noOfMeasurePoints > 0) {
+	    measurePoints = HLPR_readJSONfromFile(urlMeasurePoints);
+        measurePointsLabels = HLPR_readJSONfromFile(urlMeasurePointsLabels);
+	    NO_OF_MEASURE_POINTS = measurePoints.length;
+	} else if (noOfMeasurePoints < 0) {
+		measurePoints = $.parseJSON(urlMeasurePoints);
+		measurePointsLabels = HLPR_readJSONfromFile(urlMeasurePointsLabels);
+	    NO_OF_MEASURE_POINTS = measurePoints.length;
+	} else {
+		NO_OF_MEASURE_POINTS = 0;
+		measurePoints = [];
+		measurePointsLabels = [];
+	}
+    
+    var timeUrls = $.parseJSON(urlTimeList);
+    for (var i = 0; i < timeUrls.length; i++) {
+    	timeData = timeData.concat(HLPR_readJSONfromFile(timeUrls[i]));
+    }
+    
+	nrOfSlices = parseInt(nrOfPages);
+	pageSize = onePageSize;
+	urlBase = baseDatatypeURL;
+    if (nrOfSlices > 0) {
+    	initActivityData();
+    }
+
+    if (oneToOneMapping == 'True') {
+        isOneToOneMapping = true;
+    }
+    activityMin = parseFloat(minActivity);
+    activityMax = parseFloat(maxActivity);
+    
+    LEG_initMinMax(activityMin, activityMax);
+
+    var canvas = document.getElementById(BRAIN_CANVAS_ID);
+    //needed for the export/save canvas operation
+    canvas.webGlCanvas = true;
+    customInitGL(canvas);
+    GL_initColorPickFrameBuffer();
+    initShaders();
+    NAV_initBrainNavigatorBuffers();
+
+    brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList), 
+    						   $.parseJSON(urlAlphasList), $.parseJSON(urlAlphasIndicesList), isDoubleView);
+    LEG_generateLegendBuffers();
+    
+    if (shelfObject) {
+    	shelfObject = $.parseJSON(shelfObject);
+    	shelfBuffers = initBuffers(shelfObject[0], shelfObject[1], shelfObject[2], false, false, true);
+    }
+    // Initialize the buffers for the measure points
+    for (var i = 0; i < NO_OF_MEASURE_POINTS; i++) {
+        measurePointsBuffers[i] = bufferAtPoint(measurePoints[i]);
+    }
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    // Enable keyboard and mouse interaction
+    canvas.onkeydown = GL_handleKeyDown;
+    canvas.onkeyup = GL_handleKeyUp;
+    canvas.onmousedown = customMouseDown;
+    document.onmouseup = NAV_customMouseUp;
+    document.onmousemove = customMouseMove; 
+    
+    if (!isPreview) {
+	    if (timeData.length > 0) {
+	        MAX_TIME_STEP = timeData.length - 1;
+	        $("#sliderStep").slider({min:1, max: 50, step: 1,
+	            stop: function(ev, ui) {
+	            	var newStep = $("#sliderStep").slider("option", "value");
+	                setTimeStep(newStep);
+	                refreshCurrentDataSlice()
+	            }});
+	        // Initialize slider for timeLine
+	        $("#slider").slider({ min:0, max: MAX_TIME_STEP,
+	            slide: function(event, ui) {
+	                sliderSel = true;
+	                currentTimeValue = $("#slider").slider("option", "value");
+	            },
+	            stop: function(event, ui) {
+	                sliderSel = false;
+	                loadFromTimeStep($("#slider").slider("option", "value"));
+	            } });
+	    } else {
+	        $("#fieldSetForSliderSpeed").hide();
+	    }
+	    document.getElementById("Infobox").innerHTML = "";
+	}
+    // Specify the re-draw function.
+    setInterval(tick, TICK_STEP);
+}
+
+////////////////////////////////////////// GL Initializations //////////////////////////////////////////
+
 function customInitGL(canvas) {
 	window.onresize = function() {
 		updateGLCanvasSize(BRAIN_CANVAS_ID);
@@ -152,6 +298,7 @@ function customMouseMove(event) {
 /////////////////////////////////////////~~~~~~~~END MOUSE RELATED CODE~~~~~~~~~~~//////////////////////////////////
 
 
+////////////////////////////////////////~~~~~~~~~ WEB GL RELATED RENDERING ~~~~~~~/////////////////////////////////
 /**
  * Update colors for all Positions on the brain.
  */
@@ -168,7 +315,7 @@ function updateColors(currentTimeValue) {
     if (colorDiff == 0) {
     	colorDiff = 1;
     }
-    var currentTimeInFrame = currentTimeValue - totalPassedActivitiesData;
+    var currentTimeInFrame = Math.floor((currentTimeValue - totalPassedActivitiesData) / TIME_STEP);
     if (isOneToOneMapping) {
         for (i = 0; i < brainBuffers.length; i++) {
         	// Reset color buffers at each step.
@@ -214,7 +361,7 @@ function updateColors(currentTimeValue) {
         loadNextActivitiesFile();
     }
     if (shouldChangeCurrentActivitiesFile()) {
-        changeCurrentActivitiesFile();
+        changeCurrentActivitiesFile(true);
     }
 }
 
@@ -292,6 +439,54 @@ function resetSpeedSlider() {
     	$("#sliderStep").slider("option", "value", 1);
 	}
 }
+
+
+/**
+ * Creates a list of webGl buffers.
+ *
+ * @param dataList a list of lists. Each list will contain the data needed for creating a gl buffer.
+ */
+function createWebGlBuffers(dataList) {
+    var result = [];
+    for (var i = 0; i < dataList.length; i++) {
+        var buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(dataList[i]), gl.STATIC_DRAW);
+        buffer.numItems = dataList[i].length;
+        result.push(buffer);
+    }
+
+    return result;
+}
+
+
+/**
+ * Computes the data for alpha and alphasIndices.
+ *
+ * @param vertices a list which contains lists of vertices. E.g.: [[slice_1_vertices],...,[slice_n_vertices]]
+ * @param measurePoints a list which contains all the measure points. E.g.: [[x0,y0,z0],[x1,y1,z1],...]
+ */
+function computeAlphas(vertices, measurePoints) {
+    var alphas = [];
+    var alphasIndices = [];
+    for (var i = 0; i < vertices.length; i++) {
+        var currentAlphas = [];
+        var currentAlphasIndices = [];
+        for (var j = 0; j < vertices[i].length/3; j++) {
+            var currentVertex = [vertices[i][j * 3], vertices[i][j * 3 + 1], vertices[i][j * 3 + 2]];
+            var closestPosition = _findClosestPosition(currentVertex, measurePoints);
+            currentAlphas.push(1);
+            currentAlphas.push(0);
+            currentAlphasIndices.push(closestPosition);
+            currentAlphasIndices.push(0);
+            currentAlphasIndices.push(0);
+        }
+        alphas.push(currentAlphas);
+        alphasIndices.push(currentAlphasIndices);
+    }
+    return [alphas, alphasIndices];
+}
+
 
 /**
  * Method used for creating a color buffer for a cube (measure point).
@@ -561,6 +756,11 @@ function drawScene() {
 	}
 }
 
+////////////////////////////////////////~~~~~~~~~ END WEB GL RELATED RENDERING ~~~~~~~/////////////////////////////////
+
+
+/////////////////////////////////////// ~~~~~~~~~~ DATA RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
+
 /*
  * Change the currently selected state variable. Get the newly selected value, reset the currentTimeValue to start
  * and read the first page of the new mode/state var combination.
@@ -588,177 +788,58 @@ function initActivityData() {
 	currentTimeValue = 0;
     //read the first file
     var fromIdx = 0;
-    var toIdx = pageSize;
-    activitiesData = HLPR_readJSONfromFile(readDataPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode));
+    var toIdx = pageSize - pageSize % TIME_STEP;
+    activitiesData = HLPR_readJSONfromFile(readDataPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode, TIME_STEP));
     if (activitiesData != undefined) {
         currentActivitiesFileIndex = 0;
-        currentActivitiesFileLength = activitiesData.length;
+        currentActivitiesFileLength = activitiesData.length * TIME_STEP;
         totalPassedActivitiesData = 0;
     }
 }
 
 
-function _webGLPortletPreview(baseDatatypeURL, onePageSize, nrOfPages, urlVerticesList, urlTrianglesList, urlNormalsList, urlAlphasList, urlAlphasIndicesList, minActivity, maxActivity, oneToOneMapping) {
-	isPreview = true;
-	GL_DEFAULT_Z_POS = 250;
-	GL_zTranslation = GL_DEFAULT_Z_POS;
-	nrOfSlices = parseInt(nrOfPages);
-	pageSize = onePageSize;
-	urlBase = baseDatatypeURL
-	var fromIdx = 0;
-    var toIdx = pageSize;
-    activitiesData = HLPR_readJSONfromFile(readDataPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode));
-    if (oneToOneMapping == 'True') {
-        isOneToOneMapping = true;
-    }
-    activityMin = parseFloat(minActivity);
-    activityMax = parseFloat(maxActivity);
-    var canvas = document.getElementById(BRAIN_CANVAS_ID);
-    //needed for the export/save canvas operation
-    canvas.webGlCanvas = true;
-    customInitGL(canvas);
-    initShaders();
-	brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList), 
-    						   $.parseJSON(urlAlphasList), $.parseJSON(urlAlphasIndicesList), false);
-    LEG_generateLegendBuffers();
-    
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clearDepth(1.0);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
-    // Enable keyboard and mouse interaction
-    canvas.onkeydown = GL_handleKeyDown;
-    canvas.onkeyup = GL_handleKeyUp;
-    canvas.onmousedown = customMouseDown;
-    document.onmouseup = NAV_customMouseUp;
-    document.onmousemove = customMouseMove;
-    setInterval(tick, TICK_STEP);
-}
-
-function _webGLStart(baseDatatypeURL, onePageSize, nrOfPages, urlTimeList, urlVerticesList, urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
-                     urlAlphasList, urlAlphasIndicesList, minActivity, maxActivity, oneToOneMapping, doubleView, shelfObject, urlMeasurePointsLabels) {
-	isPreview = false;
-    isDoubleView = doubleView;
-    GL_DEFAULT_Z_POS = 250;
-    if (isDoubleView) {
-    	GL_currentRotationMatrix = createRotationMatrix(270, [1, 0, 0]).x(createRotationMatrix(270, [0, 0, 1]));
-    	GL_DEFAULT_Z_POS = 300;
-    	$("#displayFaceChkId").trigger('click');
-    }
-    GL_zTranslation = GL_DEFAULT_Z_POS;
-    
-    if (noOfMeasurePoints > 0) {
-	    measurePoints = HLPR_readJSONfromFile(urlMeasurePoints);
-        measurePointsLabels = HLPR_readJSONfromFile(urlMeasurePointsLabels);
-	    NO_OF_MEASURE_POINTS = measurePoints.length;
-	} else if (noOfMeasurePoints < 0) {
-		measurePoints = $.parseJSON(urlMeasurePoints);
-		measurePointsLabels = HLPR_readJSONfromFile(urlMeasurePointsLabels);
-	    NO_OF_MEASURE_POINTS = measurePoints.length;
-	} else {
-		NO_OF_MEASURE_POINTS = 0;
-		measurePoints = [];
-		measurePointsLabels = [];
-	}
-    
-    var timeUrls = $.parseJSON(urlTimeList);
-    for (var i = 0; i < timeUrls.length; i++) {
-    	timeData = timeData.concat(HLPR_readJSONfromFile(timeUrls[i]));
-    }
-    
-	nrOfSlices = parseInt(nrOfPages);
-	pageSize = onePageSize;
-	urlBase = baseDatatypeURL;
-    if (nrOfSlices > 0) {
-    	initActivityData();
-    }
-
-    if (oneToOneMapping == 'True') {
-        isOneToOneMapping = true;
-    }
-    activityMin = parseFloat(minActivity);
-    activityMax = parseFloat(maxActivity);
-    
-    LEG_initMinMax(activityMin, activityMax);
-
-    var canvas = document.getElementById(BRAIN_CANVAS_ID);
-    //needed for the export/save canvas operation
-    canvas.webGlCanvas = true;
-    customInitGL(canvas);
-    GL_initColorPickFrameBuffer();
-    initShaders();
-    NAV_initBrainNavigatorBuffers();
-
-    brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList), 
-    						   $.parseJSON(urlAlphasList), $.parseJSON(urlAlphasIndicesList), isDoubleView);
-    LEG_generateLegendBuffers();
-    
-    if (shelfObject) {
-    	shelfObject = $.parseJSON(shelfObject);
-    	shelfBuffers = initBuffers(shelfObject[0], shelfObject[1], shelfObject[2], false, false, true);
-    }
-    // Initialize the buffers for the measure points
-    for (var i = 0; i < NO_OF_MEASURE_POINTS; i++) {
-        measurePointsBuffers[i] = bufferAtPoint(measurePoints[i]);
-    }
-
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clearDepth(1.0);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
-    // Enable keyboard and mouse interaction
-    canvas.onkeydown = GL_handleKeyDown;
-    canvas.onkeyup = GL_handleKeyUp;
-    canvas.onmousedown = customMouseDown;
-    document.onmouseup = NAV_customMouseUp;
-    document.onmousemove = customMouseMove; 
-    
-    if (!isPreview) {
-	    if (timeData.length > 0) {
-	        MAX_TIME_STEP = timeData.length - 1;
-	        $("#sliderStep").slider({min:1, max: 50, step: 1,
-	            slide: function(ev, ui) {
-	                setTimeStep($("#sliderStep").slider("option", "value"));
-	            }});
-	        // Initialize slider for timeLine
-	        $("#slider").slider({ min:0, max: MAX_TIME_STEP,
-	            slide: function(event, ui) {
-	                sliderSel = true;
-	                currentTimeValue = $("#slider").slider("option", "value");
-	            },
-	            stop: function(event, ui) {
-	                sliderSel = false;
-	                loadFromTimeStep($("#slider").slider("option", "value"));
-	            } });
-	    } else {
-	        $("#fieldSetForSliderSpeed").hide();
-	    }
-	    document.getElementById("Infobox").innerHTML = "";
-	}
-    // Specify the re-draw function.
-    setInterval(tick, TICK_STEP);
-}
-
 function loadFromTimeStep(step) {
 	/*
 	 * Load the brainviewer from this given time step.
 	 */
+	showBlockerOverlay(500);
+	step = step - step % TIME_STEP; // Set time to be multiple of step
 	var chunkForStep = Math.floor(step / pageSize);
-	currentActivitiesFileIndex = chunkForStep - 1;
-	var nextUrl = getNextActivitiesFileUrl();
-	isLoadStarted = true;
+	currentActivitiesFileIndex = chunkForStep; // Decrease one since changeCurrentActivities will automatically increase
+	var nextUrl = getCurrentActivitiesUrl();
+	isLoadStarted = false;
 	readFileData(nextUrl, false);
-	changeCurrentActivitiesFile();
 	currentTimeValue = step;
-	totalPassedActivitiesData = chunkForStep * pageSize;
+	activitiesData = null;
+    activitiesData = nextActivitiesFileData.slice(0);
+    nextActivitiesFileData = null;
+    currentActivitiesFileLength = activitiesData.length * TIME_STEP;
+	totalPassedActivitiesData = chunkForStep * pageSize - (chunkForStep * pageSize) % TIME_STEP;
+	shouldIncrementTime = true;
 	// Also sync eeg monitor if in double view
 	if (isDoubleView) {
 		loadEEGChartFromTimeStep(step);
 	}
+	closeBlockerOverlay();
 }
 
-function changeCurrentActivitiesFile() {
-    if (nextActivitiesFileData == null || nextActivitiesFileData == undefined || nextActivitiesFileData.length == 0) {
+function refreshCurrentDataSlice() {
+	/*
+	 * Refresh the current data with the new time step.
+	 */
+	showBlockerOverlay(500);
+	var nextUrl = getCurrentActivitiesUrl();
+	isLoadStarted = false;
+	readFileData(nextUrl, false);
+	activitiesData = nextActivitiesFileData.slice(0);
+    nextActivitiesFileData = null;
+    currentActivitiesFileLength = activitiesData.length * TIME_STEP;
+    currentTimeValue = currentTimeValue - currentTimeValue % TIME_STEP;
+	closeBlockerOverlay();
+}
+
+function changeCurrentActivitiesFile(async) {
+    if ((nextActivitiesFileData == null || nextActivitiesFileData == undefined || nextActivitiesFileData.length == 0) || (!isLoadStarted && async)) {
         shouldIncrementTime = false;
         return;
     }
@@ -767,7 +848,7 @@ function changeCurrentActivitiesFile() {
     activitiesData = nextActivitiesFileData.slice(0);
     nextActivitiesFileData = null;
     currentActivitiesFileIndex = getNextActivitiesFileIndex();
-    currentActivitiesFileLength = activitiesData.length;
+    currentActivitiesFileLength = activitiesData.length * TIME_STEP;
     isLoadStarted = false;
     if (activitiesData != undefined && activitiesData.length > 0) {
         shouldIncrementTime = true;
@@ -792,15 +873,28 @@ function getNextActivitiesFileIndex() {
     return nextIndex;
 }
 
+function getUrlForIndex(index) {
+	// URL needed to read the data for the page given by 'index'
+	var fromIdx = (index * pageSize);
+    fromIdx = fromIdx - fromIdx % TIME_STEP
+    var toIdx = (index + 1) * pageSize;
+    toIdx = toIdx - toIdx % TIME_STEP
+    return readDataPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode, TIME_STEP);
+}
+
 function getNextActivitiesFileUrl() {
+	// URL for the next activity file
     var nextIndex = getNextActivitiesFileIndex();
-    var fromIdx = nextIndex * pageSize;
-    var toIdx = (nextIndex + 1) * pageSize;
-    return readDataPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode);
+    return getUrlForIndex(nextIndex);
+}
+
+function getCurrentActivitiesUrl() {
+	// URL for the current activity file
+	return getUrlForIndex(currentActivitiesFileIndex);	
 }
 
 function shouldLoadNextActivitiesFile() {
-    if (!isLoadStarted && ((currentTimeValue - totalPassedActivitiesData + 100 * TIME_STEP) >= currentActivitiesFileLength)) {
+    if (!isLoadStarted && ((currentTimeValue - totalPassedActivitiesData + 100 / TIME_STEP) >= currentActivitiesFileLength - TIME_STEP)) {
         if (nrOfSlices > 1 && (nextActivitiesFileData == null || nextActivitiesFileData.length == 0)) {
             return true;
         }
@@ -817,34 +911,18 @@ function shouldChangeCurrentActivitiesFile() {
     return false;
 }
 
-function readFileData(fileUrl, sync) {
+function readFileData(fileUrl, async) {
+	nextActivitiesFileData = null;
     $.ajax({
         url: fileUrl,
-        async: sync,
+        async: async,
         success: function(data) {
-            nextActivitiesFileData = eval(data);
-            data = null;
+        	if ((isLoadStarted && async) || !async) {
+        		nextActivitiesFileData = eval(data);
+            	data = null;
+        	}
         }
     });
-}
-
-
-/**
- * Creates a list of webGl buffers.
- *
- * @param dataList a list of lists. Each list will contain the data needed for creating a gl buffer.
- */
-function createWebGlBuffers(dataList) {
-    var result = [];
-    for (var i = 0; i < dataList.length; i++) {
-        var buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(dataList[i]), gl.STATIC_DRAW);
-        buffer.numItems = dataList[i].length;
-        result.push(buffer);
-    }
-
-    return result;
 }
 
 
@@ -869,30 +947,4 @@ function readFloatData(data_url_list, staticFiles) {
     return result;
 }
 
-
-/**
- * Computes the data for alpha and alphasIndices.
- *
- * @param vertices a list which contains lists of vertices. E.g.: [[slice_1_vertices],...,[slice_n_vertices]]
- * @param measurePoints a list which contains all the measure points. E.g.: [[x0,y0,z0],[x1,y1,z1],...]
- */
-function computeAlphas(vertices, measurePoints) {
-    var alphas = [];
-    var alphasIndices = [];
-    for (var i = 0; i < vertices.length; i++) {
-        var currentAlphas = [];
-        var currentAlphasIndices = [];
-        for (var j = 0; j < vertices[i].length/3; j++) {
-            var currentVertex = [vertices[i][j * 3], vertices[i][j * 3 + 1], vertices[i][j * 3 + 2]];
-            var closestPosition = _findClosestPosition(currentVertex, measurePoints);
-            currentAlphas.push(1);
-            currentAlphas.push(0);
-            currentAlphasIndices.push(closestPosition);
-            currentAlphasIndices.push(0);
-            currentAlphasIndices.push(0);
-        }
-        alphas.push(currentAlphas);
-        alphasIndices.push(currentAlphasIndices);
-    }
-    return [alphas, alphasIndices];
-}
+/////////////////////////////////////// ~~~~~~~~~~ END DATA RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////

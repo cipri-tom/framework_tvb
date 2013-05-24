@@ -77,7 +77,7 @@ var isNextDataLoaded = false;
 // <code>true</code> only if the next time data was loaded into memory
 var isNextTimeDataLoaded = false;
 // <code>true</code> only if the the process of loading a file is started
-var isLoadStarted = false;
+var AG_isLoadStarted = false;
 // this is the number of steps left before updating the next file
 var threshold = 10;
 // the amount of data that has passed
@@ -368,7 +368,7 @@ function submitSelectedChannels(isEndOfData) {
     // reset data
     nextData = [];
     nextTimeData = [];
-    isLoadStarted = false;
+    AG_isLoadStarted = false;
     isNextDataLoaded = false;
     isNextTimeDataLoaded = false;
     currentDataFileIndex = 0;
@@ -648,71 +648,144 @@ function loadEEGChartFromTimeStep(step) {
 	/*
 	 * Load the data from a given step and center plot around that step.
 	 */
+	// Read all data for the page in which the selected step falls into
 	var chunkForStep = Math.floor(step / dataPageSize);
-	$.ajax({
-        url: readDataPageURL(baseDataURLS[0], chunkForStep * dataPageSize, (chunkForStep + 1) * dataPageSize, tsStates[0], tsModes[0]),
-        async: false,
-        success: function(data) {
-        	data = $.parseJSON(data);
-            nextData = parseData(data, 0);
-        }
-    });
-    $.ajax({
-        url: timeSetUrls[0][chunkForStep],
-        async: false,
-        success: function(data) {
-            nextTimeData = $.parseJSON(data);
-            isNextTimeDataLoaded = true;
-        }
-    });
-    totalPassedData = chunkForStep * dataPageSize;
+	var dataUrl = readDataPageURL(baseDataURLS[0], chunkForStep * dataPageSize, (chunkForStep + 1) * dataPageSize, tsStates[0], tsModes[0]);
+	nextData = [parseData(HLPR_readJSONfromFile(dataUrl), 0)];
+    AG_allPoints = getDisplayedChannels(nextData[0], 0).slice(0);
+	AG_time = HLPR_readJSONfromFile(timeSetUrls[0][chunkForStep]).slice(0);
+	
+	totalPassedData = chunkForStep * dataPageSize;	// New passed data will be all data until the start of this page
+	currentDataFileIndex = chunkForStep;
     AG_displayedPoints = [];
-    AG_allPoints = getDisplayedChannels(nextData, 0).slice(0);
-	AG_time = nextTimeData.slice(0);
-	var indexInPage = step % dataPageSize;
-	var fromIdx = 0;
-	var toIdx = AG_numberOfVisiblePoints;
+	var indexInPage = step % dataPageSize;	// This is the index in the current page that step will have
+	var fromIdx, toIdx;
+	currentLinePosition = AG_numberOfVisiblePoints / 2; // Assume we are not end or beginning since that will be most of the times
 	if (indexInPage <= AG_numberOfVisiblePoints / 2) {
-		// We are at the beginning of the graph, line did not reach middle point yet, and we are still displaying the first
-		// AG_numberOfVisiblePoints values
-		fromIdx = 0;
-		toIdx = AG_numberOfVisiblePoints;
-		AG_currentIndex = AG_numberOfVisiblePoints;
-		currentLinePosition = indexInPage;
+		if (chunkForStep == 0) {
+			// We are at the beginning of the graph, line did not reach middle point yet, and we are still displaying the first
+			// AG_numberOfVisiblePoints values
+			AG_currentIndex = AG_numberOfVisiblePoints;
+			currentLinePosition = indexInPage;
+			prepareDisplayData(0, AG_numberOfVisiblePoints, AG_allPoints, AG_time);
+		} else {
+			// We are at an edge case between pages. So in order to have all the 
+			// AG_numberOfVisiblePoints we need to also load the points from before this page
+			addFromPreviousPage(indexInPage, chunkForStep);
+		}
 	} else {
-		if (indexInPage >= totalTimeLength - AG_numberOfVisiblePoints / 2) {
-			// We are at the end of the graph. The line is starting to move further right from the middle position. We are just
-			// displaying the last AG_numberOfVisiblePoints from the last page
-			if (AG_time.length > AG_numberOfVisiblePoints) {
-				fromIdx = AG_time.length - 1 - AG_numberOfVisiblePoints;
+		if (indexInPage >= pageSize - AG_numberOfVisiblePoints / 2) {
+			if (chunkForStep >= nrOfPagesSet[0] - 1) {
+				// We are at the end of the graph. The line is starting to move further right from the middle position. We are just
+				// displaying the last AG_numberOfVisiblePoints from the last page
+				if (AG_time.length > AG_numberOfVisiblePoints) {
+					fromIdx = AG_time.length - 1 - AG_numberOfVisiblePoints;
+				} else {
+					fromIdx = 0;
+				}
+				toIdx = AG_time.length - 1;
+				AG_currentIndex = toIdx;
+				currentLinePosition = AG_numberOfVisiblePoints - (AG_time.length - 1 - indexInPage); 
+				prepareDisplayData(fromIdx, toIdx, AG_allPoints, AG_time);
 			} else {
-				fromIdx = 0;
+				// We are at an edge case between pages. So in order to have all the 
+				// AG_numberOfVisiblePoints we need to also load the points from after this page
+				addFromNextPage(indexInPage, chunkForStep);
 			}
-			toIdx = AG_time.length - 1;
-			AG_currentIndex = toIdx;
-			currentLinePosition = AG_numberOfVisiblePoints - (AG_time.length - 1 - indexInPage); 
-			
 		} else {
 				// We are somewhere in the middle of the graph. 
 				fromIdx = indexInPage - AG_numberOfVisiblePoints / 2;
 				toIdx = indexInPage + AG_numberOfVisiblePoints / 2;
 				AG_currentIndex = toIdx;
-				currentLinePosition = AG_numberOfVisiblePoints / 2;
-				}
+				prepareDisplayData(fromIdx, toIdx, AG_allPoints, AG_time);
+			}
 	} 
 	
+    AG_isLoadStarted = false;
+    isNextDataLoaded = false;
+    isNextTimeDataLoaded = false;
+}
+
+
+function addFromPreviousPage(indexInPage, currentPage) {
+	/*
+	 * Add all required data to AG_displayedPoints and AG_displayedTimes in order to center
+	 * around indexInPage, if some of the required data is on the previous page.
+	 */
+	var previousPageUrl = readDataPageURL(baseDataURLS[0], (currentPage - 1) * dataPageSize, currentPage * dataPageSize, tsStates[0], tsModes[0]);
+	var previousData = parseData(HLPR_readJSONfromFile(previousPageUrl), 0);
+	previousData = getDisplayedChannels(previousData, 0).slice(0);
+	var previousTimeData = HLPR_readJSONfromFile(timeSetUrls[0][currentPage - 1]);
+	// Compute which slices we would need from the 'full' two-pages data.
+	// We only need the difference so to center indexInPage at AG_numberOfVisiblePoints / 2
+	fromIdx = previousData[0].length - (AG_numberOfVisiblePoints / 2 - indexInPage);  // This is from where we need to read from previous data
+	AG_currentIndex = toIdx = AG_numberOfVisiblePoints - (AG_numberOfVisiblePoints / 2 - indexInPage); // This is where we need to add from the current page
+	// Just generate displayed point and displayed times now
+	for (var idx = 0; idx < previousData.length; idx++) {
+			var oneLine = [];
+			// Push data that is from previos slice
+			for (var idy = fromIdx; idy < previousData[0].length; idy++) {
+				oneLine.push([previousTimeData[idy], AG_addTranslationStep(previousData[idx][idy], idx)])
+			}
+			// Now that that is from our current slice
+			for (var idy = 0; idy < toIdx; idy ++) {
+				oneLine.push([AG_time[idy], AG_addTranslationStep(AG_allPoints[idx][idy], idx)])
+			}
+			AG_displayedPoints.push(oneLine);
+		}
+	AG_displayedTimes = previousTimeData.slice(fromIdx).concat(AG_time.slice(0, toIdx));
+	previousData = null;
+	beforeTimeData = null;
+}
+
+
+function addFromNextPage(indexInPage, currentPage) {
+	/*
+	 * Add all required data to AG_displayedPoints and AG_displayedTimes in order to center
+	 * around indexInPage, if some of the required data is on the next page.
+	 */
+	var followingPageUrl = readDataPageURL(baseDataURLS[0], (currentPage + 1) * dataPageSize, (currentPage + 2) * dataPageSize, tsStates[0], tsModes[0]);
+	var followingData = parseData(HLPR_readJSONfromFile(followingPageUrl), 0);
+	followingData = getDisplayedChannels(followingData, 0).slice(0);
+	var followingTimeData = HLPR_readJSONfromFile(timeSetUrls[0][currentPage + 1]);
+	
+	fromIdx = indexInPage - (AG_numberOfVisiblePoints / 2);	// We need to read starting from here from the current page
+	AG_currentIndex = toIdx = fromIdx + AG_numberOfVisiblePoints - AG_allPoints[0].length;	// We need to read up to here from next page
 	for (var idx = 0; idx < AG_allPoints.length; idx++) {
 		var oneLine = [];
-		for (var idy = fromIdx; idy < toIdx; idy++) {
-			oneLine.push([ AG_time[idy], AG_addTranslationStep(AG_allPoints[idx][idy], idx) ])
+		// Push data that is from this slice
+		for (var idy = fromIdx; idy < AG_allPoints[0].length; idy++) {
+			oneLine.push([AG_time[idy], AG_addTranslationStep(AG_allPoints[idx][idy], idx) ])
+		}
+		// Now that that is from next slice
+		for (var idy = 0; idy < toIdx; idy ++) {
+			oneLine.push([followingTimeData[idy], AG_addTranslationStep(followingData[idx][idy], idx) ])
 		}
 		AG_displayedPoints.push(oneLine);
 	}
-	AG_displayedTimes = AG_time.slice(fromIdx, toIdx)
-    currentDataFileIndex = chunkForStep;
-    isLoadStarted = false;
-    isNextDataLoaded = false;
-    isNextTimeDataLoaded = false;
+	AG_displayedTimes = AG_time.slice(fromIdx).concat(followingTimeData.slice(0, toIdx));
+	// Since next page is already loaded, that becomes the current page
+	AG_allPoints = followingData;
+	AG_time = followingTimeData;
+	totalPassedData = (currentPage + 1) * dataPageSize;
+	currentDataFileIndex = currentPage + 1;
+	isNextDataLoaded = true;
+	isNextTimeDataLoaded = true;
+}
+
+
+function prepareDisplayData(fromIdx, toIdx, pointsArray, timeArray) {
+	/*
+	 * Just re-populate whole displayedPoints and displayedTimes given a start and end index.
+	 */
+	for (var idx = 0; idx < pointsArray.length; idx++) {
+		var oneLine = [];
+		for (var idy = fromIdx; idy < toIdx; idy++) {
+			oneLine.push([ timeArray[idy], AG_addTranslationStep(pointsArray[idx][idy], idx) ])
+		}
+		AG_displayedPoints.push(oneLine);
+	}
+	AG_displayedTimes = timeArray.slice(fromIdx, toIdx)
 }
 
 
@@ -720,7 +793,7 @@ function loadNextDataFile() {
 	/*
 	 * Read the next data file asyncronously. Also get the corresponding time data file.
 	 */
-    isLoadStarted = true;
+    AG_isLoadStarted = true;
     var nx_idx = getNextDataFileIndex();
     cachedFileIndex = nx_idx;
     AG_readFileDataAsynchronous(nrOfPagesSet, noOfChannelsPerSet, nx_idx, maxChannelLength, 0);
@@ -736,7 +809,7 @@ function changeCurrentDataFile() {
     	speed = $("#ctrl-input-speed").slider("option", "value");
     }
     if (cachedFileIndex != getNextDataFileIndex()) {
-        isLoadStarted = false;
+        AG_isLoadStarted = false;
         isNextDataLoaded = false;
         isNextTimeDataLoaded = false;
         nextData = [];
@@ -766,7 +839,7 @@ function changeCurrentDataFile() {
     AG_time = nextTimeData.slice(0);
     nextTimeData = [];
     currentDataFileIndex = getNextDataFileIndex();
-    isLoadStarted = false;
+    AG_isLoadStarted = false;
     isNextDataLoaded = false;
     isNextTimeDataLoaded = false;
 
@@ -776,7 +849,7 @@ function changeCurrentDataFile() {
 }
 
 function shouldLoadNextDataFile() {
-    if (!isLoadStarted && maxDataFileIndex > 0) {
+    if (!AG_isLoadStarted && maxDataFileIndex > 0) {
         var nextFileIndex = getNextDataFileIndex();
         var speed = 1; // Assume left to right pass of data
         if (isSmallPreview == false && !isDoubleView) {
