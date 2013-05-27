@@ -410,7 +410,7 @@ function shouldMoveLine(direction, shiftNo) {
 	if (direction == 1) {
 		isEndOfGraph = ((totalPassedData + AG_currentIndex + noOfShiftedPoints >= totalTimeLength) && (currentLinePosition < AG_numberOfVisiblePoints + shiftNo));	
 		isStartOfGraph = (currentLinePosition < targetVerticalLinePosition);		
-		if (AG_displayedTimes[currentLinePosition] >= AG_displayedPoints[longestChannelIndex][AG_displayedPoints[longestChannelIndex].length - 1][0]) {
+		if (AG_displayedTimes[currentLinePosition] > AG_displayedPoints[longestChannelIndex][AG_displayedPoints[longestChannelIndex].length - 1][0]) {
 	    	isEndOfGraph = false;
 	    }
 	} else {
@@ -494,7 +494,7 @@ function drawGraph(executeShift, shiftNo) {
 	    currentLinePosition = currentLinePosition + noOfShiftedPoints * direction;	
     }
 
-    if (currentLinePosition >= AG_numberOfVisiblePoints + noOfShiftedPoints) {
+    if (currentLinePosition >= AG_numberOfVisiblePoints) {
         isEndOfData = true;
     }
 
@@ -652,8 +652,8 @@ function loadEEGChartFromTimeStep(step) {
 	// Read all data for the page in which the selected step falls into
 	var chunkForStep = Math.floor(step / dataPageSize);
 	var dataUrl = readDataPageURL(baseDataURLS[0], chunkForStep * dataPageSize, (chunkForStep + 1) * dataPageSize, tsStates[0], tsModes[0]);
-	nextData = [parseData(HLPR_readJSONfromFile(dataUrl), 0)];
-    AG_allPoints = getDisplayedChannels(nextData[0], 0).slice(0);
+	var dataPage = [parseData(HLPR_readJSONfromFile(dataUrl), 0)];
+    AG_allPoints = getDisplayedChannels(dataPage[0], 0).slice(0);
 	AG_time = HLPR_readJSONfromFile(timeSetUrls[0][chunkForStep]).slice(0);
 	
 	totalPassedData = chunkForStep * dataPageSize;	// New passed data will be all data until the start of this page
@@ -701,7 +701,7 @@ function loadEEGChartFromTimeStep(step) {
 				prepareDisplayData(fromIdx, toIdx, AG_allPoints, AG_time);
 			}
 	} 
-	
+	nextData = [];
     AG_isLoadStarted = false;
     isNextDataLoaded = false;
     isNextTimeDataLoaded = false;
@@ -925,7 +925,7 @@ function AG_readFileDataAsynchronous(nrOfPages, noOfChannelsPerSet, currentFileI
         channelLengths = []
         return;
     }
-    if (nrOfPages[dataSetIndex] - 1 < currentFileIndex) {
+    if (nrOfPages[dataSetIndex] - 1 < currentFileIndex && AG_isLoadStarted) {
         var oneChannel = [];
         for (var i = 0; i < maxChannelLength; i++) {
             oneChannel.push(0);
@@ -939,12 +939,14 @@ function AG_readFileDataAsynchronous(nrOfPages, noOfChannelsPerSet, currentFileI
         $.ajax({
             url: readDataPageURL(baseDataURLS[dataSetIndex], currentFileIndex * dataPageSize, (currentFileIndex + 1) * dataPageSize, tsStates[dataSetIndex], tsModes[dataSetIndex]),
             success: function(data) {
-            	data = $.parseJSON(data);
-                var result = parseData(data, dataSetIndex);
-                // nextData = nextData.concat(result);
-                nextData.push(result);
-
-                AG_readFileDataAsynchronous(nrOfPages, noOfChannelsPerSet, currentFileIndex, maxChannelLength, dataSetIndex + 1);
+            	if (AG_isLoadStarted) {
+            		data = $.parseJSON(data);
+	                var result = parseData(data, dataSetIndex);
+	                // nextData = nextData.concat(result);
+	                nextData.push(result);
+	
+	                AG_readFileDataAsynchronous(nrOfPages, noOfChannelsPerSet, currentFileIndex, maxChannelLength, dataSetIndex + 1);
+            	}
             }
         });
     }

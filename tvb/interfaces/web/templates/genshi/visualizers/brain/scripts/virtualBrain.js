@@ -677,7 +677,8 @@ function drawScene() {
 	        if (shouldIncrementTime) {
 	            currentTimeValue = currentTimeValue + TIME_STEP;
 	        }
-	        if (currentTimeValue > MAX_TIME_STEP) {
+	        if (currentTimeValue + TIME_STEP >= MAX_TIME_STEP) {
+	        	// Next time value is no longer in activity data.
 	            currentTimeValue = 0;
 	            totalPassedActivitiesData = 0;
 	        }
@@ -803,7 +804,7 @@ function loadFromTimeStep(step) {
 	 * Load the brainviewer from this given time step.
 	 */
 	showBlockerOverlay(500);
-	step = step - step % TIME_STEP; // Set time to be multiple of step
+	step = step - step % TIME_STEP + TIME_STEP; // Set time to be multiple of step
 	var chunkForStep = Math.floor(step / pageSize);
 	currentActivitiesFileIndex = chunkForStep; // Decrease one since changeCurrentActivities will automatically increase
 	var nextUrl = getCurrentActivitiesUrl();
@@ -834,7 +835,11 @@ function refreshCurrentDataSlice() {
 	activitiesData = nextActivitiesFileData.slice(0);
     nextActivitiesFileData = null;
     currentActivitiesFileLength = activitiesData.length * TIME_STEP;
-    currentTimeValue = currentTimeValue - currentTimeValue % TIME_STEP;
+    currentTimeValue = currentTimeValue - currentTimeValue % TIME_STEP + TIME_STEP;
+    // Also sync eeg monitor if in double view
+	if (isDoubleView) {
+		loadEEGChartFromTimeStep(currentTimeValue);
+	}
 	closeBlockerOverlay();
 }
 
