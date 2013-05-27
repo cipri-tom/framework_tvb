@@ -211,6 +211,15 @@ class ProjectService:
                         datatype = dao.get_datatype_by_id(datatype_group.id)
                         result["datatype_group_gid"] = datatype.gid
                         result["gid"] = operation_group.gid
+
+                        algo = self.retrieve_launchers("DataTypeGroup", datatype.gid).values()[0]
+                        view_groups = []
+                        for algo in algo.values():
+                            view_groups.append(dict(name=algo["displayName"],
+                                                    url='/flow/' + str(algo['category']) + '/' + str(algo['id']),
+                                                    param_name=algo['children'][0]['param_name']))
+                        result["view_groups"] = view_groups
+
                     except Exception, excep:
                         self.logger.error(excep)
                         self.logger.warning("Will ignore group on entity:" + str(one_op))

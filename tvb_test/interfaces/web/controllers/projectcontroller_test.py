@@ -27,34 +27,37 @@
 #   Frontiers in Neuroinformatics (in press)
 #
 #
+
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import unittest
 import cherrypy
 from sqlalchemy.orm.exc import NoResultFound
 import tvb.interfaces.web.controllers.basecontroller as b_c
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.project.projectcontroller import ProjectController
-from tvb.basic.config.settings import TVBSettings as cfg
 from tvb_test.core.base_testcase import TransactionalTestCase
 from tvb_test.interfaces.web.controllers.basecontroller_test import BaseControllersTest
 from tvb_test.core.test_factory import TestFactory
 from tvb_test.datatypes.datatypes_factory import DatatypesFactory
 
 
+
 class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
     """ Unit tests for burstcontroller """
-    
+
+
     def setUp(self):
         BaseControllersTest.init(self)
-        self.project_c =  ProjectController()
-    
-    
+        self.project_c = ProjectController()
+
+
     def tearDown(self):
         BaseControllersTest.cleanup(self)
-            
-            
+
+
     def test_index_no_project(self):
         """
         Index with no project selected should redirect to viewall page.
@@ -78,22 +81,21 @@ class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
         project1 = TestFactory.create_project(self.test_user, 'prj1')
         TestFactory.create_project(self.test_user, 'prj2')
         TestFactory.create_project(self.test_user, 'prj3')
-        result = self.project_c.viewall(selected_project_id = project1.id)
+        result = self.project_c.viewall(selected_project_id=project1.id)
         projects_list = result['projectsList']
-        self.assertEqual(set([prj.name for prj in projects_list]), 
-                         set(['prj1', 'prj2', 'prj3', 'Test']))
+        self.assertEqual(set([prj.name for prj in projects_list]), {'prj1', 'prj2', 'prj3', 'Test'})
         self.assertEqual(result['page_number'], 1)
         self.assertEqual(result[b_c.KEY_PROJECT].name, 'prj1')
 
-        
+
     def test_viewall_invalid_projectid(self):
         """
         Try to pass on an invalid id for the selected project.
         """
-        result = self.project_c.viewall(selected_project_id = 'invalid')
+        result = self.project_c.viewall(selected_project_id='invalid')
         self.assertEqual(result[b_c.KEY_MESSAGE_TYPE], b_c.TYPE_ERROR)
         self.assertEqual(result[b_c.KEY_PROJECT].id, self.test_project.id)
-        
+
 
     def test_viewall_post_create(self):
         """
@@ -109,34 +111,33 @@ class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
         """
         cherrypy.request.method = "POST"
         self._expect_redirect('/project', self.project_c.editone, cancel=True)
-        
-        
+
+
     def test_editone_remove(self):
         """
         Test that a project is indeed deleted.
         """
         cherrypy.request.method = "POST"
-        self._expect_redirect('/project/viewall', self.project_c.editone, 
+        self._expect_redirect('/project/viewall', self.project_c.editone,
                               self.test_project.id, delete=True)
         self.assertRaises(NoResultFound, dao.get_project_by_id, self.test_project.id)
-        
-            
+
+
     def test_editone_create(self):
         """
         Create a new project using the editone page.
         """
-        data = dict(name = "newly_created",
-                    description = "Some test descript.",
-                    users = [],
-                    administrator = self.test_user.username,
-                    visited_pages = None,
-                    )
+        data = dict(name="newly_created",
+                    description="Some test descript.",
+                    users=[],
+                    administrator=self.test_user.username,
+                    visited_pages=None)
         cherrypy.request.method = "POST"
-        self._expect_redirect('/project/viewall', self.project_c.editone, save=True, **data)             
-        projects = dao.get_projects_for_user(self.test_user.id)    
+        self._expect_redirect('/project/viewall', self.project_c.editone, save=True, **data)
+        projects = dao.get_projects_for_user(self.test_user.id)
         self.assertEqual(len(projects), 2)
-        
-        
+
+
     def test_getmemberspage(self):
         """
         Get the first page of the members page.
@@ -148,9 +149,9 @@ class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
         self.assertEqual(result['usersMembers'], [])
         # Same users as before should be available since we created new one
         # as owned for the project.
-        self.assertEqual(len(result['usersList']), users_count) 
-        
-    
+        self.assertEqual(len(result['usersList']), users_count)
+
+
     def test_set_visibility_datatype(self):
         """
         Set datatype visibility to true and false and check results are updated.
@@ -163,8 +164,8 @@ class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
         self.project_c.set_visibility('datatype', datatype.gid, 'True')
         datatype = dao.get_datatype_by_gid(datatype.gid)
         self.assertTrue(datatype.visible)
-    
-    
+
+
     def test_set_visibility_operation(self):
         """
         Same flow of operations as per test_set_visibilty_datatype just for
@@ -179,22 +180,22 @@ class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
         self.project_c.set_visibility('operation', operation.gid, 'True')
         operation = dao.get_operation_by_gid(operation.gid)
         self.assertTrue(operation.visible)
-    
-    
+
+
     def test_viewoperations(self):
         """ 
         Test the viewoperations from projectcontroller.
         """
-        operation = TestFactory.create_operation(test_user=self.test_user, 
+        operation = TestFactory.create_operation(test_user=self.test_user,
                                                  test_project=self.test_project)
         result_dict = self.project_c.viewoperations(self.test_project.id)
         operation_list = result_dict['operationsList']
         self.assertEqual(len(operation_list), 1)
         self.assertEqual(operation_list[0]['id'], str(operation.id))
-        self.assertTrue('viewGroupParam' in result_dict)
-        self.assertTrue('viewGroupURL' in result_dict)
-        
-        
+        self.assertTrue('no_filter_selected' in result_dict)
+        self.assertTrue('total_op_count' in result_dict)
+
+
     def test_get_datatype_details(self):
         """
         Check for various field in the datatype details dictionary.
@@ -206,8 +207,8 @@ class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
         self.assertFalse(dt_details['isGroup'])
         self.assertTrue(dt_details['isRelevant'])
         self.assertEqual(len(dt_details['overlay_indexes']), len(dt_details['overlay_tabs']))
-    
-    
+
+
     def test_get_linkable_projects(self):
         """
         Test get linkable project, no projects linked so should just return none.
@@ -216,12 +217,12 @@ class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
         result_dict = self.project_c.get_linkable_projects(datatype.id, False, False)
         self.assertTrue(result_dict['projectslinked'] is None)
         self.assertEqual(result_dict['datatype_id'], datatype.id)
-        
-        
+
+
     def test_get_operation_details(self):
         """
         """
-        operation = TestFactory.create_operation(test_user=self.test_user, 
+        operation = TestFactory.create_operation(test_user=self.test_user,
                                                  test_project=self.test_project,
                                                  parameters='{"test" : "test"}')
         result_dict = self.project_c.get_operation_details(operation.gid)
@@ -232,12 +233,12 @@ class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
         self.assertEqual(operation_dict['count']['value'], 1)
         self.assertEqual(operation_dict['gid']['value'], operation.gid)
         self.assertEqual(operation_dict['operation_id']['value'], operation.id)
-    
-    
+
+
     def test_editstructure_invalid_proj(self):
         self._expect_redirect('/project', self.project_c.editstructure, None)
-    
-    
+
+
     def test_editproject_valid(self):
         """
         Pass valid project to edit structure and check some entries from result dict.
@@ -256,12 +257,13 @@ class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
         cherrypy.session[b_c.KEY_USER] = dt_factory.user
         datatype = dt_factory.create_datatype_with_storage()
         result = self.project_c.readprojectsforlink(datatype.id)
-        self.assertTrue(result is None) #No projects to link into
+        self.assertTrue(result is None)     # No projects to link into
         new_project = TestFactory.create_project(dt_factory.user)
         result = self.project_c.readprojectsforlink(datatype.id)
-        self.assertEqual(result, '{"%s": "%s"}'%(new_project.id, new_project.name))
+        self.assertEqual(result, '{"%s": "%s"}' % (new_project.id, new_project.name))
 
-            
+
+
 def suite():
     """
     Gather all the tests in a test suite.
@@ -269,6 +271,7 @@ def suite():
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(ProjectContollerTest))
     return test_suite
+
 
 
 if __name__ == "__main__":

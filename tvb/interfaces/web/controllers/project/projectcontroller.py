@@ -283,25 +283,14 @@ class ProjectController(bc.BaseController):
 
         page = int(page)
         project, total_op_count, filtered_ops, pages_no = self.project_service.retrieve_project_full(project_id,
-                                                                                                     selected_filters,
-                                                                                                     page)
+                                                                                                selected_filters, page)
         ## Select current project
         self._mark_selected(project)
-        group_url = ''
-        group_param = ''
-        try:
-            algo = self.project_service.retrieve_launchers("DataTypeGroup").values()[0]
-            algo = algo.values()[0]
-            group_url = self.get_url_adapter(algo['category'], algo['id'])
-            group_param = algo['children'][0]['param_name']
-        except Exception, excep:
-            self.logger.warning(str(excep))
+
         template_specification = dict(mainContent="project/viewoperations", project=project,
-                                      operationsList=filtered_ops,
+                                      title='Past operations for " ' + project.name + '"', operationsList=filtered_ops,
                                       total_op_count=total_op_count, total_pages=pages_no, page_number=page,
-                                      title='Past operations for " ' + project.name + '"', viewGroupURL=group_url,
-                                      viewGroupParam=group_param, filters=filters,
-                                      no_filter_selected=(selected_filters is None))
+                                      filters=filters, no_filter_selected=(selected_filters is None))
         return self.fill_default_attributes(template_specification, 'operations')
 
 
