@@ -627,7 +627,10 @@ class ProjectController(bc.BaseController):
             available_launchers = algorithms[category]
             for launcher in available_launchers:
                 info = available_launchers[launcher]
-                info['url'] = self.get_url_adapter(info['category'], info['id'])
+                if info['part_of_group'] is False:
+                    info['url'] = self.get_url_adapter(info['category'], info['id'])
+                else:
+                    info['url'] = '/flow/prepare_group_launch/' + datatype_gid + '/' + str(info['category']) + '/' + str(info['id'])
         return algorithms
 
 

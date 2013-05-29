@@ -217,6 +217,14 @@ function _webGLStart(baseDatatypeURL, onePageSize, nrOfPages, urlTimeList, urlVe
 	    }
 	    document.getElementById("Infobox").innerHTML = "";
 	}
+	if (!isDoubleView) {
+		canvasX = document.getElementById('brain-x');
+    	if (canvasX) canvasX.onmousedown = handleXLocale;
+	    canvasY = document.getElementById('brain-y');
+	    if (canvasY) canvasY.onmousedown = handleYLocale;
+	    canvasZ = document.getElementById('brain-z');
+	    if (canvasZ) canvasZ.onmousedown = handleZLocale;
+	}
     // Specify the re-draw function.
     setInterval(tick, TICK_STEP);
 }

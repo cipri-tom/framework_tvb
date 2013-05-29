@@ -415,6 +415,29 @@ function doLaunch(visualizer_url, param_name, data_gid, param_algo, algo_ident, 
 	document.body.removeChild(myForm);
 }
 
+/**
+ * Launch from DataType overlay an analysis or a visualize algorithm.
+ */
+function doGroupLaunch(visualizer_url, param_name, param_algo, algo_ident) {
+	
+	var myForm = document.createElement("form");
+	myForm.method="POST" ;
+	myForm.action = visualizer_url;
+	var myInput = document.createElement("input");
+	myInput.setAttribute("name", 'range_param_name');
+	myInput.setAttribute("value", param_name);
+	myForm.appendChild(myInput);
+	if (param_algo != ''){
+		var myInput = document.createElement("input");
+		myInput.setAttribute("name", param_algo);
+		myInput.setAttribute("value", algo_ident);
+		myForm.appendChild(myInput);
+	}
+	document.body.appendChild(myForm);
+	myForm.submit();
+	document.body.removeChild(myForm);
+}
+
 
 /**
  * Called when the visibility filter is changed.

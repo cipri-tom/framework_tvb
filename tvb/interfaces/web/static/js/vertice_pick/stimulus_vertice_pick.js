@@ -295,7 +295,7 @@ function drawScene() {
 		 * 	mouse over). Here we can afford to update the 2D slices because performance is
 		 * not that much of an issue.
 		 */
-		BASE_PICK_drawSlices();
+		// BASE_PICK_drawSlices();
 		BASE_PICK_drawBrain(BASE_PICK_brainDisplayBuffers, noOfUnloadedBrainDisplayBuffers);
 	}
 }

@@ -17,9 +17,16 @@
 						<py:with vars="ident = '' if algo['ident'] is None else algo['ident'];
 	                                   name = algo['name']; paramName = algo['param_name'];
 	                                   linkLabel = name if algoName != '' else  displayName">
-							<button class="action action-$category $category-${linkLabel.lower().replace(' ','')}" onclick="doLaunch('$url', '$paramName', '$entity_gid' , '$algoName', '$ident', '$backPageIdentifier');">
-								$linkLabel
-							</button>
+	                        <py:if test="not algo_group.get('part_of_group', False)">
+	                        	<button class="action action-$category $category-${linkLabel.lower().replace(' ','')}" onclick="doLaunch('$url', '$paramName', '$entity_gid' , '$algoName', '$ident', '$backPageIdentifier');">
+									$linkLabel
+								</button>
+	                        </py:if>
+	                        <py:if test="algo_group.get('part_of_group', False)">
+	                        	<button class="action action-$category $category-${linkLabel.lower().replace(' ','')}" onclick="doGroupLaunch('$url', '$paramName', '$algoName', '$ident');">
+									$linkLabel
+								</button>
+	                        </py:if>
 						</py:with>
 					</li>
 				</ul>

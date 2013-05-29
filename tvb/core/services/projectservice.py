@@ -663,16 +663,21 @@ class ProjectService:
 
 
     @staticmethod
-    def retrieve_launchers(dataname, datatype_gid=None):
+    def retrieve_launchers(dataname, datatype_gid=None, inspect_group=False):
         """
         Returns all the available launch-able algorithms from the database.
         Filter the ones accepting as required input a specific DataType.
         """
         launch_categ = dao.get_launchable_categories()
         launch_categ = dict((categ.id, categ.displayname) for categ in launch_categ)
+        if inspect_group:
+            # Me might want to exclude views from launchers (e.g. for groups where only mass analysis makes sense)
+            views_categ_id = dao.get_visualisers_categories()[0].id
+            if views_categ_id in launch_categ:
+                del launch_categ[views_categ_id]
         launch_groups = dao.get_apliable_algo_groups(dataname, launch_categ.keys())
         if datatype_gid is None:
-            return ProjectService.__prepare_group_result(launch_groups, launch_categ)
+            return ProjectService.__prepare_group_result(launch_groups, launch_categ, inspect_group)
         try:
             datatype_instance = dao.get_datatype_by_gid(datatype_gid)
             data_class = datatype_instance.__class__
@@ -693,15 +698,27 @@ class ProjectService:
             for one_group in to_remove:
                 launch_groups.remove(one_group)
                 del one_group
-            return ProjectService.__prepare_group_result(launch_groups, launch_categ)
+            launchers = ProjectService.__prepare_group_result(launch_groups, launch_categ, inspect_group)
+            if dataname == model.DataTypeGroup.__name__:
+                # If part of a group, update also with specific launchers of that datatype
+                dt_group = dao.get_datatype_group_by_gid(datatype_gid)
+                datatype = dao.get_datatypes_from_datatype_group(dt_group.id)[-1]
+                datatype = dao.get_datatype_by_gid(datatype.gid)
+                specific_launchers = ProjectService.retrieve_launchers(datatype.__class__.__name__, datatype.gid, True)
+                for key in specific_launchers:
+                    if key in launchers:
+                        launchers[key].update(specific_launchers[key])
+                    else:
+                        launchers[key] = specific_launchers[key]
+            return launchers
         except Exception, excep:
             ProjectService().logger.exception(excep)
             ProjectService().logger.warning("Attempting to filter launcher  for group despite exception!")
-            return ProjectService.__prepare_group_result(launch_groups, launch_categ)
+            return ProjectService.__prepare_group_result(launch_groups, launch_categ, inspect_group)
 
 
     @staticmethod
-    def __prepare_group_result(launch_groups, launch_categ):
+    def __prepare_group_result(launch_groups, launch_categ, inspect_group):
         """Prepare data result format for display."""
         result = dict()
         for group in launch_groups:
@@ -711,7 +728,8 @@ class ProjectService:
             result[category][group.id] = {'id': group.id,
                                           'displayName': group.displayname,
                                           'category': group.fk_category,
-                                          'algo_param': group.algorithm_param_name}
+                                          'algo_param': group.algorithm_param_name,
+                                          'part_of_group' : inspect_group}
             childs = []
             for one_child in group.children:
                 childs.append({'ident': one_child.identifier,

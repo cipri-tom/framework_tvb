@@ -100,20 +100,6 @@ function NAV_initBrainNavigatorBuffers() {
 	}
 }
 
-
-function NAV_switchMouseControl() {
-    NAV_isMouseControlOverBrain = !NAV_isMouseControlOverBrain;
-    if (NAV_isMouseControlOverBrain) {
-        $('#ctrl-action-navigate').text("Navigator");
-        _redrawSectionView = true;
-    } else {
-        $('#ctrl-action-navigate').text("Brain");
-        GL_currentRotationMatrix = Matrix.I(4);
-        GL_zTranslation = GL_DEFAULT_Z_POS;
-        GL_zoomSpeed = 0;
-    }
-}
-
 function NAV_setInTimeRefresh(checkbox) {
 	_inTimeRefreshCheckbox = checkbox;
 	if (checkbox.checked) {

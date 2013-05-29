@@ -263,7 +263,7 @@ class SimulatorAdapter(ABCAsynchronous):
 
         #### Create Simulator State entity and persist it in DB. H5 file will be empty now.
         simulation_state = SimulationState(storage_path=self.storage_path)
-        self._capture_operation_results([simulation_state])
+        self._capture_operation_results([simulation_state], append_to_group=False)
 
         ### Run simulation
         self.log.debug("%s: Starting simulation..." % str(self))
@@ -276,7 +276,7 @@ class SimulatorAdapter(ABCAsynchronous):
         self.log.debug("%s: Completed simulation, starting to store simulation state " % str(self))
         ### Populate H5 file for simulator state. This step could also be done while running sim, in background.
         simulation_state.populate_from(self.algorithm)
-        self._capture_operation_results([simulation_state])
+        self._capture_operation_results([simulation_state], append_to_group=False)
 
         self.log.debug("%s: Simulation state persisted, returning results " % str(self))
         final_results = []

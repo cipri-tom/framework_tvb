@@ -190,6 +190,17 @@ class OperationService:
                     values_str = values_str + " " + str(val)
             values = values_str
         return str(values).lstrip().rstrip()
+    
+    
+    def group_operation_launch(self, user_id, project_id, adapter_id, category_id, **kwargs):
+        """
+        Create and prepare the launch of a group of operations.
+        """
+        category = dao.get_category_by_id(category_id)
+        algorithm = dao.get_algorithm_by_id(adapter_id)
+        operations, _ = self.prepare_operations(user_id, project_id, algorithm, category, {}, **kwargs)
+        for operation in operations:
+            self.launch_operation(operation.id, True)
 
 
     def prepare_operations(self, user_id, project_id, algorithm, category, metadata,

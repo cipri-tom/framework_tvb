@@ -46,7 +46,7 @@ from tvb.datatypes.arrays import MappedArray
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.exceptions import OperationException
-from tvb.core.services.operationservice import OperationService
+from tvb.core.services.operationservice import OperationService, PARAM_RANGE_1
 from tvb.core.services.projectservice import ProjectService
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 from tvb.interfaces.web.controllers.userscontroller import logged
@@ -162,6 +162,31 @@ class FlowController(base.BaseController):
             back_page_link = '/project/editstructure/' + str(project.id)
         return back_page_link
 
+
+    @cherrypy.expose
+    @base.settings()
+    @logged()
+    @context_selected()
+    @using_template('base_template')
+    def prepare_group_launch(self, group_gid, step_key, adapter_key, **data):
+        """
+        Recieves as input a group gid and an algorithm given by category and id, along 
+        with data that gives the name of the required input parameter for the algorithm.
+        Having these generate a range of gid's for all the datatypes in the group and
+        launch a new operation group.
+        """
+        prj_service = ProjectService()
+        dt_group = prj_service.get_datatypegroup_by_gid(group_gid)
+        datatypes = prj_service.get_datatypes_from_datatype_group(dt_group.id)
+        range_param_name = data['range_param_name']
+        del data['range_param_name']
+        data[PARAM_RANGE_1] = range_param_name
+        data[range_param_name] = ','.join([dt.gid for dt in datatypes])
+        OperationService().group_operation_launch(base.get_logged_user().id, base.get_current_project().id, 
+                                                  int(adapter_key), int(step_key), **data)
+        redirect_url = self._compute_back_link('operations', base.get_current_project())
+        raise cherrypy.HTTPRedirect(redirect_url)
+    
 
     @cherrypy.expose
     @using_template('base_template')

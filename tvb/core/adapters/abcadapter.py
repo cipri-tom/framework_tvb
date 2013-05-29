@@ -280,7 +280,7 @@ class ABCAdapter(object):
         return self._capture_operation_results(result, uid)
 
 
-    def _capture_operation_results(self, result, unique_id=None):
+    def _capture_operation_results(self, result, unique_id=None, append_to_group=True):
         """
          After an operation was finished, make sure the results are stored 
         in DB storage and the correct meta-data,IDs are set.
@@ -291,7 +291,7 @@ class ABCAdapter(object):
         if operation.user_group is None or len(operation.user_group) == 0:
             operation.user_group = date2string(datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
             operation = dao.store_entity(operation)
-        if operation.fk_operation_group is not None:
+        if operation.fk_operation_group is not None and append_to_group:
             data_type_group_id = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group).id
         # All entities will have the same subject and state
         subject = self.meta_data[DataTypeMetaData.KEY_SUBJECT]
@@ -325,7 +325,7 @@ class ABCAdapter(object):
         del result[0:len(result)]
         result.extend(results_to_store)
 
-        if len(result) and operation.fk_operation_group is not None:
+        if len(result) and operation.fk_operation_group is not None and append_to_group:
             ## Update the operation group name
             operation_group = dao.get_operationgroup_by_id(operation.fk_operation_group)
             operation_group.fill_operationgroup_name(result[0].type)

@@ -40,7 +40,7 @@ function EX_initializeChannels() {
             EX_changeColorBufferForMeasurePoint(index, this.checked);
         });
         $("#refreshChannelsButton").click(function() {
-        	resetBrainToStart();
+        	initActivityData();
         });
     }
 };
@@ -58,20 +58,4 @@ function EX_changeColorBufferForMeasurePoint(measurePointIndex, isPicked) {
     var colorBufferIndex = measurePointsBuffers[measurePointIndex].length - 1;
     measurePointsBuffers[measurePointIndex][colorBufferIndex] = createColorBufferForCube(isPicked);
 }
-
-
-/**
- * Internal method, to reset all variable, for the Brain visualizer activity to be started from 0.
- */
-function resetBrainToStart() {
-	currentTimeInFrame = 0;
-	if (activitiesDataUrls.length > 0) {
-        //read the first file
-        activitiesData = HLPR_readJSONfromFile(activitiesDataUrls[0]);
-        currentActivitiesFileIndex = 0;
-        currentActivitiesFileLength = activitiesData.length;
-        totalPassedActivitiesData = 0;
-    }
-}
-
 
