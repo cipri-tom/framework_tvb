@@ -396,9 +396,14 @@ class ProjectController(bc.BaseController):
         if "Export" not in exclude_tabs:
             tabs.append(OverlayTabDefinition("Export", "export", enabled=(exporters and len(exporters) > 0)))
             overlay_indexes.append(4)
+        if "Resulted Datatypes" not in exclude_tabs:
+            tabs.append(OverlayTabDefinition("Resulted Datatypes", "result_dts", 
+                                             enabled=self.project_service.count_datatypes_generated_from(entity_gid)))
+            overlay_indexes.append(5)
         template_specification = self.fill_overlay_attributes(template_specification, "DataType Details",
                                                               overlay_title, "project/details_datatype_overlay",
                                                               overlay_class, tabs, overlay_indexes)
+        template_specification['baseUrl'] = cfg.BASE_URL
         #template_specification[bc.KEY_OVERLAY_PAGINATION] = True
         #template_specification[bc.KEY_OVERLAY_PREVIOUS] = "alert(1);"
         #template_specification[bc.KEY_OVERLAY_NEXT] = "alert(2);"

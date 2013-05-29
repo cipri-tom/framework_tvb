@@ -1,7 +1,9 @@
 <div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
 	
+	<script type="text/javascript" src="/static/jquery/jquery.jstree.js?4266"></script>
+	
 	<py:with vars="tab_names = [tab.name for tab in overlay_tabs]">
-
+		
 		<!-- Overlay: Metadata -->
 		<section id="overlayTabContent_0" class="node-data node-metadata active">
 			<xi:include href="details_operation_overlay.html"/>
@@ -68,6 +70,22 @@
 				</li>
 			</ul>
 			<label py:if="not exporters">No exporters are currently available for this DataType.</label>
+		</section>
+		
+		<!-- Overlay: Data Exporters -->
+		<section id="overlayTabContent_5" class="node-data node-chain-dts ">
+			<div id="div-burst-tree">
+				<input type="hidden" id="levelTree_1" value="Data_State"/>
+				<input type="hidden" id="levelTree_2" value="Data_Subject"/>
+				<input type="hidden" id="filterInput" value=""/>
+				<div id="tree4"></div>
+				<script type="text/javascript">
+					$(document).ready(function() { 
+						   var filterValue = {'type' : 'from_datatype', 'value' : '$entity_gid'};
+                           updateTree('${selectedProject.id}', '${baseUrl}', JSON.stringify(filterValue));
+						})
+				</script>
+			</div>
 		</section>
         
     </py:with>

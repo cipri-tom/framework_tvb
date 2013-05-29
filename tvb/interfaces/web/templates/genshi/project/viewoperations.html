@@ -22,9 +22,19 @@
 					<mark>${operation_row['count']} operations</mark>
 					<p>Group ${operation_row['group']}</p>
 					
-					<a href="#" title="Go view the diagram" class="action action-crosslink crosslink-s-project crosslink-ss-stray" tabindex="-1"
-                       onclick="doLaunch('$view_group.url','$view_group.param_name', '${operation_row['datatype_group_gid']}', '', '','operations')"
-                       py:for="view_group in operation_row.view_groups">$view_group.name</a>
+					
+					<py:for each="view_group in operation_row.view_groups">
+						<py:if test="not view_group.get('part_of_group', False)">
+                        	<a href="#" title="Go view the diagram" class="action action-crosslink crosslink-s-project crosslink-ss-stray" tabindex="-1"
+                       				onclick="doLaunch('$view_group.url','$view_group.param_name', '${operation_row['datatype_group_gid']}', '', '','operations')">
+                       		$view_group.name</a>
+                        </py:if>
+                        <py:if test="view_group.get('part_of_group', False)">
+                        	<a href="#" title="Go view the diagram" class="action action-crosslink crosslink-s-project crosslink-ss-stray" tabindex="-1"
+                       				onclick="doGroupLaunch('$view_group.url','$view_group.param_name', '', '')">
+                       		$view_group.name</a>
+                        </py:if>
+					</py:for>
 				</div>
 			</div>
 		</nav>

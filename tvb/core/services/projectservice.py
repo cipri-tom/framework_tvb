@@ -211,13 +211,21 @@ class ProjectService:
                         datatype = dao.get_datatype_by_id(datatype_group.id)
                         result["datatype_group_gid"] = datatype.gid
                         result["gid"] = operation_group.gid
-
-                        algo = self.retrieve_launchers("DataTypeGroup", datatype.gid).values()[0]
+                        
+                        all_categs = dao.get_algorithm_categories()
+                        view_categ = dao.get_visualisers_categories()[0]
+                        excludes = [categ.id for categ in all_categs if categ.id != view_categ.id]
+                        algo = self.retrieve_launchers("DataTypeGroup", datatype.gid, exclude_categories=excludes).values()[0]
+                        
                         view_groups = []
                         for algo in algo.values():
+                            url = '/flow/' + str(algo['category']) + '/' + str(algo['id'])
+                            if algo['part_of_group']:
+                                url = '/flow/prepare_group_launch/' + datatype.gid + '/' + str(algo['category']) + '/' + str(algo['id'])
                             view_groups.append(dict(name=algo["displayName"],
-                                                    url='/flow/' + str(algo['category']) + '/' + str(algo['id']),
-                                                    param_name=algo['children'][0]['param_name']))
+                                                    url=url,
+                                                    param_name=algo['children'][0]['param_name'],
+                                                    part_of_group=algo['part_of_group']))
                         result["view_groups"] = view_groups
 
                     except Exception, excep:
@@ -663,18 +671,14 @@ class ProjectService:
 
 
     @staticmethod
-    def retrieve_launchers(dataname, datatype_gid=None, inspect_group=False):
+    def retrieve_launchers(dataname, datatype_gid=None, inspect_group=False, exclude_categories=None):
         """
         Returns all the available launch-able algorithms from the database.
         Filter the ones accepting as required input a specific DataType.
         """
+        if exclude_categories is None: exclude_categories = []
         launch_categ = dao.get_launchable_categories()
-        launch_categ = dict((categ.id, categ.displayname) for categ in launch_categ)
-        if inspect_group:
-            # Me might want to exclude views from launchers (e.g. for groups where only mass analysis makes sense)
-            views_categ_id = dao.get_visualisers_categories()[0].id
-            if views_categ_id in launch_categ:
-                del launch_categ[views_categ_id]
+        launch_categ = dict((categ.id, categ.displayname) for categ in launch_categ if categ.id not in exclude_categories)
         launch_groups = dao.get_apliable_algo_groups(dataname, launch_categ.keys())
         if datatype_gid is None:
             return ProjectService.__prepare_group_result(launch_groups, launch_categ, inspect_group)
@@ -702,14 +706,18 @@ class ProjectService:
             if dataname == model.DataTypeGroup.__name__:
                 # If part of a group, update also with specific launchers of that datatype
                 dt_group = dao.get_datatype_group_by_gid(datatype_gid)
-                datatype = dao.get_datatypes_from_datatype_group(dt_group.id)[-1]
-                datatype = dao.get_datatype_by_gid(datatype.gid)
-                specific_launchers = ProjectService.retrieve_launchers(datatype.__class__.__name__, datatype.gid, True)
-                for key in specific_launchers:
-                    if key in launchers:
-                        launchers[key].update(specific_launchers[key])
-                    else:
-                        launchers[key] = specific_launchers[key]
+                datatypes = dao.get_datatypes_from_datatype_group(dt_group.id)
+                if len(datatypes):
+                    datatype = datatypes[-1]
+                    datatype = dao.get_datatype_by_gid(datatype.gid)
+                    views_categ_id = dao.get_visualisers_categories()[0].id
+                    specific_launchers = ProjectService.retrieve_launchers(datatype.__class__.__name__, datatype.gid, 
+                                                                           True, [views_categ_id] + exclude_categories)
+                    for key in specific_launchers:
+                        if key in launchers:
+                            launchers[key].update(specific_launchers[key])
+                        else:
+                            launchers[key] = specific_launchers[key]
             return launchers
         except Exception, excep:
             ProjectService().logger.exception(excep)
@@ -940,6 +948,14 @@ class ProjectService:
     def get_datatypegroup_by_gid(datatypegroup_gid):
         """ Returns the DataTypeGroup with the specified gid. """
         return dao.get_datatype_group_by_gid(datatypegroup_gid)
+    
+    @staticmethod
+    def count_datatypes_generated_from(datatype_gid):
+        """
+        A list with all the datatypes resulted from operations that had as 
+        input the datatype given by 'datatype_gid'.
+        """
+        return dao.count_datatypes_generated_from(datatype_gid)
 
 
     @staticmethod

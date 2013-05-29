@@ -30,7 +30,7 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>    
 """
-
+import json
 from tvb.core.entities import model
 from tvb.basic.filters.chain import FilterChain
 
@@ -61,11 +61,27 @@ class StaticFiltersFactory():
             if single_filter in filters:
                 return filters[single_filter]
             else:
-                ### Build a Burst-Filter
-                return FilterChain('Burst', [FilterChain.datatype + '.fk_parent_burst'],
-                                   [single_filter], operations=["=="])
+                ### We have some custom filter to build
+                return StaticFiltersFactory._build_custom_filter(single_filter)
         return filters.values()
-
+    
+    
+    @staticmethod
+    def _build_custom_filter(filter_data):
+        """
+        Param filter_data should be at this point a dictionary of the form:
+        {'type' : 'fitler_type', 'value' : 'fitler_value'}
+        If 'filter_type' is not handled just return None.
+        """
+        filter_data = json.loads(filter_data)
+        if filter_data['type'] == 'from_burst':
+            return FilterChain('Burst', [FilterChain.datatype + '.fk_parent_burst'],
+                                                [filter_data['value']], operations=["=="])
+        if filter_data['type'] == 'from_datatype':
+            return FilterChain('Datatypes', [FilterChain.operation + '.parameters'],
+                                                    [filter_data['value']], operations=["like"])
+        return None
+    
 
     @staticmethod
     def build_operations_filters(simulation_algorithm, logged_user_id):

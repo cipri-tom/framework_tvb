@@ -900,11 +900,11 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
 	            success: function(r) {} ,
 	            error: function(r) {}
         	});
-	var filterValue = sessionStoredBurst.id;
+	var filterValue = {'type' : 'from_burst', 'value' : sessionStoredBurst.id};
 	if (filterValue == '') {
-		filterValue = "0";
+		filterValue = {'type' : 'from_burst', 'value' : "0"};
 	}
-    updateTree(selectedProjectID, baseURL, filterValue);
+    updateTree(selectedProjectID, baseURL, JSON.stringify(filterValue));
     $("#portlets-display").hide();
     $("#portlets-configure").hide();
     $("#portlet-param-config").hide();

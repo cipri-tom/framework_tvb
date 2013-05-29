@@ -356,7 +356,7 @@ var TVB_NODE_DATATYPE_TYPE = "datatype";
  * @param backPage is a string, saying where the visualizers that can be launched from the overlay should point their BACK button.
  */
 function displayNodeDetails(entity_gid, entityType, backPage, excludeTabs) {
-
+	closeOverlay(); // If there was overlay opened, just close it
     if (entity_gid == undefined || entity_gid == "firstOperation" || entity_gid == "fakeRootNode" || TVB_skipDisplayOverlay) {
         return;
     }
