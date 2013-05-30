@@ -174,6 +174,9 @@ class ProjectService:
     def retrieve_project_full(self, project_id, applied_filters=None, current_page=1):
         """
         Return a Tuple with Project entity and Operations for current Project.
+        :param project_id: Current Project Identifier
+        :param applied_filters: Filters to apply on Operations
+        :param current_page: Number for current page in operations
         """
         selected_project = self.find_project(project_id)
         total_filtered = self.count_filtered_operations(project_id, applied_filters)
@@ -215,13 +218,15 @@ class ProjectService:
                         all_categs = dao.get_algorithm_categories()
                         view_categ = dao.get_visualisers_categories()[0]
                         excludes = [categ.id for categ in all_categs if categ.id != view_categ.id]
-                        algo = self.retrieve_launchers("DataTypeGroup", datatype.gid, exclude_categories=excludes).values()[0]
-                        
+                        algo = self.retrieve_launchers("DataTypeGroup", datatype.gid,
+                                                       exclude_categories=excludes).values()[0]
+
                         view_groups = []
                         for algo in algo.values():
                             url = '/flow/' + str(algo['category']) + '/' + str(algo['id'])
                             if algo['part_of_group']:
-                                url = '/flow/prepare_group_launch/' + datatype.gid + '/' + str(algo['category']) + '/' + str(algo['id'])
+                                url = '/flow/prepare_group_launch/' + datatype.gid + '/' + \
+                                      str(algo['category']) + '/' + str(algo['id'])
                             view_groups.append(dict(name=algo["displayName"],
                                                     url=url,
                                                     param_name=algo['children'][0]['param_name'],
@@ -670,18 +675,26 @@ class ProjectService:
             dao.store_entity(user)
 
 
-    @staticmethod
-    def retrieve_launchers(dataname, datatype_gid=None, inspect_group=False, exclude_categories=None):
+    def retrieve_launchers(self, dataname, datatype_gid=None, inspect_group=False, exclude_categories=None):
         """
         Returns all the available launch-able algorithms from the database.
         Filter the ones accepting as required input a specific DataType.
+
+        :param dataname: String or class representing DataType to retrieve filters for it.
+        :param datatype_gid: Optional GID, to filter algorithms for this particular entity.
+        :param inspect_group: TRUE if we are now in the inspection of sub-entities in a DataTypeGroup
+        :param exclude_categories: List of categories to be excluded from the result.
         """
-        if exclude_categories is None: exclude_categories = []
+        if exclude_categories is None:
+            exclude_categories = []
         launch_categ = dao.get_launchable_categories()
-        launch_categ = dict((categ.id, categ.displayname) for categ in launch_categ if categ.id not in exclude_categories)
+        launch_categ = dict((categ.id, categ.displayname) for categ in launch_categ
+                            if categ.id not in exclude_categories)
         launch_groups = dao.get_apliable_algo_groups(dataname, launch_categ.keys())
+
         if datatype_gid is None:
             return ProjectService.__prepare_group_result(launch_groups, launch_categ, inspect_group)
+
         try:
             datatype_instance = dao.get_datatype_by_gid(datatype_gid)
             data_class = datatype_instance.__class__
@@ -703,6 +716,7 @@ class ProjectService:
                 launch_groups.remove(one_group)
                 del one_group
             launchers = ProjectService.__prepare_group_result(launch_groups, launch_categ, inspect_group)
+
             if dataname == model.DataTypeGroup.__name__:
                 # If part of a group, update also with specific launchers of that datatype
                 dt_group = dao.get_datatype_group_by_gid(datatype_gid)
@@ -711,8 +725,8 @@ class ProjectService:
                     datatype = datatypes[-1]
                     datatype = dao.get_datatype_by_gid(datatype.gid)
                     views_categ_id = dao.get_visualisers_categories()[0].id
-                    specific_launchers = ProjectService.retrieve_launchers(datatype.__class__.__name__, datatype.gid, 
-                                                                           True, [views_categ_id] + exclude_categories)
+                    specific_launchers = self.retrieve_launchers(datatype.__class__.__name__, datatype.gid,
+                                                                 True, [views_categ_id] + exclude_categories)
                     for key in specific_launchers:
                         if key in launchers:
                             launchers[key].update(specific_launchers[key])
@@ -737,7 +751,7 @@ class ProjectService:
                                           'displayName': group.displayname,
                                           'category': group.fk_category,
                                           'algo_param': group.algorithm_param_name,
-                                          'part_of_group' : inspect_group}
+                                          'part_of_group': inspect_group}
             childs = []
             for one_child in group.children:
                 childs.append({'ident': one_child.identifier,
