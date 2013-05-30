@@ -493,6 +493,13 @@ class BaseProfile():
         return FrameworkSettings.get_attribute(FrameworkSettings.KEY_ADMIN_EMAIL, FrameworkSettings.DEFAULT_ADMIN_EMAIL)
 
 
+    @ClassProperty
+    @staticmethod
+    @settings_loaded()
+    def TVB_PATH():
+        return FrameworkSettings.get_attribute(FrameworkSettings.KEY_TVB_PATH, '')
+
+
     # CherryPy settings:
     @ClassProperty
     @staticmethod
@@ -619,6 +626,7 @@ class BaseProfile():
     KEY_ADMIN_NAME = 'ADMINISTRATOR_NAME'
     KEY_ADMIN_PWD = 'ADMINISTRATOR_PASSWORD'
     KEY_ADMIN_EMAIL = 'ADMINISTRATOR_EMAIL'
+    KEY_TVB_PATH = 'TVB_PATH'
     KEY_STORAGE = 'TVB_STORAGE'
     KEY_MAX_DISK_SPACE_USR = 'USR_DISK_SPACE'
     #During the introspection phase, it is checked if either Matlab or
@@ -801,7 +809,7 @@ class DeploymentProfile(BaseProfile):
             data_path = os.path.dirname(sys.executable)
             #Add root folder as first in PYTHONPATH so we can find tvb there if we checked out from GIT for contributors
             root_folder = os.path.dirname(data_path)
-            new_python_path = os.path.join(root_folder, 'tvb_simulator_library') + os.pathsep
+            new_python_path = cfg.TVB_PATH + os.pathsep
             new_python_path += data_path + os.pathsep + os.path.join(data_path, 'lib-tk')
             os.environ['PYTHONPATH'] = new_python_path
             os.environ['PATH'] = data_path
@@ -821,7 +829,7 @@ class DeploymentProfile(BaseProfile):
             root_folder = os.path.split(os.path.split(data_path)[0])[0]
             new_python_path = python_folder + os.pathsep + os.path.join(python_folder, 'site-packages.zip')
             new_python_path += os.pathsep + os.path.join(python_folder, 'lib-dynload')
-            new_python_path = os.path.join(root_folder, 'tvb_simulator_library') + os.pathsep + new_python_path
+            new_python_path = cfg.TVB_PATH + os.pathsep + new_python_path
             os.environ['PYTHONPATH'] = new_python_path
 
         if cfg.is_linux():
@@ -829,8 +837,7 @@ class DeploymentProfile(BaseProfile):
             # LD_RUN_PATH, PYTHONPATH and PYTHONHOME are set also in the startup scripts.
             data_path = os.path.dirname(sys.executable)
             #Add root folder as first in PYTHONPATH so we can find tvb there if we checked out from GIT for contributors
-            root_folder = os.path.dirname(data_path)
-            new_python_path = os.path.join(root_folder, 'tvb_simulator_library') + os.pathsep + ''
+            new_python_path = cfg.TVB_PATH + os.pathsep + ''
             new_python_path += os.pathsep + os.path.join(data_path, 'lib-tk')
             os.environ['PYTHONPATH'] = new_python_path
             setup_tk_tcl_environ(data_path)
