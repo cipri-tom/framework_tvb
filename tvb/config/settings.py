@@ -34,6 +34,7 @@ TVB global configurations are predefined/read from here.
 
 import os
 import sys
+import bin
 from copy import copy
 from sys import platform
 from subprocess import Popen, PIPE
@@ -201,7 +202,7 @@ class BaseProfile():
     SYSTEM_USER_NAME = 'TVB system'
     DEFAULT_ADMIN_EMAIL = 'jira.tvb@gmail.com'
     CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    EXTERNALS_FOLDER_PARENT = os.path.dirname(os.path.dirname(CURRENT_DIR))
+    EXTERNALS_FOLDER_PARENT = os.path.dirname(os.path.dirname(bin.__file__))
 
     # Specify if the current process is executing an operation (via clusterLauncher)
     OPERATION_EXECUTION_PROCESS = False
@@ -789,8 +790,6 @@ class DeploymentProfile(BaseProfile):
     Profile for packages deployed already.
     """
 
-    EXTERNALS_FOLDER_PARENT = os.path.dirname(BaseProfile.CURRENT_DIR)
-
 
     @classmethod
     def initialize_profile(cls):
@@ -808,7 +807,6 @@ class DeploymentProfile(BaseProfile):
         if cfg.is_windows():
             data_path = os.path.dirname(sys.executable)
             #Add root folder as first in PYTHONPATH so we can find tvb there if we checked out from GIT for contributors
-            root_folder = os.path.dirname(data_path)
             new_python_path = cfg.TVB_PATH + os.pathsep
             new_python_path += data_path + os.pathsep + os.path.join(data_path, 'lib-tk')
             os.environ['PYTHONPATH'] = new_python_path
@@ -826,7 +824,6 @@ class DeploymentProfile(BaseProfile):
             setup_tk_tcl_environ(data_path)
 
             #Add root folder as first in PYTHONPATH so we can find tvb there if we checked out from GIT for contributors
-            root_folder = os.path.split(os.path.split(data_path)[0])[0]
             new_python_path = python_folder + os.pathsep + os.path.join(python_folder, 'site-packages.zip')
             new_python_path += os.pathsep + os.path.join(python_folder, 'lib-dynload')
             new_python_path = cfg.TVB_PATH + os.pathsep + new_python_path
@@ -841,10 +838,6 @@ class DeploymentProfile(BaseProfile):
             new_python_path += os.pathsep + os.path.join(data_path, 'lib-tk')
             os.environ['PYTHONPATH'] = new_python_path
             setup_tk_tcl_environ(data_path)
-
-        if not cfg.is_development():
-            #Set path to only search in our custom set PYTHONPATH and ignore any other Python defaults.
-            sys.path = os.environ.get('PYTHONPATH', '').split(os.pathsep)
 
 
 
