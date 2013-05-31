@@ -657,7 +657,8 @@ class BaseProfile():
         tvb_root = os.path.dirname(BaseProfile.CURRENT_DIR)
         return (os.path.exists(os.path.join(tvb_root, 'AUTHORS'))
                 and os.path.exists(os.path.join(tvb_root, 'ui_test'))
-                and os.path.exists(os.path.join(tvb_root, 'tvb_test')))
+                and os.path.exists(os.path.join(tvb_root, 'tvb_test'))
+                and os.path.exists(os.path.join(os.path.dirname(tvb_root), 'documentor')))
 
 
     def is_windows(self):
@@ -683,14 +684,16 @@ class BaseProfile():
 
     def get_python_path(self):
         """Get Python path, based on running options."""
+        bin_folder = os.path.dirname(bin.__file__)
         if self.is_development():
             return 'python'
         if self.is_windows():
-            return os.path.join(os.path.dirname(sys.executable), 'python.exe')
+            return os.path.join(os.path.dirname(bin_folder), 'python.exe')
         if self.is_mac():
-            return '../MacOS/python'
+            root_folder = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(bin_folder))))
+            return os.path.join(root_folder, 'MacOS', 'python')
         if self.is_linux():
-            return os.path.join(os.path.dirname(sys.executable), 'python2.7')
+            return os.path.join(os.path.dirname(bin_folder), 'python2.7')
         raise Exception("Invalid BUILD type found!!!")
 
 
@@ -817,8 +820,8 @@ class DeploymentProfile(BaseProfile):
             # Contents/Resorces/lib/python2.7/tvb . PYTHONPATH needs to be set
             # at the level Contents/Resources/lib/python2.7/ and the root path
             # from where to start looking for TK and TCL up to Contents/
-            data_path = os.path.dirname(__file__)
-            python_folder = os.path.dirname(os.path.split(data_path)[0])
+            data_path = os.path.dirname(bin.__file__)
+            python_folder = os.path.dirname(data_path)
 
             data_path = os.path.split(os.path.split(os.path.split(python_folder)[0])[0])[0]
             setup_tk_tcl_environ(data_path)
