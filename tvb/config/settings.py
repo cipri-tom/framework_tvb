@@ -162,9 +162,7 @@ class BaseProfile():
         """Current SVN version in the package running now."""
         result = '1'
         try:
-            import bin
-
-            with open(os.path.join(os.path.dirname(bin.__file__), 'tvb.version'), 'r') as version_file:
+            with open(os.path.join(FrameworkSettings.BIN_FOLDER, 'tvb.version'), 'r') as version_file:
                 result = version_file.read()
         except Exception:
             pass
@@ -201,8 +199,9 @@ class BaseProfile():
     LOCALHOST = "127.0.0.1"
     SYSTEM_USER_NAME = 'TVB system'
     DEFAULT_ADMIN_EMAIL = 'jira.tvb@gmail.com'
+    BIN_FOLDER = os.path.dirname(os.path.abspath(bin.__file__))
     CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    EXTERNALS_FOLDER_PARENT = os.path.dirname(os.path.dirname(bin.__file__))
+    EXTERNALS_FOLDER_PARENT = os.path.dirname(BIN_FOLDER)
 
     # Specify if the current process is executing an operation (via clusterLauncher)
     OPERATION_EXECUTION_PROCESS = False
@@ -684,16 +683,15 @@ class BaseProfile():
 
     def get_python_path(self):
         """Get Python path, based on running options."""
-        bin_folder = os.path.dirname(bin.__file__)
         if self.is_development():
             return 'python'
         if self.is_windows():
-            return os.path.join(os.path.dirname(bin_folder), 'python.exe')
+            return os.path.join(os.path.dirname(FrameworkSettings.BIN_FOLDER), 'python.exe')
         if self.is_mac():
-            root_folder = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(bin_folder))))
+            root_folder = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(FrameworkSettings.BIN_FOLDER))))
             return os.path.join(root_folder, 'MacOS', 'python')
         if self.is_linux():
-            return os.path.join(os.path.dirname(bin_folder), 'python2.7')
+            return os.path.join(os.path.dirname(FrameworkSettings.BIN_FOLDER), 'python2.7')
         raise Exception("Invalid BUILD type found!!!")
 
 
@@ -820,7 +818,7 @@ class DeploymentProfile(BaseProfile):
             # Contents/Resorces/lib/python2.7/tvb . PYTHONPATH needs to be set
             # at the level Contents/Resources/lib/python2.7/ and the root path
             # from where to start looking for TK and TCL up to Contents/
-            data_path = os.path.dirname(bin.__file__)
+            data_path = cfg.BIN_FOLDER
             python_folder = os.path.dirname(data_path)
 
             data_path = os.path.split(os.path.split(os.path.split(python_folder)[0])[0])[0]
