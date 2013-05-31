@@ -522,7 +522,7 @@ class ABCAdapter(object):
         for row in self.flaten_input_interface():
             ## If required attribute was submitted empty no point to continue, so just raise exception
             if (validation_required and row.get(xml_reader.ATT_REQUIRED, False)
-                and row[xml_reader.ATT_NAME] in kwargs and kwargs[row[xml_reader.ATT_NAME]] == ""):
+                    and row[xml_reader.ATT_NAME] in kwargs and kwargs[row[xml_reader.ATT_NAME]] == ""):
                 raise InvalidParameterException("Parameter %s is required for %s but no value was submitted!"
                                                 "Please relaunch with valid parameters." % (row[xml_reader.ATT_NAME],
                                                                                             self.__class__.__name__))
@@ -565,7 +565,7 @@ class ABCAdapter(object):
                     kwa[row[xml_reader.ATT_NAME]] = True
             elif row[xml_reader.ATT_TYPE] == xml_reader.TYPE_INT:
                 if (kwargs[row[xml_reader.ATT_NAME]] is None or kwargs[row[xml_reader.ATT_NAME]] == ''
-                    or kwargs[row[xml_reader.ATT_NAME]] == 'None'):
+                        or kwargs[row[xml_reader.ATT_NAME]] == 'None'):
                     kwa[row[xml_reader.ATT_NAME]] = None
                 else:
                     val = int(kwargs[row[xml_reader.ATT_NAME]])
@@ -617,8 +617,9 @@ class ABCAdapter(object):
             max_val = numpy.max(array)
             if min_val < row[xml_reader.ATT_MINVALUE] or max_val > row[xml_reader.ATT_MAXVALUE]:
                 raise InvalidParameterException("Field %s should have values between %s and %s but provided array "
-                                        "contains min-max: (%s, %s)." % (row[xml_reader.ATT_NAME],
-                                        row[xml_reader.ATT_MINVALUE], row[xml_reader.ATT_MAXVALUE], min_val, max_val))
+                                                "contains min-max: (%s, %s)." % (row[xml_reader.ATT_NAME],
+                                                row[xml_reader.ATT_MINVALUE], row[xml_reader.ATT_MAXVALUE],
+                                                min_val, max_val))
         except Exception:
             pass
 
@@ -734,7 +735,7 @@ class ABCAdapter(object):
                 keys_to_remove = []
                 for submit_key in submited_kwargs:
                     if (submit_key.startswith(prefix + ABCAdapter.KEYWORD_OPTION)
-                        and submit_key.endswith(sufix) and submit_key != proposed_name):
+                            and submit_key.endswith(sufix) and submit_key != proposed_name):
                         keys_to_remove.append(submit_key)
                 for submit_key in keys_to_remove:
                     del submited_kwargs[submit_key]
@@ -813,8 +814,8 @@ class ABCAdapter(object):
 
         ## Validate current entity to be compliant with specified ROW filters.
         dt_filter = row.get(xml_reader.ELEM_CONDITIONS, False)
-        if (dt_filter is not None) and (dt_filter is not False) and (
-            entity is not None) and not dt_filter.get_python_filter_equivalent(entity):
+        if (dt_filter is not None) and (dt_filter is not False) and \
+                (entity is not None) and not dt_filter.get_python_filter_equivalent(entity):
             ## If a filter is declared, check that the submitted DataType is in compliance to it.
             raise InvalidParameterException("Field %s did not pass filters." % (row[xml_reader.ATT_NAME],))
 
@@ -923,7 +924,7 @@ class ABCAdapter(object):
             new_prefix += ABCAdapter.KEYWORD_SEPARATOR
         new_prefix += input_param + ABCAdapter.KEYWORD_PARAMS
         if option_prefix is not None:
-            new_prefix += ABCAdapter.KEYWORD_OPTION +option_prefix + ABCAdapter.KEYWORD_SEPARATOR
+            new_prefix += ABCAdapter.KEYWORD_OPTION + option_prefix + ABCAdapter.KEYWORD_SEPARATOR
         return new_prefix
 
 
@@ -950,9 +951,9 @@ class ABCAdapter(object):
                         selected_values = data[param[ABCAdapter.KEY_NAME]]
                     else:
                         selected_values = [data[param[ABCAdapter.KEY_NAME]]]
-                    for option in new_options:
+                    for i, option in enumerate(new_options):
                         if option[ABCAdapter.KEY_VALUE] in selected_values:
-                            option = ABCAdapter.fill_defaults([option], data)[0]
+                            new_options[i] = ABCAdapter.fill_defaults([option], data)[0]
                 new_p[ABCAdapter.KEY_OPTIONS] = new_options
             result.append(new_p)
         return result
@@ -1006,8 +1007,8 @@ class ABCAdapter(object):
                                      (param[ABCAdapter.KEY_TYPE] == xml_reader.TYPE_MULTIPLE
                                       or param[ABCAdapter.KEY_TYPE] == xml_reader.TYPE_SELECT))
                 new_prefix = ABCAdapter.form_prefix(param[ABCAdapter.KEY_NAME], prefix)
-                prepared_param[ABCAdapter.KEY_OPTIONS] = ABCAdapter.prepare_param_names(
-                                                        param[ABCAdapter.KEY_OPTIONS], new_prefix, add_prefix_option)
+                prepared_param[ABCAdapter.KEY_OPTIONS] = ABCAdapter.prepare_param_names(param[ABCAdapter.KEY_OPTIONS],
+                                                                                        new_prefix, add_prefix_option)
 
             if (ABCAdapter.KEY_ATTRIBUTES in param) and (param[ABCAdapter.KEY_ATTRIBUTES] is not None):
                 new_prefix = prefix
