@@ -182,7 +182,7 @@ class StandAloneClient(object):
         if not operation or operation.status != model.STATUS_STARTED:
             LOGGER.warn("Operation %d was not found or has not the correct status, to be stopped." % operation_id)
             return False
-        LOGGER.debug("Stopping operation: %d" % operation_id)
+        LOGGER.debug("Stopping operation: %s" % str(operation_id))
 
         ## Set the thread stop flag to true
         for thread in CURRENT_ACTIVE_THREADS:
