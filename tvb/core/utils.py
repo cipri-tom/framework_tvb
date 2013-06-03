@@ -383,7 +383,6 @@ def check_matlab_version(matlab_path):
     version = result_data.strip().split('tvb_checking_version')[1]
     log_file.close()
     os.remove(matlab_log_file)
-    os.remove(matlab_test_file + '.m')
     return version.replace('\n', '').strip()
 
 
