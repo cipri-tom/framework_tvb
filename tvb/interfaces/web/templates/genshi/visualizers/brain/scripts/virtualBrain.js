@@ -54,20 +54,19 @@ var measurePointsBuffers = [];
 
 var activitiesData = [], timeData = [], measurePoints = [], measurePointsLabels = [];
 
-var nrOfSlices = 0;
 var pageSize = 0;
 var urlBase = '';
 var selectedMode = 0;
 var selectedStateVar = 0;
 var currentActivitiesFileLength = 0;
-var isLoadStarted = false;
-var currentActivitiesFileIndex = 0;
 var nextActivitiesFileData = [];
 var totalPassedActivitiesData = 0;
 var shouldIncrementTime = true;
+var currentAsyncCall = null;
 
 var MAX_TIME_STEP = 0;
 var NO_OF_MEASURE_POINTS = 0;
+var NEXT_PAGE_THREASHOLD = 100;
 
 var displayMeasureNodes = false;
 
@@ -82,7 +81,6 @@ function _webGLPortletPreview(baseDatatypeURL, onePageSize, nrOfPages, urlVertic
 	isPreview = true;
 	GL_DEFAULT_Z_POS = 250;
 	GL_zTranslation = GL_DEFAULT_Z_POS;
-	nrOfSlices = parseInt(nrOfPages);
 	pageSize = onePageSize;
 	urlBase = baseDatatypeURL
 	var fromIdx = 0;
@@ -146,12 +144,9 @@ function _webGLStart(baseDatatypeURL, onePageSize, nrOfPages, urlTimeList, urlVe
     	timeData = timeData.concat(HLPR_readJSONfromFile(timeUrls[i]));
     }
     
-	nrOfSlices = parseInt(nrOfPages);
 	pageSize = onePageSize;
 	urlBase = baseDatatypeURL;
-    if (nrOfSlices > 0) {
-    	initActivityData();
-    }
+	initActivityData();
 
     if (oneToOneMapping == 'True') {
         isOneToOneMapping = true;
@@ -200,8 +195,13 @@ function _webGLStart(baseDatatypeURL, onePageSize, nrOfPages, urlTimeList, urlVe
 	            stop: function(ev, ui) {
 	            	var newStep = $("#sliderStep").slider("option", "value");
 	                setTimeStep(newStep);
-	                refreshCurrentDataSlice()
-	            }});
+	                refreshCurrentDataSlice();
+	                sliderSel = false;
+	            },
+	            slide: function(event, ui) {
+	            	sliderSel = true;
+	            }
+	            });
 	        // Initialize slider for timeLine
 	        $("#slider").slider({ min:0, max: MAX_TIME_STEP,
 	            slide: function(event, ui) {
@@ -369,7 +369,7 @@ function updateColors(currentTimeValue) {
         loadNextActivitiesFile();
     }
     if (shouldChangeCurrentActivitiesFile()) {
-        changeCurrentActivitiesFile(true);
+        changeCurrentActivitiesFile();
     }
 }
 
@@ -445,6 +445,7 @@ function resetSpeedSlider() {
 	if (!isPreview) {
 		setTimeStep(1);
     	$("#sliderStep").slider("option", "value", 1);
+    	refreshCurrentDataSlice();
 	}
 }
 
@@ -467,6 +468,26 @@ function createWebGlBuffers(dataList) {
     return result;
 }
 
+/**
+ * Read data from the specified urls.
+ *
+ * @param data_url_list a list of urls from where   it should read the data
+ * @param staticFiles <code>true</code> if the urls points to some static files
+ */
+function readFloatData(data_url_list, staticFiles) {
+    var result = [];
+    for (var i = 0; i < data_url_list.length; i++) {
+        var data_json = HLPR_readJSONfromFile(data_url_list[i], staticFiles);
+        if (staticFiles) {
+            for (var j = 0; j < data_json.length; j++) {
+                data_json[j] = parseFloat(data_json[j]);
+            }
+        }
+        result.push(data_json);
+        data_json = null;
+    }
+    return result;
+}
 
 /**
  * Computes the data for alpha and alphasIndices.
@@ -528,7 +549,6 @@ function createColorBufferForCube(isPicked) {
 
 
 function bufferAtPoint(p) {
-	
 	var result = HLPR_bufferAtPoint(gl, p);
     var bufferVertices= result[0];
     var bufferNormals = result[1];
@@ -679,16 +699,17 @@ function drawScene() {
 	    mvTranslate([0.0, -5.0, -GL_zTranslation]);
 	    multMatrix(GL_currentRotationMatrix);
 	    mvRotate(180, [0, 0, 1]);
-	
-	    if (AG_isStopped == false) {
+		
+		// If we are in the middle of waiting for the next data file just
+		// stop and wait since we might have an index that is 'out' of this data slice
+		if (AG_isStopped == false) {
 	        updateColors(currentTimeValue);
 	        if (shouldIncrementTime) {
-	            currentTimeValue = currentTimeValue + TIME_STEP;
-	        }
-	        if (currentTimeValue + TIME_STEP >= MAX_TIME_STEP) {
+            	currentTimeValue = currentTimeValue + TIME_STEP;
+           }
+	        if (currentTimeValue > MAX_TIME_STEP) {
 	        	// Next time value is no longer in activity data.
-	            currentTimeValue = 0;
-	            totalPassedActivitiesData = 0;
+	            initActivityData();
 	        }
 	    } else {
 	    	updateColors(currentTimeValue);
@@ -796,11 +817,9 @@ function changeMode() {
 function initActivityData() {
 	currentTimeValue = 0;
     //read the first file
-    var fromIdx = 0;
-    var toIdx = pageSize - pageSize % TIME_STEP;
-    activitiesData = HLPR_readJSONfromFile(readDataPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode, TIME_STEP));
+    var initUrl = getUrlForPageFromIndex(0);
+    activitiesData = HLPR_readJSONfromFile(initUrl);
     if (activitiesData != undefined) {
-        currentActivitiesFileIndex = 0;
         currentActivitiesFileLength = activitiesData.length * TIME_STEP;
         totalPassedActivitiesData = 0;
     }
@@ -811,20 +830,19 @@ function loadFromTimeStep(step) {
 	/*
 	 * Load the brainviewer from this given time step.
 	 */
-	showBlockerOverlay(500);
-	step = step - step % TIME_STEP + TIME_STEP; // Set time to be multiple of step
-	var chunkForStep = Math.floor(step / pageSize);
-	currentActivitiesFileIndex = chunkForStep; // Decrease one since changeCurrentActivities will automatically increase
-	var nextUrl = getCurrentActivitiesUrl();
-	isLoadStarted = false;
+	showBlockerOverlay(50000);
+	if (step % TIME_STEP != 0) {
+		step = step - step % TIME_STEP + TIME_STEP; // Set time to be multiple of step
+	}
+	var nextUrl = getUrlForPageFromIndex(step);
+	currentAsyncCall = null;
 	readFileData(nextUrl, false);
 	currentTimeValue = step;
 	activitiesData = null;
     activitiesData = nextActivitiesFileData.slice(0);
     nextActivitiesFileData = null;
     currentActivitiesFileLength = activitiesData.length * TIME_STEP;
-	totalPassedActivitiesData = chunkForStep * pageSize - (chunkForStep * pageSize) % TIME_STEP;
-	shouldIncrementTime = true;
+	totalPassedActivitiesData = currentTimeValue;
 	// Also sync eeg monitor if in double view
 	if (isDoubleView) {
 		loadEEGChartFromTimeStep(step);
@@ -832,105 +850,103 @@ function loadFromTimeStep(step) {
 	closeBlockerOverlay();
 }
 
+
 function refreshCurrentDataSlice() {
 	/*
 	 * Refresh the current data with the new time step.
 	 */
-	showBlockerOverlay(500);
-	var nextUrl = getCurrentActivitiesUrl();
-	isLoadStarted = false;
-	readFileData(nextUrl, false);
-	activitiesData = nextActivitiesFileData.slice(0);
-    nextActivitiesFileData = null;
-    currentActivitiesFileLength = activitiesData.length * TIME_STEP;
-    currentTimeValue = currentTimeValue - currentTimeValue % TIME_STEP + TIME_STEP;
-    // Also sync eeg monitor if in double view
-	if (isDoubleView) {
-		loadEEGChartFromTimeStep(currentTimeValue);
+	if (currentTimeValue % TIME_STEP != 0) {
+		currentTimeValue = currentTimeValue - currentTimeValue % TIME_STEP + TIME_STEP; // Set time to be multiple of step
 	}
-	closeBlockerOverlay();
+	loadFromTimeStep(currentTimeValue);
 }
 
-function changeCurrentActivitiesFile(async) {
-    if ((nextActivitiesFileData == null || nextActivitiesFileData == undefined || nextActivitiesFileData.length == 0) || (!isLoadStarted && async)) {
+
+function getUrlForPageFromIndex(index) {
+	/*
+	 * Generate the url that reads one page of data starting from @param index
+	 */
+	var fromIdx = index;
+	if (fromIdx > MAX_TIME_STEP) fromIdx = 0;
+	var toIdx = fromIdx + pageSize * TIME_STEP;
+	return readDataPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode, TIME_STEP)
+}
+
+
+function shouldLoadNextActivitiesFile() {
+	/*
+	 * If we are at the last NEXT_PAGE_THREASHOLD points of data we should start loading the next data file 
+	 * to get as smooth as animation as possible.
+	 */
+    if ((currentAsyncCall == null) && ((currentTimeValue - totalPassedActivitiesData + NEXT_PAGE_THREASHOLD * TIME_STEP) >= currentActivitiesFileLength)) {
+        if (nextActivitiesFileData == null || nextActivitiesFileData.length == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+function loadNextActivitiesFile() {
+	/*
+	 * Start a new async call that should load required data for the next activity slice.
+	 */
+	var nextFileIndex = totalPassedActivitiesData + currentActivitiesFileLength;
+	var nextUrl = getUrlForPageFromIndex(nextFileIndex);
+    var asyncCallId = new Date().getTime();
+    currentAsyncCall = asyncCallId;
+    readFileData(nextUrl, true, asyncCallId);
+}
+
+
+function shouldChangeCurrentActivitiesFile() {
+	/*
+	 * If the next time value is bigger that the length of the current activity loaded data
+	 * that means it's time to switch to the next activity data slice.
+	 */
+    if ((currentTimeValue + TIME_STEP - totalPassedActivitiesData) >= currentActivitiesFileLength) {
+    	return true;
+    }
+    return false;
+}
+
+
+function changeCurrentActivitiesFile() {
+	/*
+	 * We've reached the end of the current activity chunk. Time to switch to
+	 * the next one.
+	 */
+    if ((nextActivitiesFileData == null || nextActivitiesFileData == undefined || nextActivitiesFileData.length == 0)) {
+    	// Async data call was not finished, stop incrementing call and wait for data.
         shouldIncrementTime = false;
         return;
     }
-    totalPassedActivitiesData = totalPassedActivitiesData + currentActivitiesFileLength;
+    totalPassedActivitiesData = totalPassedActivitiesData + activitiesData.length;
     activitiesData = null;
     activitiesData = nextActivitiesFileData.slice(0);
     nextActivitiesFileData = null;
-    currentActivitiesFileIndex = getNextActivitiesFileIndex();
     currentActivitiesFileLength = activitiesData.length * TIME_STEP;
-    isLoadStarted = false;
+    currentAsyncCall = null;
     if (activitiesData != undefined && activitiesData.length > 0) {
         shouldIncrementTime = true;
-        currentTimeValue = currentTimeValue + TIME_STEP;
     }
-    if (currentActivitiesFileIndex == 0) {
+    if (totalPassedActivitiesData >= MAX_TIME_STEP) {
         totalPassedActivitiesData = 0;
     }
 }
 
-function loadNextActivitiesFile() {
-    isLoadStarted = true;
-    var nextUrl = getNextActivitiesFileUrl();
-    readFileData(nextUrl, true);
-}
 
-function getNextActivitiesFileIndex() {
-    var nextIndex = currentActivitiesFileIndex + 1;
-    if (nextIndex >= nrOfSlices) {
-        return 0;
-    }
-    return nextIndex;
-}
-
-function getUrlForIndex(index) {
-	// URL needed to read the data for the page given by 'index'
-	var fromIdx = (index * pageSize);
-    fromIdx = fromIdx - fromIdx % TIME_STEP
-    var toIdx = (index + 1) * pageSize;
-    toIdx = toIdx - toIdx % TIME_STEP
-    return readDataPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode, TIME_STEP);
-}
-
-function getNextActivitiesFileUrl() {
-	// URL for the next activity file
-    var nextIndex = getNextActivitiesFileIndex();
-    return getUrlForIndex(nextIndex);
-}
-
-function getCurrentActivitiesUrl() {
-	// URL for the current activity file
-	return getUrlForIndex(currentActivitiesFileIndex);	
-}
-
-function shouldLoadNextActivitiesFile() {
-    if (!isLoadStarted && ((currentTimeValue - totalPassedActivitiesData + 100 / TIME_STEP) >= currentActivitiesFileLength - TIME_STEP)) {
-        if (nrOfSlices > 1 && (nextActivitiesFileData == null || nextActivitiesFileData.length == 0)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function shouldChangeCurrentActivitiesFile() {
-    if (nrOfSlices > 1) {
-        if((currentTimeValue - totalPassedActivitiesData + 1) >= currentActivitiesFileLength - TIME_STEP) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function readFileData(fileUrl, async) {
+function readFileData(fileUrl, async, callIdentifier) {
 	nextActivitiesFileData = null;
+	// Keep a call identifier so we don't "intersect" async calls when two
+	// async calls are started before the first one finishes.
+	var self = this;
+	self.callIdentifier = callIdentifier;
     $.ajax({
         url: fileUrl,
         async: async,
         success: function(data) {
-        	if ((isLoadStarted && async) || !async) {
+        	if ((self.callIdentifier == currentAsyncCall) || !async) {
         		nextActivitiesFileData = eval(data);
             	data = null;
         	}
@@ -938,26 +954,5 @@ function readFileData(fileUrl, async) {
     });
 }
 
-
-/**
- * Read data from the specified urls.
- *
- * @param data_url_list a list of urls from where   it should read the data
- * @param staticFiles <code>true</code> if the urls points to some static files
- */
-function readFloatData(data_url_list, staticFiles) {
-    var result = [];
-    for (var i = 0; i < data_url_list.length; i++) {
-        var data_json = HLPR_readJSONfromFile(data_url_list[i], staticFiles);
-        if (staticFiles) {
-            for (var j = 0; j < data_json.length; j++) {
-                data_json[j] = parseFloat(data_json[j]);
-            }
-        }
-        result.push(data_json);
-        data_json = null;
-    }
-    return result;
-}
 
 /////////////////////////////////////// ~~~~~~~~~~ END DATA RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
