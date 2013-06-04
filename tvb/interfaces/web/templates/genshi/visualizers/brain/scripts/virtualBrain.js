@@ -710,6 +710,9 @@ function drawScene() {
 	        if (currentTimeValue > MAX_TIME_STEP) {
 	        	// Next time value is no longer in activity data.
 	            initActivityData();
+	            if (isDoubleView) {
+					loadEEGChartFromTimeStep(0);
+				}
 	        }
 	    } else {
 	    	updateColors(currentTimeValue);
@@ -720,7 +723,7 @@ function drawScene() {
 		        drawBuffers(gl.TRIANGLES, measurePointsBuffers, false);
 		    } 
 		    if (!isDoubleView) {
-		    	NAV_draw_navigator()
+		    	NAV_draw_navigator();
 		    }
 		    if (isFaceToDisplay) {
 		        mvPushMatrix();
@@ -921,10 +924,10 @@ function changeCurrentActivitiesFile() {
         shouldIncrementTime = false;
         return;
     }
-    totalPassedActivitiesData = totalPassedActivitiesData + activitiesData.length;
     activitiesData = null;
     activitiesData = nextActivitiesFileData.slice(0);
     nextActivitiesFileData = null;
+    totalPassedActivitiesData = totalPassedActivitiesData + currentActivitiesFileLength;
     currentActivitiesFileLength = activitiesData.length * TIME_STEP;
     currentAsyncCall = null;
     if (activitiesData != undefined && activitiesData.length > 0) {
