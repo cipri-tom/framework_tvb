@@ -34,11 +34,14 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+from sqlalchemy.sql import text
 from sqlalchemy import Column, Integer, Boolean
 from migrate.changeset.schema import create_column, drop_column
+from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
-from tvb.basic.logger.builder import get_logger
+from tvb.core.entities.storage import SA_SESSIONMAKER
+from tvb.datatypes.simulation_state import SimulationState
 
 meta = model.Base.metadata
 COL_RANGES_1 = Column('no_of_ranges', Integer, default=0)
@@ -81,7 +84,21 @@ def upgrade(migrate_engine):
         ## we can live with a column only having default value. We will not stop the startup.
         logger = get_logger(__name__)
         logger.exception(excep)
-
+        
+    session = SA_SESSIONMAKER()
+    session.execute(text("""UPDATE "OPERATIONS"
+                               SET status = 
+                                CASE
+                                    WHEN status = 'FINISHED' THEN '4-FINISHED'
+                                    WHEN status = 'STARTED' THEN '3-STARTED'
+                                    WHEN status = 'CANCELED' THEN '2-CANCELED'
+                                    ELSE '1-ERROR'
+                                END
+                             WHERE status IN ('FINISHED', 'CANCELED', 'STARTED', 'ERROR');"""))
+    for sim_state in session.query(SimulationState).filter(SimulationState.fk_datatype_group != None).all():
+        session.delete(sim_state)
+    session.commit()
+    session.close()
 
 
 def downgrade(migrate_engine):
@@ -91,4 +108,16 @@ def downgrade(migrate_engine):
     table = meta.tables['DATA_TYPES_GROUPS']
     drop_column(COL_RANGES_1, table)
     drop_column(COL_RANGES_2, table)
+    
+    session = SA_SESSIONMAKER()
+    
+    session.execute(text("""UPDATE "OPERATIONS"
+                               SET status = 
+                                CASE
+                                    WHEN status = '4-FINISHED' THEN 'FINISHED'
+                                    WHEN status = '3-STARTED' THEN 'STARTED'
+                                    WHEN status = '2-CANCELED' THEN 'CANCELED'
+                                    ELSE 'ERROR'
+                                END
+                             WHERE status IN ('4-FINISHED', '2-CANCELED', '3-STARTED', '1-ERROR');"""))
 

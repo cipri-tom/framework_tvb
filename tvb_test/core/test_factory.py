@@ -117,7 +117,7 @@ class TestFactory():
     
     @staticmethod
     def create_operation(algorithm=None, test_user=None, test_project=None, 
-                         operation_status="FINISHED", parameters="test params"):
+                         operation_status=model.STATUS_FINISHED, parameters="test params"):
         """
         Create persisted operation.
         

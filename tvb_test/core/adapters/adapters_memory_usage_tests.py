@@ -70,7 +70,7 @@ class AdapterMemoryUsageTest(TransactionalTestCase):
         data = {"test" : 5}
         
         operation = model.Operation(self.test_user.id, self.test_project.id, algo_group.id, 
-                                         json.dumps(data), json.dumps({}), status="STARTED",
+                                         json.dumps(data), json.dumps({}), status=model.STATUS_STARTED,
                                          method_name = ABCAdapter.LAUNCH_METHOD)
         operation = dao.store_entity(operation)
         self.assertRaises(MethodUnimplementedException, OperationService().initiate_prelaunch, operation, adapter, {})
@@ -87,7 +87,7 @@ class AdapterMemoryUsageTest(TransactionalTestCase):
         data = {"test" : 5}
         
         operation = model.Operation(self.test_user.id, self.test_project.id, algo_group.id, 
-                                         json.dumps(data), json.dumps({}), status="STARTED",
+                                         json.dumps(data), json.dumps({}), status=model.STATUS_STARTED,
                                          method_name = ABCAdapter.LAUNCH_METHOD)
         operation = dao.store_entity(operation)
         self.assertRaises(NoMemoryAvailableException, OperationService().initiate_prelaunch, operation, adapter, {})

@@ -479,7 +479,7 @@ class OperationServiceTest(BaseTestCase):
         algorithm_id = FlowService().get_algorithm_by_module_and_class('tvb_test.adapters.ndimensionarrayadapter',
                                                                        'NDimensionArrayAdapter')[0].id
         operation = model.Operation(self.test_user.id, self.test_project.id, algorithm_id, 'test params',
-                                    meta=json.dumps({DataTypeMetaData.KEY_STATE: "RAW"}), status="FINISHED",
+                                    meta=json.dumps({DataTypeMetaData.KEY_STATE: "RAW"}), status=model.STATUS_FINISHED,
                                     method_name=ABCAdapter.LAUNCH_METHOD)
         operation = dao.store_entity(operation)
         #save the array wrapper in DB

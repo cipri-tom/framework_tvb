@@ -110,28 +110,28 @@
 			</tfoot>
 			
 			<tbody py:if="operationsList">
-				<tr py:for="operation in operationsList" class="${'ops-group' if operation['group'] else 'ops-single'} ${'ops-finished' if operation['status']=='FINISHED' else 'ops-error' if operation['status']=='ERROR' else 'ops-cancelled' if operation['status']=='CANCELED' else 'ops-started'} ${'ops-relevant' if operation['visible'] else 'ops-irrelevant'} ops-type-${operation['algorithm'].algo_group.group_category.displayname.lower()}" >
+				<tr py:for="operation in operationsList" class="${'ops-group' if operation['group'] else 'ops-single'} ${'ops-finished' if operation['status']=='4-FINISHED' else 'ops-error' if operation['status']=='1-ERROR' else 'ops-cancelled' if operation['status']=='2-CANCELED' else 'ops-started'} ${'ops-relevant' if operation['visible'] else 'ops-irrelevant'} ops-type-${operation['algorithm'].algo_group.group_category.displayname.lower()}" >
 					<td class="id" title="${operation['operation_tag']}">
 						${operation['id']}
 					</td>
-					
-					<td class="state"> 
-						<a py:if="operation['additional'] == ''"  class="action action-mini-zoom-in"  onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');" title="Show details...">${operation['status'].title()}</a> 
-						
-						<nav class="inline-menu" py:if="operation['additional'] != ''">
-							<button tabindex='3' class="action action-menu"><mark>${operation['status'].title()}</mark></button>
+					<py:with vars="op_ui_status = operation['status'].split('-')[1].title()">
+						<td class="state"> 
+							<a py:if="operation['additional'] == ''"  class="action action-mini-zoom-in"  onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');" title="Show details...">${op_ui_status}</a> 
 							
-							<div class="extension">
-								<div class="dropdown-pane">
-									<mark>Retrieved ${'error' if operation['status']== "ERROR" else 'warning'} message:</mark>
-									<p>${operation['additional']}</p>
-									
-									<a class="action action-mini-zoom-in"  onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');" title="Show details...">Show operation details</a>
+							<nav class="inline-menu" py:if="operation['additional'] != ''">
+								<button tabindex='3' class="action action-menu"><mark>${op_ui_status}</mark></button>
+								
+								<div class="extension">
+									<div class="dropdown-pane">
+										<mark>Retrieved ${'error' if operation['status']== "1-ERROR" else 'warning'} message:</mark>
+										<p>${operation['additional']}</p>
+										
+										<a class="action action-mini-zoom-in"  onclick="displayNodeDetails('${operation['gid']}', '${'operationGroup' if operation['group'] else 'operation'}', 'operations');" title="Show details...">Show operation details</a>
+									</div>
 								</div>
-							</div>
-						</nav>
-					</td>
-					
+							</nav>
+						</td>
+					</py:with>
 					<td class="control">
 						<div class="action-block block-player">
 							<py:choose test="(not operation['group']) and (not operation['algorithm'].algo_group.group_category.displayname == 'Create') and (not operation['algorithm'].algo_group.group_category.rawinput) and operation['burst_name']=='-'">
@@ -139,7 +139,7 @@
   								<py:otherwise><button tabindex='3' type="submit" class="action action-run action-idle" disabled="disabled">Reload</button></py:otherwise>
 							</py:choose>
 							<button class="action action-pause action-idle" title="Not supported in current version!" disabled="disabled">Pause</button>
-							<py:choose test="operation['burst_name']=='-' and operation['status'] == 'STARTED'">
+							<py:choose test="operation['burst_name']=='-' and operation['status'] == '3-STARTED'">
 							  	<py:when test="True"><button tabindex='3' type="submit" class="action action-stop" onclick="stopOperation(${operation['id']}, ${1 if operation['group'] else 0})">Stop</button></py:when>
 							  	<py:otherwise><button tabindex='3' type="submit" class="action action-stop action-idle" disabled="disabled">Stop</button></py:otherwise>
 							</py:choose>

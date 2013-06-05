@@ -108,7 +108,7 @@ class SimulatorAdapterTest(TransactionalTestCase):
                                             
         self.operation = model.Operation(self.test_user.id, self.test_project.id, algo_group.id, 
                                          json.dumps(SIMULATOR_PARAMETERS), 
-                                         meta = json.dumps(meta), status="STARTED",
+                                         meta = json.dumps(meta), status=model.STATUS_STARTED,
                                          method_name = ABCAdapter.LAUNCH_METHOD)
         self.operation = dao.store_entity(self.operation)
         

@@ -89,7 +89,7 @@ class TimeSeriesMetricsAdapterTest(TransactionalTestCase):
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW"}
         algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)[1]
         self.operation = model.Operation(self.test_user.id, self.test_project.id, algo_group.id, json.dumps(''),
-                                         meta=json.dumps(meta), status="STARTED",
+                                         meta=json.dumps(meta), status=model.STATUS_STARTED,
                                          method_name=ABCAdapter.LAUNCH_METHOD)
         self.operation = dao.store_entity(self.operation)
         storage_path = FilesHelper().get_project_folder(self.test_project, str(self.operation.id))
