@@ -83,8 +83,8 @@ class BCTTest(TransactionalTestCase):
                 ### Prepare Operation and parameters
                 algorithm = dao.get_algorithm_by_group(self.algo_groups[i].id, bct_identifier)
                 operation = TestFactory.create_operation(algorithm=algorithm, test_user=self.test_user,
-                                                         test_project=self.test_project, operation_status="STARTED")
-                self.assertEqual("STARTED", operation.status)
+                                                         test_project=self.test_project, operation_status=model.STATUS_STARTED)
+                self.assertEqual(model.STATUS_STARTED, operation.status)
                 ### Launch BCT algorithm
                 submit_data = {self.algo_groups[i].algorithm_param_name: bct_identifier,
                                algorithm.parameter_name: self.connectivity.gid}
@@ -96,7 +96,7 @@ class BCTTest(TransactionalTestCase):
 
                     operation = dao.get_operation_by_id(operation.id)
                     ### Check that operation status after execution is success.
-                    self.assertEqual("FINISHED", operation.status)
+                    self.assertEqual("4-FINISHED", operation.status)
                     ### Make sure at least one result exists for each BCT algorithm
                     results = dao.get_generic_entity(model.DataType, operation.id, 'fk_from_operation')
                     self.assertTrue(len(results) > 0)

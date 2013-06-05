@@ -298,10 +298,10 @@ class OperationGroup(Base, Exportable):
 
 
 #Possible values for Operation.status field
-STATUS_STARTED = "STARTED"
-STATUS_FINISHED = "FINISHED"
-STATUS_CANCELED = "CANCELED"
-STATUS_ERROR = "ERROR"
+STATUS_STARTED = "3-STARTED"
+STATUS_FINISHED = "4-FINISHED"
+STATUS_CANCELED = "2-CANCELED"
+STATUS_ERROR = "1-ERROR"
 
 
 
@@ -472,7 +472,7 @@ class Operation(Base, Exportable):
             self.start_date = string2date(dictionary['start_date'])
         if dictionary['completion_date'] != "None":
             self.completion_date = string2date(dictionary['completion_date'])
-        self.status = dictionary['status']
+        self.status = self._parse_status(dictionary['status'])
         self.visible = string2bool(dictionary['visible'])
         self.range_values = dictionary['range_values']
         self.user_group = dictionary['user_group']
@@ -480,6 +480,20 @@ class Operation(Base, Exportable):
         self.gid = dictionary['gid']
 
         return self
+    
+    
+    def _parse_status(self, status):
+        """
+        To keep backwards compatibility, when we import an operation that did not have new 
+        operation status.
+        """
+        if status in (STATUS_FINISHED, 'FINISHED'):
+            return STATUS_FINISHED
+        elif status in (STATUS_ERROR, 'ERROR'):
+            return STATUS_ERROR
+        elif status in (STATUS_CANCELED, 'CANCELED'):
+            return STATUS_CANCELED
+        return STATUS_STARTED
 
 
 

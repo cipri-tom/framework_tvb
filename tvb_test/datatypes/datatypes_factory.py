@@ -103,7 +103,7 @@ class DatatypesFactory():
         self.meta = {DataTypeMetaData.KEY_SUBJECT: self.USER_FULL_NAME,
                      DataTypeMetaData.KEY_STATE: self.DATATYPE_STATE}
         operation = model.Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
-                                    meta=json.dumps(self.meta), status="FINISHED", method_name=ABCAdapter.LAUNCH_METHOD)
+                                    meta=json.dumps(self.meta), status=model.STATUS_FINISHED, method_name=ABCAdapter.LAUNCH_METHOD)
         self.operation = dao.store_entity(operation)
 
 
@@ -188,7 +188,7 @@ class DatatypesFactory():
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW"}
         algorithm, algo_group = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
         operation = model.Operation(self.user.id, self.project.id, algo_group.id, json.dumps(''),
-                                    meta=json.dumps(meta), status="STARTED", method_name=ABCAdapter.LAUNCH_METHOD)
+                                    meta=json.dumps(meta), status=model.STATUS_STARTED, method_name=ABCAdapter.LAUNCH_METHOD)
         operation = dao.store_entity(operation)
         storage_path = FilesHelper().get_project_folder(self.project, str(operation.id))
         return operation, algorithm.id, storage_path
@@ -339,7 +339,7 @@ class DatatypesFactory():
         # Now create some data types and add them to group
         for range_val in ['a', 'b', 'c']:
             operation = model.Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
-                                        meta=json.dumps(self.meta), status="FINISHED",
+                                        meta=json.dumps(self.meta), status=model.STATUS_FINISHED,
                                         method_name=ABCAdapter.LAUNCH_METHOD,
                                         range_values=json.dumps({'row1': range_val}))
             operation.fk_operation_group = group.id

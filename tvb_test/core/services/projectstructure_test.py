@@ -527,7 +527,7 @@ class ProjectStructureTest(TransactionalTestCase):
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
                 DataTypeMetaData.KEY_STATE: "RAW"}
         operation = model.Operation(self.test_user.id, project_id, algorithm.id, 'test params',
-                                    meta=json.dumps(meta), status="FINISHED",
+                                    meta=json.dumps(meta), status=model.STATUS_FINISHED,
                                     method_name=ABCAdapter.LAUNCH_METHOD)
         return dao.store_entity(operation)
 
