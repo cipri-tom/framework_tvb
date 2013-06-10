@@ -1673,7 +1673,8 @@ action-page-fwd
 #overlay .action-page-fwd, 
 #main .view-column .action-relevancy,
 #main .controller .action-relevancy,
-#overlay .action-relevancy {
+#overlay .action-relevancy,
+#main .view-column .action-remove {
 padding-left: 0;
 text-indent: -1000em;
 width: 35px;

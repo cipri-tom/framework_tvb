@@ -681,12 +681,18 @@ class FlowController(base.BaseController):
     @ajax_call()
     @logged()
     @context_selected()
-    def reload_burst_operation(self, operation_id, **_):
+    def reload_burst_operation(self, operation_id, is_group, **_):
         """
         Find out from which burst was this operation launched. Set that burst as the selected one and 
         redirect to the burst page.
         """
-        operation = self.flow_service.load_operation(self._parse_op_id(operation_id)[0])
+        is_group = int(is_group)
+        if not is_group:
+            operation = self.flow_service.load_operation(int(operation_id))
+        else:
+            op_group = ProjectService.get_operation_group_by_id(operation_id)
+            first_op = ProjectService.get_operations_in_group(op_group)[0]
+            operation = self.flow_service.load_operation(int(first_op.id))
         operation.burst.prepare_after_load()
         base.add2session(base.KEY_BURST_CONFIG, operation.burst)
         raise cherrypy.HTTPRedirect("/burst/")
@@ -700,15 +706,14 @@ class FlowController(base.BaseController):
         operations from that group.
         """
         operation_service = OperationService()
-        operation_id = self._parse_op_id(operation_id)[0]
         result = False
         if int(is_group) == 0:
             result = operation_service.stop_operation(operation_id)
             if remove_after_stop:
                 ProjectService().remove_operation(operation_id)
         else:
-            operation = self.flow_service.load_operation(operation_id)
-            operations_in_group = ProjectService.get_operations_in_group(operation.operation_group)
+            op_group = ProjectService.get_operation_group_by_id(operation_id)
+            operations_in_group = ProjectService.get_operations_in_group(op_group)
             for operation in operations_in_group:
                 tmp_res = operation_service.stop_operation(operation.id)
                 if remove_after_stop:
@@ -719,11 +724,17 @@ class FlowController(base.BaseController):
     
     @cherrypy.expose
     @ajax_call()
-    def stop_burst_operation(self, operation_id, remove_after_stop=False):
+    def stop_burst_operation(self, operation_id, is_group, remove_after_stop=False):
         """
         For a given operation id that is part of a burst just stop the given burst.
         """
-        operation = self.flow_service.load_operation(self._parse_op_id(operation_id)[0])
+        operation_id = int(operation_id)
+        if int(is_group) == 0:
+            operation = self.flow_service.load_operation(operation_id)
+        else:
+            op_group = ProjectService.get_operation_group_by_id(operation_id)
+            first_op = ProjectService.get_operations_in_group(op_group)[0]
+            operation = self.flow_service.load_operation(int(first_op.id))
         try:
             burst_service = BurstService()
             burst_service.stop_burst(operation.burst)
