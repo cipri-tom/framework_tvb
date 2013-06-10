@@ -467,6 +467,16 @@ function reloadOperation(operationId, formId) {
 
 
 /**
+ * Take an operation Identifier which was started from a burst, and redirect to the 
+ * burst page with that given burst as the selected one.
+ */
+function reloadBurstOperation(operationId, formId) {
+	document.getElementById(formId).action = "/flow/reload_burst_operation/" + operationId;
+	document.getElementById(formId).submit();
+}
+
+
+/**
  * To be called from Operation/DataType overlay window to switch current entity's visibility.
  */
 function overlayMarkVisibility(entityGID, entityType, toBeVisible, backPage) {
@@ -538,6 +548,53 @@ function stopOperation(operationId, isGroup) {
       });
 }
 
+
+function stopBurstOperation(operationId) {
+    // Take an operation Identifier and reload previously selected input parameters for it.
+    $.ajax({ async : false,
+        type: 'POST',
+        url: "/flow/stop_burst_operation/" + operationId,
+        success: function(r) {  if (r == 'true') {				
+        							displayMessage("The burst was succesfully stopped.", "infoMessage")
+        						} else {
+        							displayMessage("The burst was already finished.",'warningMessage');
+        						}		
+        					  },
+		error: function(r) {
+								 displayMessage("Some error occured during burst stop.",'errorMessage'); 
+							}
+      });
+}
+
+
+function deleteOperation(operationId, isGroup) {
+	// Delete a operation that was not part of a group
+	$.ajax({ async : false,
+        type: 'POST',
+        url: "/flow/stop_operation/" + operationId + '/' + isGroup + '/True',
+        success: function(r) {  if (r == 'true') {				
+        							displayMessage("The operation was succesfully removed.", "infoMessage")
+        						} else {
+        							displayMessage("Could not remove operation.",'warningMessage');
+        						}},
+		error: function(r) { displayMessage("Some error occured while removing operation.",'errorMessage'); }});
+}
+
+
+function deleteBurstOperation(operationId) {
+	// Delete a operation that was part of a burst launch
+	$.ajax({ async : false,
+        type: 'POST',
+        url: "/flow/stop_burst_operation/" + operationId + '/True',
+        success: function(r) {  if (r == 'true') {				
+        							displayMessage("The burst was succesfully removed.", "infoMessage")
+        						} else {
+        							displayMessage("Could not remove burst.",'warningMessage');
+        						}},
+		error: function(r) { displayMessage("Some error occured while removing burst.",'errorMessage'); }});
+}
+
+
 function resetOperationFilters(submitFormId) {
 	//Reset all the filters set for the operation page.
 	var input = document.createElement("INPUT");
@@ -556,6 +613,9 @@ function applyOperationFilter(filterName, submitFormId) {
 	document.getElementById(submitFormId).submit();
 }
 
+function refreshOperations() {
+	document.getElementById('operationsForm').submit();
+}
 
 // ----------------END OPERATIONS----------------------------
 
@@ -694,6 +754,26 @@ function showBlockerOverlay(timeout, overlay_data) {
 		// Ensure that overlay will close in 1 min 
 		BLOCKER_OVERLAY_TIMEOUT = setTimeout(forceCloseBlockerOverlay, timeout);
 	}
+}
+
+function showQuestionOverlay(question, yesCallback, noCallback) {
+	/*
+	 * Dispaly a question overlay with yes / no answers. The params yesCallback / noCallback
+	 * are javascript code that will be evaluated when pressing the corresponding choice buttons.
+	 */
+	var undefined;
+	if (yesCallback == undefined) {
+		yesCallback = 'closeOverlay()';
+	}
+	if (noCallback == undefined) {
+		noCallback = 'closeOverlay()';
+	}
+	var url = "/project/show_confirmation_overlay";
+	var data = {'yes_action' : yesCallback, 'no_action' : noCallback}
+	if (question != undefined) {
+		data['question'] = question;
+	}
+	showOverlay(url, true, data);
 }
 
 function forceCloseBlockerOverlay() {

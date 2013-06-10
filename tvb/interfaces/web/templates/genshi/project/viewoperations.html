@@ -82,7 +82,6 @@
 	<!-- Column displaying the operation list -->
 	<section class="ops-list view-column col-2">
 		<h4><mark>Manage</mark> Operations</h4>
-		<a href="#" title="Refresh Entire page" class="column-control action action-refresh" onclick="document.getElementById('operationsForm').submit();">Refresh</a>
 
 		<table>
 			<!-- Table header -->
@@ -134,15 +133,58 @@
 					</py:with>
 					<td class="control">
 						<div class="action-block block-player">
-							<py:choose test="(not operation['group']) and (not operation['algorithm'].algo_group.group_category.displayname == 'Create') and (not operation['algorithm'].algo_group.group_category.rawinput) and operation['burst_name']=='-'">
-								<py:when test="True"><button tabindex='3' type="submit" class="action action-run" onclick="reloadOperation(${operation['id']}, 'operationsForm')">Reload</button></py:when>
-  								<py:otherwise><button tabindex='3' type="submit" class="action action-run action-idle" disabled="disabled">Reload</button></py:otherwise>
+							<py:choose test="not operation['burst_name']=='-'">
+								<py:when test="True">
+									<!-- Part of a burst. Redirect to burst page with this one as selected -->
+									<button tabindex='3' type="submit" class="action action-run" onclick="reloadBurstOperation('${operation['id']}', 'operationsForm')">Reload</button>
+								</py:when>
+  								<py:otherwise>
+  									<py:choose test="(not operation['group']) and (not operation['algorithm'].algo_group.group_category.displayname == 'Create') and (not operation['algorithm'].algo_group.group_category.rawinput)">
+  										<py:when test="True">
+											<!-- Normal operation reload -->
+  											<button tabindex='3' type="submit" class="action action-run" onclick="reloadOperation(${operation['id']}, 'operationsForm')">Reload</button>
+  										</py:when>
+  										<py:otherwise>
+  											<!-- Upload or non-burst group which we can't reload -->
+  											<button tabindex='3' type="submit" class="action action-run action-idle" disabled="disabled">Reload</button>
+  										</py:otherwise>
+  									</py:choose>
+  								</py:otherwise>
 							</py:choose>
-							<button class="action action-pause action-idle" title="Not supported in current version!" disabled="disabled">Pause</button>
-							<py:choose test="operation['burst_name']=='-' and operation['status'] == '3-STARTED'">
-							  	<py:when test="True"><button tabindex='3' type="submit" class="action action-stop" onclick="stopOperation(${operation['id']}, ${1 if operation['group'] else 0})">Stop</button></py:when>
-							  	<py:otherwise><button tabindex='3' type="submit" class="action action-stop action-idle" disabled="disabled">Stop</button></py:otherwise>
+							<py:choose test="operation['status'] == '3-STARTED'">
+							  	<py:when test="True">
+							  		<py:choose test="operation['burst_name']!='-'">
+							  			<py:when test="True">
+							  				<button tabindex='3' type="submit" class="action action-stop" onclick="stopBurstOperation('${operation['id']}')">Stop</button>
+							  			</py:when>
+							  			<py:otherwise>
+							  				<button tabindex='3' type="submit" class="action action-stop" onclick="stopOperation('${operation['id']}', ${1 if operation['group'] else 0})">Stop</button>
+							  			</py:otherwise>
+							  		</py:choose>
+							  	</py:when>
+							  	<py:otherwise>
+							  		<button tabindex='3' type="submit" class="action action-stop action-idle" disabled="disabled">Stop</button>
+							  	</py:otherwise>
 							</py:choose>
+							<py:choose test="operation['burst_name']!='-'">
+					  			<py:when test="True">
+									<!-- Remove burst button -->
+									<py:with vars="op_id = str(operation['id']).split('-')[-1]; ok_callback = 'deleteBurstOperation(' + op_id + '); refreshOperations();'">
+										<a href="#" class="action action-remove" title="Remove burst"
+										onclick="showQuestionOverlay('Are you sure you want to delete the burst?', '${ok_callback}')">
+											B
+										</a>
+									</py:with>
+					  			</py:when>
+					  			<py:otherwise>
+									<py:with vars="op_id = str(operation['id']).split('-')[-1]; ok_callback = 'deleteOperation(' + op_id + ', ' + str(1 if operation['group'] else 0) + '); refreshOperations();'">
+										<a href="#" class="action action-remove" title="Remove operation"
+										onclick="showQuestionOverlay('Are you sure you want to delete the operation?', '${ok_callback}')">
+											O
+										</a>
+									</py:with>
+					  			</py:otherwise>
+					  		</py:choose>
 						</div>
 					</td>
 					
@@ -179,6 +221,15 @@
 	</section>
 	
 </form>
+
+<py:if test="started_count > 0">
+	<script type="text/javascript">
+		$(document).ready(function() {
+			setTimeout(function() { refreshOperations(); }, 5000);
+		});
+	</script>
+</py:if>
+
 </div>
 
 

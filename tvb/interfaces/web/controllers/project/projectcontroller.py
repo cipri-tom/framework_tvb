@@ -282,12 +282,12 @@ class ProjectController(bc.BaseController):
                 my_filter.passes_count = ''
 
         page = int(page)
-        project, total_op_count, filtered_ops, pages_no = self.project_service.retrieve_project_full(project_id,
+        project, total_op_count, started_ops, filtered_ops, pages_no = self.project_service.retrieve_project_full(project_id,
                                                                                                 selected_filters, page)
         ## Select current project
         self._mark_selected(project)
 
-        template_specification = dict(mainContent="project/viewoperations", project=project,
+        template_specification = dict(mainContent="project/viewoperations", project=project, started_count=started_ops,
                                       title='Past operations for " ' + project.name + '"', operationsList=filtered_ops,
                                       total_op_count=total_op_count, total_pages=pages_no, page_number=page,
                                       filters=filters, no_filter_selected=(selected_filters is None))
@@ -309,6 +309,20 @@ class ProjectController(bc.BaseController):
             bc.add2session(self.KEY_OPERATION_FILTERS, new_filters)
             return new_filters
 
+
+    @cherrypy.expose
+    @using_template("overlay_confirmation")
+    @logged()
+    def show_confirmation_overlay(self, **data):
+        """
+        Returns the content of a confirmation dialog, with a given question. 
+        """
+        if not data:
+            data = {}
+        question = data.get('question', "Are you sure ?")
+        data['question'] = question
+        return self.fill_default_attributes(data)
+    
 
     @cherrypy.expose
     @using_template("overlay")
