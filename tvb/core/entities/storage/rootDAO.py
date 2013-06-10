@@ -35,6 +35,7 @@ Base DAO behavior.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+from sqlalchemy.orm.exc import NoResultFound
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import model
 from tvb.core.entities.storage.sessionmaker import SESSION_META_CLASS
@@ -101,6 +102,8 @@ class RootDAO(object):
             self.session.delete(entity)
             self.session.commit()
             result = True
+        except NoResultFound, ex:
+            self.logger.info("Entity from class %s with id %s no longer exists."%(entity_class, entity_id))
         except Exception, excep:
             self.logger.exception(excep)
         return result

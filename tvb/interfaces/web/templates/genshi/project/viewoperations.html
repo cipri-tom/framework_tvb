@@ -133,58 +133,66 @@
 					</py:with>
 					<td class="control">
 						<div class="action-block block-player">
-							<py:choose test="not operation['burst_name']=='-'">
-								<py:when test="True">
-									<!-- Part of a burst. Redirect to burst page with this one as selected -->
-									<button tabindex='3' type="submit" class="action action-run" onclick="reloadBurstOperation('${operation['id']}', 'operationsForm')">Reload</button>
-								</py:when>
-  								<py:otherwise>
-  									<py:choose test="(not operation['group']) and (not operation['algorithm'].algo_group.group_category.displayname == 'Create') and (not operation['algorithm'].algo_group.group_category.rawinput)">
-  										<py:when test="True">
-											<!-- Normal operation reload -->
-  											<button tabindex='3' type="submit" class="action action-run" onclick="reloadOperation(${operation['id']}, 'operationsForm')">Reload</button>
-  										</py:when>
-  										<py:otherwise>
-  											<!-- Upload or non-burst group which we can't reload -->
-  											<button tabindex='3' type="submit" class="action action-run action-idle" disabled="disabled">Reload</button>
-  										</py:otherwise>
-  									</py:choose>
-  								</py:otherwise>
-							</py:choose>
-							<py:choose test="operation['status'] == '3-STARTED'">
-							  	<py:when test="True">
-							  		<py:choose test="operation['burst_name']!='-'">
-							  			<py:when test="True">
-							  				<button tabindex='3' type="submit" class="action action-stop" onclick="stopBurstOperation('${operation['id']}')">Stop</button>
-							  			</py:when>
-							  			<py:otherwise>
-							  				<button tabindex='3' type="submit" class="action action-stop" onclick="stopOperation('${operation['id']}', ${1 if operation['group'] else 0})">Stop</button>
-							  			</py:otherwise>
-							  		</py:choose>
-							  	</py:when>
-							  	<py:otherwise>
-							  		<button tabindex='3' type="submit" class="action action-stop action-idle" disabled="disabled">Stop</button>
-							  	</py:otherwise>
-							</py:choose>
-							<py:choose test="operation['burst_name']!='-'">
-					  			<py:when test="True">
-									<!-- Remove burst button -->
-									<py:with vars="op_id = str(operation['id']).split('-')[-1]; ok_callback = 'deleteBurstOperation(' + op_id + '); refreshOperations();'">
-										<a href="#" class="action action-remove" title="Remove burst"
-										onclick="clearTimeout(refreshOpsTimeout); showQuestionOverlay('Are you sure you want to delete the burst?', '${ok_callback}')">
-											B
-										</a>
-									</py:with>
-					  			</py:when>
-					  			<py:otherwise>
-									<py:with vars="op_id = str(operation['id']).split('-')[-1]; ok_callback = 'deleteOperation(' + op_id + ', ' + str(1 if operation['group'] else 0) + '); refreshOperations();'">
-										<a href="#" class="action action-remove" title="Remove operation"
-										onclick="clearTimeout(refreshOpsTimeout); showQuestionOverlay('Are you sure you want to delete the operation?', '${ok_callback}')">
+							<py:with vars="op_id = operation['id'] if not operation['group'] else operation['operation_group_id']; is_group = 1 if operation['group'] else 0">
+								<py:choose test="not operation['burst_name']=='-'">
+									<py:when test="True">
+										<!-- Part of a burst. Redirect to burst page with this one as selected -->
+										<button tabindex='3' type="submit" class="action action-run" onclick="reloadBurstOperation('${op_id}', ${is_group}, 'operationsForm')">
+											Reload
+										</button>
+									</py:when>
+	  								<py:otherwise>
+	  									<py:choose test="(not operation['group']) and (not operation['algorithm'].algo_group.group_category.displayname == 'Create') and (not operation['algorithm'].algo_group.group_category.rawinput)">
+	  										<py:when test="True">
+												<!-- Normal operation reload -->
+	  											<button tabindex='3' type="submit" class="action action-run" onclick="reloadOperation(${operation['id']}, 'operationsForm')">Reload</button>
+	  										</py:when>
+	  										<py:otherwise>
+	  											<!-- Upload or non-burst group which we can't reload -->
+	  											<button tabindex='3' type="submit" class="action action-run action-idle" disabled="disabled">Reload</button>
+	  										</py:otherwise>
+	  									</py:choose>
+	  								</py:otherwise>
+								</py:choose>
+								<py:choose test="operation['status'] == '3-STARTED'">
+								  	<py:when test="True">
+								  		<py:choose test="operation['burst_name']!='-'">
+								  			<py:when test="True">
+								  				<button tabindex='3' type="submit" class="action action-stop" onclick="stopBurstOperation('${op_id}', ${is_group})">
+								  					Stop
+								  				</button>
+								  			</py:when>
+								  			<py:otherwise>
+								  				<button tabindex='3' type="submit" class="action action-stop" onclick="stopOperation('${op_id}', ${is_group})">
+								  					Stop
+								  				</button>
+								  			</py:otherwise>
+								  		</py:choose>
+								  	</py:when>
+								  	<py:otherwise>
+								  		<button tabindex='3' type="submit" class="action action-stop action-idle" disabled="disabled">Stop</button>
+								  	</py:otherwise>
+								</py:choose>
+								<py:choose test="operation['burst_name']!='-'">
+						  			<py:when test="True">
+										<!-- Remove burst button. TODO: Once TVB-926 is finished we should have a new icon here. -->
+										<py:with vars="ok_callback = 'deleteBurstOperation(' + str(op_id) + ', ' + str(is_group) + '); refreshOperations();'">
+											<button type="submit" class="action action-remove" title="Remove burst"
+											onclick="clearOperationTimeout(); showQuestionOverlay('Are you sure you want to delete the burst?', '${ok_callback}'); return false;">
 											O
-										</a>
-									</py:with>
-					  			</py:otherwise>
-					  		</py:choose>
+											</button>
+										</py:with>
+						  			</py:when>
+						  			<py:otherwise>
+										<py:with vars="ok_callback = 'deleteOperation(' + str(op_id) + ', ' + str(is_group) + '); refreshOperations();'">
+											<button type="submit" class="action action-remove" title="Remove operation"
+											onclick="clearOperationTimeout(); showQuestionOverlay('Are you sure you want to delete the operation?', '${ok_callback}'); return false;">
+											B
+											</button>
+										</py:with>
+						  			</py:otherwise>
+						  		</py:choose>
+					  		</py:with>
 						</div>
 					</td>
 					

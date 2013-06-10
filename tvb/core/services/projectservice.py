@@ -627,10 +627,13 @@ class ProjectService:
         Remove a given operation 
         """
         operation = dao.get_operation_by_id(operation_id)
-        datatypes_for_op = dao.get_results_for_operation(operation_id)
-        for dt in datatypes_for_op:
-            self.remove_datatype(operation.project.id, dt.gid, True)
-        dao.remove_entity(model.Operation, operation.id)
+        if operation is not None:
+            datatypes_for_op = dao.get_results_for_operation(operation_id)
+            for dt in datatypes_for_op:
+                self.remove_datatype(operation.project.id, dt.gid, True)
+            dao.remove_entity(model.Operation, operation.id)
+        else:
+            self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)
         
 
     def remove_datatype(self, project_id, datatype_gid, skip_validation=False):

@@ -470,8 +470,8 @@ function reloadOperation(operationId, formId) {
  * Take an operation Identifier which was started from a burst, and redirect to the 
  * burst page with that given burst as the selected one.
  */
-function reloadBurstOperation(operationId, formId) {
-	document.getElementById(formId).action = "/flow/reload_burst_operation/" + operationId;
+function reloadBurstOperation(operationId, isGroup, formId) {
+	document.getElementById(formId).action = "/flow/reload_burst_operation/" + operationId + '/' + isGroup;
 	document.getElementById(formId).submit();
 }
 
@@ -512,6 +512,11 @@ function _markEntityVisibility(entityGID, entityType, toBeVisible) {
 // ---------------------------------------------------------
 
 /**
+ * Timeout used to refresh the operations page if any operations are started.
+ */
+var refreshOpsTimeout;
+
+/**
  * Sets the visibility for an operation, from specifically the View Operation page. 
  * This will also trigger operation reload.
  *
@@ -549,11 +554,11 @@ function stopOperation(operationId, isGroup) {
 }
 
 
-function stopBurstOperation(operationId) {
+function stopBurstOperation(operationId, isGroup) {
     // Take an operation Identifier and reload previously selected input parameters for it.
     $.ajax({ async : false,
         type: 'POST',
-        url: "/flow/stop_burst_operation/" + operationId,
+        url: "/flow/stop_burst_operation/" + operationId + '/' + isGroup,
         success: function(r) {  if (r == 'true') {				
         							displayMessage("The burst was succesfully stopped.", "infoMessage")
         						} else {
@@ -581,11 +586,11 @@ function deleteOperation(operationId, isGroup) {
 }
 
 
-function deleteBurstOperation(operationId) {
+function deleteBurstOperation(operationId, isGroup) {
 	// Delete a operation that was part of a burst launch
 	$.ajax({ async : false,
         type: 'POST',
-        url: "/flow/stop_burst_operation/" + operationId + '/True',
+        url: "/flow/stop_burst_operation/" + operationId + '/' + isGroup + '/True',
         success: function(r) {  if (r == 'true') {				
         							displayMessage("The burst was succesfully removed.", "infoMessage")
         						} else {
@@ -615,6 +620,13 @@ function applyOperationFilter(filterName, submitFormId) {
 
 function refreshOperations() {
 	document.getElementById('operationsForm').submit();
+}
+
+function clearOperationTimeout() {
+	var undefined;
+	if (refreshOpsTimeout != undefined) {
+		clearTimeout(refreshOpsTimeout);
+	}
 }
 
 // ----------------END OPERATIONS----------------------------
