@@ -113,7 +113,7 @@ class ContextDiscretePSE(EnhancedDictionary):
                     datatype_tooltip = datatype_tooltip + self.LINE_SEPARATOR + str(key) + ": " + str(value)
             node_info[self.KEY_TOOLTIP] = datatype_tooltip
         else:
-            node_info[self.KEY_TOOLTIP] = "No result available. Operation is in status: %s" % operation.status
+            node_info[self.KEY_TOOLTIP] = "No result available. Operation is in status: %s" % operation.status.split('-')[1]
         return node_info
     
     

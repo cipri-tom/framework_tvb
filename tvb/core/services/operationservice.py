@@ -524,7 +524,7 @@ class OperationService:
         """
         Stop the operation given by the operation id.
         """
-        return BACKEND_CLIENT.stop_operation(operation_id)
+        return BACKEND_CLIENT.stop_operation(int(operation_id))
 
     
     

@@ -571,8 +571,8 @@ class BaseController(object):
         Returns the content of the blocking overlay (covers entire page and do not allow any action)
         """
         return self.fill_default_attributes(dict(data))
-
-
+    
+    
     def update_operations_count(self):
         """
         If a project is selected, update Operation Numbers in call-out.

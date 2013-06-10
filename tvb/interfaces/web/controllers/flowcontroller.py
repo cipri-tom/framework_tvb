@@ -48,6 +48,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operationservice import OperationService, PARAM_RANGE_1
 from tvb.core.services.projectservice import ProjectService
+from tvb.core.services.burstservice import BurstService
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 from tvb.interfaces.web.controllers.userscontroller import logged
 from tvb.interfaces.web.controllers.basecontroller import using_template, ajax_call
@@ -675,26 +676,79 @@ class FlowController(base.BaseController):
         algo_id = operation.algorithm.fk_algo_group
         raise cherrypy.HTTPRedirect("/flow/" + str(category_id) + "/" + str(algo_id) + "?not_reset=True")
 
+    
+    @cherrypy.expose
+    @ajax_call()
+    @logged()
+    @context_selected()
+    def reload_burst_operation(self, operation_id, **_):
+        """
+        Find out from which burst was this operation launched. Set that burst as the selected one and 
+        redirect to the burst page.
+        """
+        operation = self.flow_service.load_operation(self._parse_op_id(operation_id)[0])
+        operation.burst.prepare_after_load()
+        base.add2session(base.KEY_BURST_CONFIG, operation.burst)
+        raise cherrypy.HTTPRedirect("/burst/")
+
 
     @cherrypy.expose
     @ajax_call()
-    def stop_operation(self, operation_id, is_group):
+    def stop_operation(self, operation_id, is_group, remove_after_stop=False):
         """
         Stop the operation given by operation_id. If is_group is true stop all the
         operations from that group.
         """
         operation_service = OperationService()
+        operation_id = self._parse_op_id(operation_id)[0]
         result = False
         if int(is_group) == 0:
             result = operation_service.stop_operation(operation_id)
+            if remove_after_stop:
+                ProjectService().remove_operation(operation_id)
         else:
-            operation_id = operation_id.split(',')[0]
             operation = self.flow_service.load_operation(operation_id)
             operations_in_group = ProjectService.get_operations_in_group(operation.operation_group)
             for operation in operations_in_group:
                 tmp_res = operation_service.stop_operation(operation.id)
+                if remove_after_stop:
+                    ProjectService().remove_operation(operation.id)
                 result = result or tmp_res
         return result
+    
+    
+    @cherrypy.expose
+    @ajax_call()
+    def stop_burst_operation(self, operation_id, remove_after_stop=False):
+        """
+        For a given operation id that is part of a burst just stop the given burst.
+        """
+        operation = self.flow_service.load_operation(self._parse_op_id(operation_id)[0])
+        try:
+            burst_service = BurstService()
+            burst_service.stop_burst(operation.burst)
+            if remove_after_stop:
+                current_burst = base.get_from_session(base.KEY_BURST_CONFIG)
+                if current_burst and current_burst.id == operation.burst.id:
+                    base.remove_from_session(base.KEY_BURST_CONFIG)
+                burst_service.remove_burst(operation.burst.id)
+            return True
+        except Exception, ex:
+            self.logger.exception(ex)
+            return False
+        
+        
+    def _parse_op_id(self, operation_id):
+        """
+        Get the operation id from the one passed from the UI. In case of a range of operation
+        the id will have the form from_id-to_id.
+        """
+        is_group = False
+        if '-' in operation_id:
+            # Parf of a group, just split and take any since both are from same burst
+            operation_id = operation_id.split('-')[-1]
+            is_group = True
+        return int(operation_id), is_group
 
 
     def fill_default_attributes(self, template_dictionary, algo_group=None):

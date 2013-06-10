@@ -499,7 +499,7 @@ class BurstService():
                     any_stopped = self.operation_service.stop_operation(step.fk_operation) or any_stopped
 
         if any_stopped and burst_entity.status != burst_entity.BURST_CANCELED:
-                self.workflow_service.mark_burst_finished(burst_entity, cancel=True)
+            self.workflow_service.mark_burst_finished(burst_entity, cancel=True)
         
     
     @transactional 

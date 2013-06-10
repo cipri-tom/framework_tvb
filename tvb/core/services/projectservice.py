@@ -190,6 +190,7 @@ class ProjectService:
         pages_no = total_filtered // OPERATIONS_PAGE_SIZE + (1 if total_filtered % OPERATIONS_PAGE_SIZE else 0)
         total_ops_nr = self.count_filtered_operations(project_id)
         current_ops = dao.get_filtered_operations(project_id, applied_filters, start_idx, end_idx)
+        started_ops = 0
         if current_ops is None:
             return selected_project, [], 0
         operations = []
@@ -259,6 +260,8 @@ class ProjectService:
                 if result["complete"] is not None and result["start"] is not None:
                     result["duration"] = timedelta2string(result["complete"] - result["start"])
                 result["status"] = one_op[10]
+                if result["status"] == model.STATUS_STARTED:
+                    started_ops += 1
                 result["additional"] = one_op[11]
                 result["visible"] = True if one_op[12] > 0 else False
                 result['operation_tag'] = one_op[13]
@@ -285,7 +288,7 @@ class ProjectService:
                 ## We got an exception when processing one Operation Row. We will continue with the rest of the rows.
                 self.logger.error(excep)
                 self.logger.exception("Could not prepare operation for display:" + str(one_op))
-        return selected_project, total_ops_nr, operations, pages_no
+        return selected_project, total_ops_nr, started_ops, operations, pages_no
 
 
     def retrieve_projects_for_user(self, user_id, current_page=1):
@@ -618,6 +621,17 @@ class ProjectService:
             self.logger.exception(excep)
             raise StructureException("Remove operation failed for unknown reasons.Please contact system administrator.")
 
+
+    def remove_operation(self, operation_id):
+        """
+        Remove a given operation 
+        """
+        operation = dao.get_operation_by_id(operation_id)
+        datatypes_for_op = dao.get_results_for_operation(operation_id)
+        for dt in datatypes_for_op:
+            self.remove_datatype(operation.project.id, dt.gid, True)
+        dao.remove_entity(model.Operation, operation.id)
+        
 
     def remove_datatype(self, project_id, datatype_gid, skip_validation=False):
         """
