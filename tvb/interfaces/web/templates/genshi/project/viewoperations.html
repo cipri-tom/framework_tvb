@@ -171,7 +171,7 @@
 									<!-- Remove burst button -->
 									<py:with vars="op_id = str(operation['id']).split('-')[-1]; ok_callback = 'deleteBurstOperation(' + op_id + '); refreshOperations();'">
 										<a href="#" class="action action-remove" title="Remove burst"
-										onclick="showQuestionOverlay('Are you sure you want to delete the burst?', '${ok_callback}')">
+										onclick="clearTimeout(refreshOpsTimeout); showQuestionOverlay('Are you sure you want to delete the burst?', '${ok_callback}')">
 											B
 										</a>
 									</py:with>
@@ -179,7 +179,7 @@
 					  			<py:otherwise>
 									<py:with vars="op_id = str(operation['id']).split('-')[-1]; ok_callback = 'deleteOperation(' + op_id + ', ' + str(1 if operation['group'] else 0) + '); refreshOperations();'">
 										<a href="#" class="action action-remove" title="Remove operation"
-										onclick="showQuestionOverlay('Are you sure you want to delete the operation?', '${ok_callback}')">
+										onclick="clearTimeout(refreshOpsTimeout); showQuestionOverlay('Are you sure you want to delete the operation?', '${ok_callback}')">
 											O
 										</a>
 									</py:with>
@@ -225,7 +225,7 @@
 <py:if test="started_count > 0">
 	<script type="text/javascript">
 		$(document).ready(function() {
-			setTimeout(function() { refreshOperations(); }, 5000);
+			refreshOpsTimeout = setTimeout(function() { refreshOperations(); }, 5000);
 		});
 	</script>
 </py:if>
