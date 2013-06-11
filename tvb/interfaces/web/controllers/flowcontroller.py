@@ -747,19 +747,6 @@ class FlowController(base.BaseController):
         except Exception, ex:
             self.logger.exception(ex)
             return False
-        
-        
-    def _parse_op_id(self, operation_id):
-        """
-        Get the operation id from the one passed from the UI. In case of a range of operation
-        the id will have the form from_id-to_id.
-        """
-        is_group = False
-        if '-' in operation_id:
-            # Parf of a group, just split and take any since both are from same burst
-            operation_id = operation_id.split('-')[-1]
-            is_group = True
-        return int(operation_id), is_group
 
 
     def fill_default_attributes(self, template_dictionary, algo_group=None):

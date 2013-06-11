@@ -515,6 +515,7 @@ function _markEntityVisibility(entityGID, entityType, toBeVisible) {
  * Timeout used to refresh the operations page if any operations are started.
  */
 var refreshOpsTimeout;
+var overlayDisplayed = false;
 
 /**
  * Sets the visibility for an operation, from specifically the View Operation page. 
@@ -619,7 +620,15 @@ function applyOperationFilter(filterName, submitFormId) {
 }
 
 function refreshOperations() {
-	document.getElementById('operationsForm').submit();
+	/*
+	 * Refresh the operation page is no overlay is currently displayed.
+	 */
+	if (overlayDisplayed == false) {
+		document.getElementById('operationsForm').submit();
+	}
+	else {
+		refreshOpsTimeout = setTimeout(function() { refreshOperations(); }, 5000);
+	}
 }
 
 function clearOperationTimeout() {
@@ -658,6 +667,7 @@ function importerSelectRadio(prefixRadio, selectedType) {
  */
 KEY_UP_EVENT = "keyup"
 function showOverlay(url, allowClose, message_data) {
+	overlayDisplayed = true;
     $.ajax({
         async:false,
         type:'GET',
@@ -677,6 +687,7 @@ function showOverlay(url, allowClose, message_data) {
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, "overlay"]);
         },
         error:function (r) {
+        	overlayDisplayed = false;
             if (r) {
             	displayMessage(r, 'errorMessage');
             } 
@@ -689,6 +700,7 @@ function showOverlay(url, allowClose, message_data) {
  *
  */
 function closeOverlay() {
+	overlayDisplayed = false;
 	var bodyElem = $('body');
     bodyElem.removeClass("overlay");
     bodyElem.unbind(KEY_UP_EVENT, closeOverlayOnEsc);
