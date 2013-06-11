@@ -30,18 +30,26 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+import copy
+import json
 import unittest
+from time import sleep
 import cherrypy
+from tvb.core.entities import model
+from tvb.core.entities.storage import dao
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.services.operationservice import OperationService
+from tvb.core.services.flowservice import FlowService
 import tvb.interfaces.web.controllers.basecontroller as b_c
 from tvb.interfaces.web.controllers.flowcontroller import FlowController
-from tvb.core.entities.storage import dao
+from tvb.interfaces.web.controllers.burst.burstcontroller import BurstController
 from tvb_test.adapters.testadapter1 import TestAdapter1
 from tvb_test.datatypes.datatypes_factory import DatatypesFactory
-from tvb_test.core.base_testcase import TransactionalTestCase
 from tvb_test.interfaces.web.controllers.basecontroller_test import BaseControllersTest
+from tvb_test.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
-class FlowContollerTest(TransactionalTestCase, BaseControllersTest):
+class FlowContollerTest(BaseControllersTest):
     """ Unit tests for flowcontoller """
     
     def setUp(self):
@@ -51,11 +59,14 @@ class FlowContollerTest(TransactionalTestCase, BaseControllersTest):
         """
         BaseControllersTest.init(self)
         self.flow_c =  FlowController()
+        self.burst_c = BurstController()
+        self.operation_service = OperationService()
     
     
     def tearDown(self):
         """ Cleans up the testing environment """
         BaseControllersTest.cleanup(self)
+        self.reset_database()
             
             
     def test_context_selected(self):
@@ -157,6 +168,142 @@ class FlowContollerTest(TransactionalTestCase, BaseControllersTest):
         result = self.flow_c.get_simple_adapter_interface(adapter.id)
         expected_interface = TestAdapter1().get_input_tree()
         self.assertEqual(result['inputList'], expected_interface)
+        
+        
+    def test_stop_burst_operation(self):
+        self.burst_c.index()
+        connectivity = DatatypesFactory().create_connectivity()[1]
+        launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
+        launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
+        launch_params['simulation_length'] = '10000'
+        burst_id, _ = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))
+        burst_config = dao.get_burst_by_id(burst_id)
+        waited = 1
+        timeout = 50
+        operations = dao.get_operations_in_burst(burst_config.id)
+        while not len(operations) and waited <= timeout:
+            sleep(1)
+            waited += 1
+            operations = dao.get_operations_in_burst(burst_config.id)
+        operation = dao.get_operations_in_burst(burst_config.id)[0]
+        self.assertEqual(operation.status, model.STATUS_STARTED)
+        self.flow_c.stop_burst_operation(operation.id, 0, False)
+        operation = dao.get_operation_by_id(operation.id)
+        self.assertEqual(operation.status, model.STATUS_CANCELED)
+        
+        
+    def test_stop_burst_operation_group(self):
+        self.burst_c.index()
+        connectivity = DatatypesFactory().create_connectivity()[1]
+        launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
+        launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
+        launch_params['simulation_length'] = '[10000,10001,10002]'
+        launch_params['first_range'] = 'simulation_length'
+        burst_id, _ = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))
+        burst_config = dao.get_burst_by_id(burst_id)
+        waited = 1
+        timeout = 50
+        operations = dao.get_operations_in_burst(burst_config.id)
+        while not len(operations) and waited <= timeout:
+            sleep(1)
+            waited += 1
+            operations = dao.get_operations_in_burst(burst_config.id)
+        operations = dao.get_operations_in_burst(burst_config.id)
+        for operation in operations:
+            self.assertEqual(operation.status, model.STATUS_STARTED)
+        self.flow_c.stop_burst_operation(operation.fk_operation_group, 1, False)
+        for operation in operations:
+            operation = dao.get_operation_by_id(operation.id)
+            self.assertEqual(operation.status, model.STATUS_CANCELED)
+        
+        
+    def test_remove_burst_operation(self):
+        self.burst_c.index()
+        connectivity = DatatypesFactory().create_connectivity()[1]
+        launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
+        launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
+        launch_params['simulation_length'] = '10000'
+        burst_id, _ = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))
+        burst_config = dao.get_burst_by_id(burst_id)
+        waited = 1
+        timeout = 50
+        operations = dao.get_operations_in_burst(burst_config.id)
+        while not len(operations) and waited <= timeout:
+            sleep(1)
+            waited += 1
+            operations = dao.get_operations_in_burst(burst_config.id)
+        operation = dao.get_operations_in_burst(burst_config.id)[0]
+        self.assertEqual(operation.status, model.STATUS_STARTED)
+        self.flow_c.stop_burst_operation(operation.id, 0, True)
+        operation = dao.get_operation_by_id(operation.id)
+        self.assertTrue(operation is None)
+        
+        
+    def test_remove_burst_operation_group(self):
+        self.burst_c.index()
+        connectivity = DatatypesFactory().create_connectivity()[1]
+        launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
+        launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
+        launch_params['simulation_length'] = '[10000,10001,10002]'
+        launch_params['first_range'] = 'simulation_length'
+        burst_id, _ = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))
+        burst_config = dao.get_burst_by_id(burst_id)
+        waited = 1
+        timeout = 50
+        operations = dao.get_operations_in_burst(burst_config.id)
+        while not len(operations) and waited <= timeout:
+            sleep(1)
+            waited += 1
+            operations = dao.get_operations_in_burst(burst_config.id)
+        operations = dao.get_operations_in_burst(burst_config.id)
+        for operation in operations:
+            self.assertEqual(operation.status, model.STATUS_STARTED)
+        self.flow_c.stop_burst_operation(operation.fk_operation_group, 1, True)
+        for operation in operations:
+            operation = dao.get_operation_by_id(operation.id)
+            self.assertTrue(operation is None)
+            
+            
+    def test_stop_operations(self):
+        module = "tvb_test.adapters.testadapter1"
+        class_name = "TestAdapter1"
+        group = dao.find_group(module, class_name)
+        adapter = FlowService().build_adapter_instance(group)
+        data = {"test1_val1": 5, 'test1_val2': 5}
+        algo_group = adapter.algorithm_group
+        algo_category = dao.get_category_by_id(algo_group.fk_category)
+        algo = dao.get_algorithm_by_group(algo_group.id)
+        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
+                                                                  algo_category, {}, ABCAdapter.LAUNCH_METHOD, **data)
+        self.operation_service._send_to_cluster(operations, adapter)
+        operation = dao.get_operation_by_id(operations[0].id)
+        self.assertEqual(operation.status, model.STATUS_STARTED)
+        self.flow_c.stop_operation(operation.id, 0, False)
+        operation = dao.get_operation_by_id(operation.id)
+        self.assertEqual(operation.status, model.STATUS_CANCELED)
+        
+        
+    def test_stop_operations_group(self):
+        module = "tvb_test.adapters.testadapter1"
+        class_name = "TestAdapter1"
+        group = dao.find_group(module, class_name)
+        adapter = FlowService().build_adapter_instance(group)
+        data = {'first_range' : "test1_val1", "test1_val1": '5,6,7', 'test1_val2': 5}
+        algo_group = adapter.algorithm_group
+        algo_category = dao.get_category_by_id(algo_group.fk_category)
+        algo = dao.get_algorithm_by_group(algo_group.id)
+        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
+                                                                  algo_category, {}, ABCAdapter.LAUNCH_METHOD, **data)
+        self.operation_service._send_to_cluster(operations, adapter)
+        for operation in operations:
+            operation = dao.get_operation_by_id(operation.id)
+            self.assertEqual(operation.status, model.STATUS_STARTED)
+        self.flow_c.stop_operation(operation.fk_operation_group, 1, False)
+        for operation in operations:
+            operation = dao.get_operation_by_id(operation.id)
+            self.assertEqual(operation.status, model.STATUS_CANCELED)
+        
+        
 
 def suite():
     """
