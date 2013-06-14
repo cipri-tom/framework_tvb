@@ -512,12 +512,6 @@ function _markEntityVisibility(entityGID, entityType, toBeVisible) {
 // ---------------------------------------------------------
 
 /**
- * Timeout used to refresh the operations page if any operations are started.
- */
-var refreshOpsTimeout;
-var overlayDisplayed = false;
-
-/**
  * Sets the visibility for an operation, from specifically the View Operation page. 
  * This will also trigger operation reload.
  *
@@ -619,24 +613,18 @@ function applyOperationFilter(filterName, submitFormId) {
 	document.getElementById(submitFormId).submit();
 }
 
+/*
+ * Refresh the operation page is no overlay is currently displayed.
+ */
 function refreshOperations() {
-	/*
-	 * Refresh the operation page is no overlay is currently displayed.
-	 */
-	if (overlayDisplayed == false) {
+
+	if (document.getElementById("overlay") == null) {
 		document.getElementById('operationsForm').submit();
-	}
-	else {
-		refreshOpsTimeout = setTimeout(function() { refreshOperations(); }, 5000);
+	} else {
+		setTimeout(refreshOperations, 30000);
 	}
 }
 
-function clearOperationTimeout() {
-	var undefined;
-	if (refreshOpsTimeout != undefined) {
-		clearTimeout(refreshOpsTimeout);
-	}
-}
 
 // ----------------END OPERATIONS----------------------------
 
@@ -667,7 +655,7 @@ function importerSelectRadio(prefixRadio, selectedType) {
  */
 KEY_UP_EVENT = "keyup"
 function showOverlay(url, allowClose, message_data) {
-	overlayDisplayed = true;
+
     $.ajax({
         async:false,
         type:'GET',
@@ -687,7 +675,6 @@ function showOverlay(url, allowClose, message_data) {
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, "overlay"]);
         },
         error:function (r) {
-        	overlayDisplayed = false;
             if (r) {
             	displayMessage(r, 'errorMessage');
             } 
@@ -700,7 +687,6 @@ function showOverlay(url, allowClose, message_data) {
  *
  */
 function closeOverlay() {
-	overlayDisplayed = false;
 	var bodyElem = $('body');
     bodyElem.removeClass("overlay");
     bodyElem.unbind(KEY_UP_EVENT, closeOverlayOnEsc);

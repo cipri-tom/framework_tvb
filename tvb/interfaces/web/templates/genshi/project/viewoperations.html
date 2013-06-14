@@ -178,7 +178,7 @@
 										<!-- Remove burst button. TODO: Once TVB-926 is finished we should have a new icon here. -->
 										<py:with vars="ok_callback = 'deleteBurstOperation(' + str(op_id) + ', ' + str(is_group) + '); refreshOperations();'">
 											<button type="submit" class="action action-remove" title="Remove burst"
-											onclick="clearOperationTimeout(); showQuestionOverlay('Are you sure you want to delete the burst?', '${ok_callback}'); return false;">
+											onclick="showQuestionOverlay('Are you sure you want to delete the burst?', '${ok_callback}'); return false;">
 											O
 											</button>
 										</py:with>
@@ -186,7 +186,7 @@
 						  			<py:otherwise>
 										<py:with vars="ok_callback = 'deleteOperation(' + str(op_id) + ', ' + str(is_group) + '); refreshOperations();'">
 											<button type="submit" class="action action-remove" title="Remove operation"
-											onclick="clearOperationTimeout(); showQuestionOverlay('Are you sure you want to delete the operation?', '${ok_callback}'); return false;">
+											onclick="showQuestionOverlay('Are you sure you want to delete the operation?', '${ok_callback}'); return false;">
 											B
 											</button>
 										</py:with>
@@ -233,7 +233,7 @@
 <py:if test="started_count > 0">
 	<script type="text/javascript">
 		$(document).ready(function() {
-			refreshOpsTimeout = setTimeout(function() { refreshOperations(); }, 5000);
+			setTimeout(refreshOperations, 30000);
 		});
 	</script>
 </py:if>

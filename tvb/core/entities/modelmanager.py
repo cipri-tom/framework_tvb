@@ -72,8 +72,7 @@ def initialize_startup():
         LOGGER.info("Database Default Tables created successfully!")
     else:
         _update_sql_scripts()
-        migratesqlapi.upgrade(cfg.DB_URL, cfg.DB_VERSIONING_REPO,
-                              version=cfg.DB_CURRENT_VERSION)
+        migratesqlapi.upgrade(cfg.DB_URL, cfg.DB_VERSIONING_REPO, version=cfg.DB_CURRENT_VERSION)
         LOGGER.info("Database already has some data, will not be re-created!")
     return is_db_empty
 
