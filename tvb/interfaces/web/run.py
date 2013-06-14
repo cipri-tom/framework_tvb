@@ -81,6 +81,7 @@ from tvb.interfaces.web.controllers.spatial.surfacemodelparameterscontroller imp
 from tvb.interfaces.web.controllers.spatial.regionstimuluscontroller import RegionStimulusController
 from tvb.interfaces.web.controllers.spatial.surfacestimuluscontroller import SurfaceStimulusController
 from tvb.interfaces.web.controllers.spatial.localconnectivitycontroller import LocalConnectivityController
+from tvb.interfaces.web.controllers.spatial.noiseconfigurationcontroller import NoiseConfigurationController
 
 
 LOGGER = get_logger('tvb.interface.web.run')
@@ -123,6 +124,7 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(RegionStimulusController(), "/spatial/stimulus/region/", config=CONFIGUER)
     cherrypy.tree.mount(SurfaceStimulusController(), "/spatial/stimulus/surface/", config=CONFIGUER)
     cherrypy.tree.mount(LocalConnectivityController(), "/spatial/localconnectivity/", config=CONFIGUER)
+    cherrypy.tree.mount(NoiseConfigurationController(), "/spatial/noiseconfiguration/", config=CONFIGUER)
     cherrypy.config.update(CONFIGUER)
 
     #----------------- Register additional request handlers -----------------

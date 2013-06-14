@@ -107,7 +107,7 @@ class BurstController(base.BaseController):
             adapter_interface = self.cached_simulator_input_tree
             if session_stored_burst is not None:
                 current_data = session_stored_burst.get_all_simulator_values()[0]
-                adapter_interface = ABCAdapter.fill_defaults(adapter_interface, current_data)
+                adapter_interface = ABCAdapter.fill_defaults(adapter_interface, current_data, True)
                 ### Add simulator tree to session to be available in filters
                 self.context.add_adapter_to_session(self.cached_simulator_algo_group, adapter_interface, current_data)
             template_specification['inputList'] = adapter_interface

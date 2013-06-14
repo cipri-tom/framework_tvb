@@ -235,7 +235,7 @@ class ClusterSchedulerClient(object):
     def execute(operation_id, user_name_label='Unknown'):
         """Call the correct system command to submit a job to the cluster."""
         thread = threading.Thread(target=ClusterSchedulerClient._run_cluster_job,
-                                  kwargs={'operation_id': operation_id, 'user_name_label': user_name_label})
+                                  kwargs={'operation_identifier': operation_id, 'user_name_label': user_name_label})
         thread.start()
 
 
