@@ -252,7 +252,7 @@ class ClusterSchedulerClient(object):
         result = 0
         ## Try to kill only if operation job process is not None
         if operation_process is not None:
-            LOGGER.debug("Stopping cluster operation: %d, with job id: %d" % (operation_id, operation_process.job_id))
+            LOGGER.debug("Stopping cluster operation: %s, with job id: %s" % (operation_id, operation_process.job_id))
             result = os.system(config.CLUSTER_STOP_COMMAND % operation_process.job_id)
 
         ## Set operation as canceled, if kill command succeed, otherwise no operation process was found...
