@@ -424,7 +424,7 @@ function configureModel(actionUrl) {
 				document.body.removeChild(myForm);      
             } ,
             error: function(r) {
-                displayMessage("Sorry, the model visual-configuer is unavailable! Please contact you administrator!", "errorMessage");
+                displayMessage("Sorry, the model visual-configuer is unavailable! Please contact your administrator!", "errorMessage");
             }
         });
 }
@@ -435,6 +435,10 @@ function configureModelParamsOnRegions() {
 
 function configureModelParamsOnSurface() {
     configureModel("/spatial/modelparameters/surface/edit_model_parameters/");
+}
+
+function configureNoiseParameters() {
+	configureModel("/spatial/noiseconfiguration/edit_noise_parameters")
 }
 
 function toggleConfigSurfaceModelParamsButton() {

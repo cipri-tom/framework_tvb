@@ -313,3 +313,91 @@ function submitSurfaceParametersData(actionUrl){
     parametersForm.submit();	
 }
 
+// --------------------------------------------------------------------------------------
+// ---------------------------- NOISE SPECIFIC SETTINGS ---------------------------------
+// --------------------------------------------------------------------------------------
+
+
+function updateNoiseParameters(rootDivID) {
+	var noiseValues = {};
+	var displayedValue = '['
+	var inputs = $('#' + rootDivID).find("input[id^='noisevalue']").each(
+		function() {
+			var nodeIdx = this.getAttribute('id').split('__')[1];
+			noiseValues[parseInt(nodeIdx)] = $(this).val();
+			displayedValue += $(this).val() + ' '
+		}
+	)
+	displayedValue = displayedValue.slice(0, -1);
+	displayedValue += ']';
+	var submitData = {'selectedNodes' : $.toJSON(GVAR_interestAreaNodeIndexes),
+					  'noiseValues' : $.toJSON(noiseValues)}
+					  
+	$.ajax({  	type: "POST", 
+    			async: true,
+				url: '/spatial/noiseconfiguration/update_noise_configuration',
+				data: submitData, 
+				traditional: true,
+                success: function(r) {
+                	var nodesLength = GVAR_interestAreaNodeIndexes.length;
+				    for (var i = 0; i < nodesLength; i++) {
+				        $("#nodeScale" + GVAR_interestAreaNodeIndexes[i]).text(displayedValue);
+				        document.getElementById("nodeScale" + GVAR_interestAreaNodeIndexes[i]).className = "node-scale node-scale-selected"
+				    }
+				    GFUNC_removeAllMatrixFromInterestArea();
+                } ,
+            });
+}
+
+function toggleAndLoadNoise(nodeIndex) {
+    toggleSelection(nodeIndex);
+    if (GFUNC_isNodeAddedToInterestArea(nodeIndex)) {
+        if (GVAR_interestAreaNodeIndexes.length == 1) {
+            loadNoiseValuesForConnectivityNode(GVAR_interestAreaNodeIndexes[0]);
+        } else if (GVAR_interestAreaNodeIndexes.length > 1) {
+            copyNoiseConfig(GVAR_interestAreaNodeIndexes[0], [nodeIndex]);
+        }
+    }
+}
+
+
+function copyAndLoadNoiseConfig() {
+    if (GVAR_interestAreaNodeIndexes.length != 0) {
+        copyNoiseConfig(GVAR_interestAreaNodeIndexes[0], GVAR_interestAreaNodeIndexes.slice(1));
+        loadNoiseValuesForConnectivityNode(GVAR_interestAreaNodeIndexes[0]);
+    }
+}
+
+
+function loadNoiseValuesForConnectivityNode(connectivityNodeIndex) {
+    if (connectivityNodeIndex >= 0) {
+        doAjaxCall({
+            async:false,
+            type:'GET',
+            url:'/spatial/noiseconfiguration/load_noise_values_for_connectivity_node/' + connectivityNodeIndex,
+            success:function (data) {
+            	var parsedData = $.parseJSON(data);
+            	for (var key in parsedData) {
+            		$('#noisevalue__' + key).val(parsedData[key]);
+            	}
+            }
+        });
+    }
+}
+
+
+
+/**
+ * Replace the model of the nodes 'to_nodes' with the model of the node 'from_node'.
+ *
+ * @param fromNode the index of the node from where will be copied the model
+ * @param toNodes a list with the nodes indexes for which will be replaced the model
+ */
+function copyNoiseConfig(fromNode, toNodes) {
+    $.ajax({
+        async:false,
+        type:'POST',
+        url:'/spatial/noiseconfiguration/copy_configuration/' + fromNode + '/' + $.toJSON(toNodes),
+        success:function (data) { }
+    });
+}

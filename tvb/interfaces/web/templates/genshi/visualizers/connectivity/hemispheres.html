@@ -29,6 +29,13 @@
                                             ${pointLabels[i*COLS_NUMBER + j]}
                                         </td>
                                     </py:if>
+                                    <py:if test="usedInArea == 'setNoiseConfig'">
+                                        <td id='nodeSelection${shiftNumber + i*COLS_NUMBER + j}' class='stimulusScale'
+                                            onclick='toggleAndLoadNoise(${shiftNumber + i*COLS_NUMBER + j});'>
+                                            ${pointLabels[i*COLS_NUMBER + j]}
+                                            <span class="node-scale" id="nodeScale${shiftNumber + i*COLS_NUMBER + j}">[1]</span>
+                                        </td>
+                                    </py:if>
                                 </py:if>
                             </py:for>
                         </tr>

@@ -164,15 +164,23 @@ class FlowContollerTest(BaseControllersTest):
         expected_interface = TestAdapter1().get_input_tree()
         self.assertEqual(result['inputList'], expected_interface)
         
-        
-    def test_stop_burst_operation(self):
+    
+    def _long_burst_launch(self, is_range=False):
         self.burst_c.index()
         connectivity = DatatypesFactory().create_connectivity()[1]
         launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
         launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
-        launch_params['simulation_length'] = '10000'
+        if not is_range:
+            launch_params['simulation_length'] = '10000'
+        else:
+            launch_params['simulation_length'] = '[10000,10001,10002]'
+            launch_params['first_range'] = 'simulation_length'
         burst_id, _ = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))
-        burst_config = dao.get_burst_by_id(burst_id)
+        return dao.get_burst_by_id(burst_id)
+        
+            
+    def test_stop_burst_operation(self):
+        burst_config = self._long_burst_launch()
         waited = 1
         timeout = 50
         operations = dao.get_operations_in_burst(burst_config.id)
@@ -188,14 +196,7 @@ class FlowContollerTest(BaseControllersTest):
         
         
     def test_stop_burst_operation_group(self):
-        self.burst_c.index()
-        connectivity = DatatypesFactory().create_connectivity()[1]
-        launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
-        launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
-        launch_params['simulation_length'] = '[10000,10001,10002]'
-        launch_params['first_range'] = 'simulation_length'
-        burst_id, _ = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))
-        burst_config = dao.get_burst_by_id(burst_id)
+        burst_config = self._long_burst_launch(True)
         waited = 1
         timeout = 50
         operations = dao.get_operations_in_burst(burst_config.id)
@@ -213,13 +214,7 @@ class FlowContollerTest(BaseControllersTest):
         
         
     def test_remove_burst_operation(self):
-        self.burst_c.index()
-        connectivity = DatatypesFactory().create_connectivity()[1]
-        launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
-        launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
-        launch_params['simulation_length'] = '10000'
-        burst_id, _ = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))
-        burst_config = dao.get_burst_by_id(burst_id)
+        burst_config = self._long_burst_launch()
         waited = 1
         timeout = 50
         operations = dao.get_operations_in_burst(burst_config.id)
@@ -235,14 +230,7 @@ class FlowContollerTest(BaseControllersTest):
         
         
     def test_remove_burst_operation_group(self):
-        self.burst_c.index()
-        connectivity = DatatypesFactory().create_connectivity()[1]
-        launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
-        launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
-        launch_params['simulation_length'] = '[10000,10001,10002]'
-        launch_params['first_range'] = 'simulation_length'
-        burst_id, _ = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))
-        burst_config = dao.get_burst_by_id(burst_id)
+        burst_config = self._long_burst_launch(True)
         waited = 1
         timeout = 50
         operations = dao.get_operations_in_burst(burst_config.id)

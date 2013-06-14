@@ -346,4 +346,17 @@ class SpatioTemporalController(base.BaseController):
             return False
         
         
+    def get_data_for_param_sliders(self, connectivity_node_index, context_model_parameters):
+        """
+        Method used only for handling the exception.
+        """
+        try:
+            return context_model_parameters.get_data_for_param_sliders(connectivity_node_index)
+        except ValueError, excep:
+            self.logger.info("All the model parameters that are configurable should be valid arrays or numbers.")
+            self.logger.exception(excep)
+            base.set_error_message("All the model parameters that are configurable should be valid arrays or numbers.")
+            raise cherrypy.HTTPRedirect("/burst/")
+        
+        
         

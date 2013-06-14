@@ -914,6 +914,10 @@ class ABCAdapter(object):
         return result
 
 
+    def noise_configurable_parameters(self):
+        return [entry[self.KEY_NAME] for entry in self.flaten_input_interface() if 'configurableNoise' in entry]
+
+
     def flaten_input_interface(self):
         """ Return a simple dictionary, instead of a Tree."""
         return self._flaten(self.get_input_tree())
@@ -942,25 +946,29 @@ class ABCAdapter(object):
 
 
     @staticmethod
-    def fill_defaults(adapter_interface, data):
+    def fill_defaults(adapter_interface, data, fill_unselected_branches=False):
         """ Change the default values in the Input Interface Tree."""
         result = []
         for param in adapter_interface:
+            if param[ABCAdapter.KEY_NAME] == 'integrator':
+                pass
             new_p = copy(param)
             if param[ABCAdapter.KEY_NAME] in data:
                 new_p[ABCAdapter.KEY_DEFAULT] = data[param[ABCAdapter.KEY_NAME]]
             if (ABCAdapter.KEY_ATTRIBUTES in param) and (param[ABCAdapter.KEY_ATTRIBUTES] is not None):
-                new_p[ABCAdapter.KEY_ATTRIBUTES] = ABCAdapter.fill_defaults(param[ABCAdapter.KEY_ATTRIBUTES], data)
+                new_p[ABCAdapter.KEY_ATTRIBUTES] = ABCAdapter.fill_defaults(param[ABCAdapter.KEY_ATTRIBUTES], data, fill_unselected_branches)
             if (ABCAdapter.KEY_OPTIONS in param) and (param[ABCAdapter.KEY_OPTIONS] is not None):
                 new_options = param[ABCAdapter.KEY_OPTIONS]
-                if param[ABCAdapter.KEY_NAME] in data:
-                    if param[ABCAdapter.KEY_TYPE] == ABCAdapter.TYPE_MULTIPLE:
-                        selected_values = data[param[ABCAdapter.KEY_NAME]]
-                    else:
-                        selected_values = [data[param[ABCAdapter.KEY_NAME]]]
+                if param[ABCAdapter.KEY_NAME] in data or fill_unselected_branches:
+                    selected_values = []
+                    if param[ABCAdapter.KEY_NAME] in data:
+                        if param[ABCAdapter.KEY_TYPE] == ABCAdapter.TYPE_MULTIPLE:
+                            selected_values = data[param[ABCAdapter.KEY_NAME]]
+                        else:
+                            selected_values = [data[param[ABCAdapter.KEY_NAME]]]
                     for i, option in enumerate(new_options):
-                        if option[ABCAdapter.KEY_VALUE] in selected_values:
-                            new_options[i] = ABCAdapter.fill_defaults([option], data)[0]
+                        if option[ABCAdapter.KEY_VALUE] in selected_values or fill_unselected_branches:
+                            new_options[i] = ABCAdapter.fill_defaults([option], data, fill_unselected_branches)[0]
                 new_p[ABCAdapter.KEY_OPTIONS] = new_options
             result.append(new_p)
         return result
