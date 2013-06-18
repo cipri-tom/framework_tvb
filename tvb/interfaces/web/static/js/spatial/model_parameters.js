@@ -349,6 +349,30 @@ function updateNoiseParameters(rootDivID) {
             });
 }
 
+/*
+ * Load the default values for the table-like connectivity node selection display.
+ */
+function loadDefaultNoiseValues() {
+	$.ajax({  	type: "POST", 
+    			async: true,
+				url: '/spatial/noiseconfiguration/load_initial_values',
+				traditional: true,
+                success: function(r) {
+                	var nodesData = $.parseJSON(r);
+				    for (var i = 0; i < nodesData[0].length; i++) {
+				    	var displayedValue = '[';
+				    	for (var j = 0; j < nodesData.length; j++) {
+				    		displayedValue += nodesData[j][i] + ' ';
+				    	}
+				    	displayedValue = displayedValue.slice(0, -1);
+						displayedValue += ']';
+				        $("#nodeScale" + i).text(displayedValue);
+				    }
+				    GFUNC_removeAllMatrixFromInterestArea();
+                } ,
+            });
+}
+
 function toggleAndLoadNoise(nodeIndex) {
     toggleSelection(nodeIndex);
     if (GFUNC_isNodeAddedToInterestArea(nodeIndex)) {

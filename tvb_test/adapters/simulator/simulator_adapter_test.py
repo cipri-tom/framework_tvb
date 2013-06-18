@@ -167,6 +167,58 @@ class SimulatorAdapterTest(TransactionalTestCase):
         estimate3 = self._estimate_hdd(simulation_parameters)
         self.assertEqual(estimate2, estimate3 / factor)
         
+    
+    def test_noise_2d_bad_shape(self):
+        """
+        Test a simulation with noise. Pass a wrong shape and expect exception to be raised.
+        """
+        SIMULATOR_PARAMETERS['integrator'] = u'HeunStochastic'
+        noise_4d_config = [[1 for _ in xrange(self.CONNECTIVITY_NODES)] for _ in xrange(4)]
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_dt'] = u'0.01220703125'
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_noise'] = u'Additive'
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_nsig'] = str(noise_4d_config)
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_ntau'] = u'0.0'
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream'] = u'RandomStream'
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream_parameters_option_RandomStream_init_seed'] = u'42'
+        filtered_params = self.simulator_adapter.prepare_ui_inputs(SIMULATOR_PARAMETERS)
+        self.simulator_adapter.configure(**filtered_params)
+        if hasattr(self.simulator_adapter, 'algorithm'):
+            self.assertEqual((4, 74), self.simulator_adapter.algorithm.integrator.noise.nsig.shape)
+        else:
+            self.fail("Simulator adapter was not initialized properly")
+        self.assertRaises(Exception, OperationService().initiate_prelaunch, self.operation, self.simulator_adapter, {}, **SIMULATOR_PARAMETERS)
+    
+    
+    def test_noise_2d_happy_flow(self):
+        """
+        Test a simulation with noise.
+        """
+        SIMULATOR_PARAMETERS['integrator'] = u'HeunStochastic'
+        noise_2d_config = [[1 for _ in xrange(self.CONNECTIVITY_NODES)] for _ in xrange(2)]
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_dt'] = u'0.01220703125'
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_noise'] = u'Additive'
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_nsig'] = str(noise_2d_config)
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_ntau'] = u'0.0'
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream'] = u'RandomStream'
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream_parameters_option_RandomStream_init_seed'] = u'42'
+        filtered_params = self.simulator_adapter.prepare_ui_inputs(SIMULATOR_PARAMETERS)
+        self.simulator_adapter.configure(**filtered_params)
+        if hasattr(self.simulator_adapter, 'algorithm'):
+            self.assertEqual((2, 74, 1), self.simulator_adapter.algorithm.integrator.noise.nsig.shape)
+        else:
+            self.fail("Simulator adapter was not initialized properly")
+        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, {}, **SIMULATOR_PARAMETERS)
+        sim_result = dao.get_generic_entity(TimeSeriesRegion, 'TimeSeriesRegion', 'type')[0]
+        self.assertEquals(sim_result.read_data_shape(), (32, 1, self.CONNECTIVITY_NODES, 1))
+        SIMULATOR_PARAMETERS['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_nsig'] = '[1]'
+        filtered_params = self.simulator_adapter.prepare_ui_inputs(SIMULATOR_PARAMETERS)
+        self.simulator_adapter.configure(**filtered_params)
+        if hasattr(self.simulator_adapter, 'algorithm'):
+            self.assertEqual((1,), self.simulator_adapter.algorithm.integrator.noise.nsig.shape)
+        else:
+            self.fail("Simulator adapter was not initialized properly")
+        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, {}, **SIMULATOR_PARAMETERS)
+        
         
 def suite():
     """

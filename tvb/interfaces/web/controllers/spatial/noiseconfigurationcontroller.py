@@ -65,10 +65,10 @@ class NoiseConfigurationController(SpatioTemporalController):
         """
         Main method, to initialize Model-Parameter visual-set.
         """
-        model, _, connectivity, _ = self.get_data_from_burst_configuration()
+        model, integrator, connectivity, _ = self.get_data_from_burst_configuration()
 
         connectivity_viewer_params = self.get_connectivity_parameters(connectivity)
-        context_noise_config = ContextNoiseParameters(connectivity, model)
+        context_noise_config = ContextNoiseParameters(connectivity, model, integrator)
         param_names, param_data = self.get_data_for_param_sliders('0', context_noise_config)
         base.add2session(KEY_CONTEXT_NC, context_noise_config)
 
@@ -83,19 +83,6 @@ class NoiseConfigurationController(SpatioTemporalController):
         return self.fill_default_attributes(template_specification)
     
     
-#    def get_data_for_param_sliders(self, connectivity_node_index, context_model_parameters):
-#        """
-#        Method used only for handling the exception.
-#        """
-#        try:
-#            return context_model_parameters.get_data_for_param_sliders(connectivity_node_index)
-#        except ValueError, excep:
-#            self.logger.info("All the model parameters that are configurable should be valid arrays or numbers.")
-#            self.logger.exception(excep)
-#            base.set_error_message("All the model parameters that are configurable should be valid arrays or numbers.")
-#            raise cherrypy.HTTPRedirect("/burst/")
-
-
     @cherrypy.expose
     @ajax_call()
     @logged()
@@ -111,6 +98,17 @@ class NoiseConfigurationController(SpatioTemporalController):
         for node_idx in selected_regions:
             for model_param_idx in noise_values.keys():
                 context_noise_config.update_noise_configuration(node_idx, model_param_idx, noise_values[model_param_idx])
+
+
+    @cherrypy.expose
+    @ajax_call()
+    @logged()
+    def load_initial_values(self):
+        """
+        Returns a json with the current noise configuration.
+        """
+        context_noise_config = base.get_from_session(KEY_CONTEXT_NC)
+        return context_noise_config.noise_values
 
 
     @cherrypy.expose

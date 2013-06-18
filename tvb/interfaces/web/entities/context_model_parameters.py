@@ -35,21 +35,18 @@
 import numpy
 from copy import deepcopy
 
-import tvb.basic.traits.traited_interface as interface
 import tvb.basic.traits.parameters_factory as parameters_factory
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.core import Type
 from tvb.core.adapters.abcadapter import KEY_EQUATION, KEY_FOCAL_POINTS, KEY_SURFACE_GID, ABCAdapter
 from tvb.datatypes.equations import SpatialApplicableEquation, Gaussian
 from tvb.adapters.visualizers.phase_plane_interactive import PhasePlaneInteractive
 import tvb.simulator.models as models_module
-import tvb.simulator.integrators as integrators_module
-
+from tvb.interfaces.web.entities.context_spatial import BaseSpatialContext
 
 
 KEY_FOCAL_POINTS_TRIANGLES = "focal_points_triangles"
 
-class ContextModelParameters():
+class ContextModelParameters(BaseSpatialContext):
     """
     This class behaves like a controller. The model for this controller will
     be the fields defined into the init method and the view is represented
@@ -60,20 +57,7 @@ class ContextModelParameters():
 
     def __init__(self, connectivity, default_model = None,
                  default_integrator = None, compute_phase_plane_params = True):
-        self.logger = get_logger(self.__class__.__module__)
-        self.default_model = default_model
-        self.default_integrator = default_integrator
-        self.connectivity = connectivity
-        self.connectivity_models = dict()
-
-        if self.default_model is None:
-            self.default_model = models_module.Generic2dOscillator()
-        if self.default_integrator is None:
-            self.default_integrator = integrators_module.RungeKutta4thOrderDeterministic()
-
-        self.model_parameter_names = deepcopy(self.default_model.ui_configurable_parameters)
-        if not len(self.model_parameter_names):
-            self.logger.warning("The 'ui_configurable_parameters' list of the current model is empty!")
+        BaseSpatialContext.__init__(self, connectivity, default_model, default_integrator)
         self.prepared_model_parameter_names = self._prepare_parameter_names(self.model_parameter_names)
 
         model = self._get_model_for_region(0)
@@ -100,18 +84,6 @@ class ContextModelParameters():
         for param in parameter_names:
             result[param] = param.replace("_", "")
         return result
-
-    
-
-    def _get_model_for_region(self, connectivity_node_index):
-        """
-        Returns the model instance corresponding to the connectivity node found at the specified index.
-        """
-        connectivity_node_index = int(connectivity_node_index)
-        if connectivity_node_index not in self.connectivity_models:
-            model = self._compute_default_model(connectivity_node_index)
-            self.connectivity_models[connectivity_node_index] = deepcopy(model)
-        return self.connectivity_models[connectivity_node_index]
 
 
     def load_model_for_connectivity_node(self, connectivity_node_index):
@@ -238,28 +210,6 @@ class ContextModelParameters():
                 return str([default_attr[0]])
 
         return deepcopy(str(default_attr))
-
-
-    def _compute_default_model(self, connectivity_node_index):
-        """
-        Computes the default model for the given connectivity node.
-
-        If the parameters of the default model contain values for all the nodes
-        of the connectivity, than this method will build a new model which will
-        have the parameters set to a numpy array with a single value. The value
-        is computed from the default model parameter values.
-        """
-        model = deepcopy(self.default_model)
-        for parameter_name in self.model_parameter_names:
-            default_attr = getattr(model, parameter_name)
-            if isinstance(default_attr, numpy.ndarray):
-                default_attr = default_attr.tolist()
-                if len(default_attr) > 1:
-                    if len(default_attr) <= connectivity_node_index:
-                        setattr(model, parameter_name, numpy.array([default_attr[0]]))
-                    else:
-                        setattr(model, parameter_name, numpy.array([default_attr[connectivity_node_index]]))
-        return model
 
 
 class SurfaceContextModelParameters(ContextModelParameters):
@@ -409,8 +359,5 @@ class EquationDisplayer(Type):
     Class used for generating the UI related to equations.
     """
     model_param_equation = SpatialApplicableEquation(label='Equation', default = Gaussian)
-    
-    
-    
     
     

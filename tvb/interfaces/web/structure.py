@@ -61,6 +61,7 @@ class WebStructure(object):
     SUB_SECTION_BURST = "burst"
     SUB_SECTION_MODEL_REGIONS = "regionmodel"
     SUB_SECTION_MODEL_SURFACE = "surfacemodel"
+    SUB_SECTION_NOISE_CONFIGURATION = "noiseconfig"
 
     ### Subsections for ANALYZE section.
     ### These subsections can extends, and depend on existing analyzers in the system.
@@ -139,6 +140,7 @@ class WebStructure(object):
         SUB_SECTION_BURST: "",
         SUB_SECTION_MODEL_REGIONS: "Region Model Parameters",
         SUB_SECTION_MODEL_SURFACE: "Surface Model Parameters",
+        SUB_SECTION_NOISE_CONFIGURATION: "Noise dispersion configuration",
 
         SUB_SECTION_ANALYZE_MENU: "",
         SUB_SECTION_ANALYZE_1: "Cross Correlation",
