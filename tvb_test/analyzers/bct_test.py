@@ -32,7 +32,10 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import unittest
+try:
+    import unittest2 as unittest
+except Exception:
+    import unittest
 from tvb.core.utils import get_matlab_executable
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
