@@ -83,7 +83,7 @@ class ProjectContollerTest(TransactionalTestCase, BaseControllersTest):
         TestFactory.create_project(self.test_user, 'prj3')
         result = self.project_c.viewall(selected_project_id=project1.id)
         projects_list = result['projectsList']
-        self.assertEqual(set([prj.name for prj in projects_list]), {'prj1', 'prj2', 'prj3', 'Test'})
+        self.assertEqual(set([prj.name for prj in projects_list]), set(['prj1', 'prj2', 'prj3', 'Test']))
         self.assertEqual(result['page_number'], 1)
         self.assertEqual(result[b_c.KEY_PROJECT].name, 'prj1')
 
