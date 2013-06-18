@@ -56,7 +56,6 @@ from tvb.core.entities.file.hdf5storage import HDF5StorageManager
 from tvb.core.entities.file.exceptions import MissingDataSetException
 
 
-
 class MappedType(model.DataType, mapped.MappedTypeLight):
     """
     Mix-in class combining core Traited mechanics with the db'ed DataType
