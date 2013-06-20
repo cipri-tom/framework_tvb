@@ -646,6 +646,10 @@ class BaseProfile():
     KEY_LAST_CHECKED_FILE_VERSION = 'LAST_CHECKED_FILE_VERSION'
     KEY_LAST_CHECKED_CODE_VERSION = 'LAST_CHECKED_CODE_VERSION'
     KEY_FILE_STORAGE_UPDATE_STATUS = 'FILE_STORAGE_UPDATE_STATUS'
+    # Keep a mapping of how the python executable will look on different os versions
+    PYTHON_EXE_MAPPING = { 'windows' : 'python.exe', 
+                           'linux' : 'python',
+                           'macos' : 'python' }
 
 
     @staticmethod
@@ -681,17 +685,27 @@ class BaseProfile():
         return platform == 'darwin' and not self.is_development()
 
 
+    def get_python_exe_name(self):
+        """ Returns the name of the python executable depending on the specific OS """
+        if platform.startswith('win'):
+            return self.PYTHON_EXE_MAPPING['windows']
+        elif platform == 'darwin':
+            return self.PYTHON_EXE_MAPPING['macos']
+        else:
+            return self.PYTHON_EXE_MAPPING['linux']
+
+
     def get_python_path(self):
         """Get Python path, based on running options."""
         if self.is_development():
             return 'python'
         if self.is_windows():
-            return os.path.join(os.path.dirname(FrameworkSettings.BIN_FOLDER), 'python.exe')
+            return os.path.join(os.path.dirname(FrameworkSettings.BIN_FOLDER), self.get_python_exe_name())
         if self.is_mac():
             root_folder = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(FrameworkSettings.BIN_FOLDER))))
-            return os.path.join(root_folder, 'MacOS', 'python')
+            return os.path.join(root_folder, 'MacOS', self.get_python_exe_name())
         if self.is_linux():
-            return os.path.join(os.path.dirname(FrameworkSettings.BIN_FOLDER), 'python2.7')
+            return os.path.join(os.path.dirname(FrameworkSettings.BIN_FOLDER), self.get_python_exe_name())
         raise Exception("Invalid BUILD type found!!!")
 
 
