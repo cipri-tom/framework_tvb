@@ -229,8 +229,8 @@ class TransactionalTests(BaseTestCase):
         This method stores n_users, after which it calls inner_trans_func with n_users as parameter. At the end it raises an exception so
         transaction will fail. All changes should be reverted regardless if inner_trans_func succedes or fails.
         
-        @param n_users: number of users to be stored both by this method and by the passed inner_trans_func
-        @param inner_trans_func: either _store_users_happy_flow or _store_users_raises_exception
+        :param n_users: number of users to be stored both by this method and by the passed inner_trans_func
+        :param inner_trans_func: either _store_users_happy_flow or _store_users_raises_exception
         """
         for idx in range(n_users):
             TestFactory.create_user('test_user_nested' + str(idx), 'pass', 'test@test.test', True, 'test')
@@ -243,7 +243,7 @@ class TransactionalTests(BaseTestCase):
         Store users in happy flow. In this case the transaction should just be commited properly and changes
         should be visible in database.
         
-        @param n_users: number of users to be stored by this method
+        :param n_users: number of users to be stored by this method
         """
         for idx in range(n_users):
             TestFactory.create_user(prefix + 'test_user' + str(idx), 'pass', 'test@test.test', True, 'test')
@@ -255,7 +255,7 @@ class TransactionalTests(BaseTestCase):
         Store users but at the end raise an exception. In case the exception is not handled up until the
         transactional decorator, all changes should be rolled back.
         
-        @param n_users: number of users to be stored by this method
+        :param n_users: number of users to be stored by this method
         """
         for idx in range(n_users):
             TestFactory.create_user('test_user' + str(idx), 'pass', 'test@test.test', True, 'test')

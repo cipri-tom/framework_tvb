@@ -62,7 +62,7 @@ class TestFactory():
     @staticmethod
     def get_entity(project, expected_data, filters = None):
         """
-        Return the first entity with class given by @param expected_data
+        Return the first entity with class given by :param expected_data
         """
         data_types = FlowService().get_available_datatypes(project.id,
                                 expected_data.module + "." + expected_data.type, filters)
@@ -72,7 +72,7 @@ class TestFactory():
     @staticmethod
     def get_entity_count(project, datatype):
         """
-        Return the count of stored datatypes with class given by @param datatype
+        Return the count of stored datatypes with class given by :param datatype
         """
         data_types = FlowService().get_available_datatypes(project.id, datatype.module + "." + datatype.type)
         return len(data_types)
@@ -83,7 +83,7 @@ class TestFactory():
         """
         Create persisted User entity.
         
-        :return: User entity after persistence.
+        :returns: User entity after persistence.
         """
         user = model.User(username, password, mail, validated, role)
         return dao.store_entity(user) 
@@ -94,7 +94,7 @@ class TestFactory():
         """
         Create persisted Project entity, with no linked DataTypes.
         
-        :return: Project entity after persistence.
+        :returns: Project entity after persistence.
         """
         data = dict(name=name, description=description, users = users)     
         return ProjectService().store_project(admin, True, None, **data)
@@ -115,7 +115,7 @@ class TestFactory():
         Create persisted operation.
         
         :param algorithm: When not None, introspect TVB and TVB_TEST for adapters.
-        :return: Operation entity after persistence. 
+        :returns: Operation entity after persistence.
         """
         if algorithm is None:
             algo_group = dao.find_group('tvb_test.adapters.ndimensionarrayadapter', 'NDimensionArrayAdapter')
@@ -169,7 +169,7 @@ class TestFactory():
     @staticmethod
     def create_adapter(algo_group= None, test_project=None, ):
         """
-        :return: Adapter Class after initialization.
+        :returns: Adapter Class after initialization.
         """
         if algo_group is None:
             algo_group = dao.find_group('tvb_test.adapters.ndimensionarrayadapter', 'NDimensionArrayAdapter')
