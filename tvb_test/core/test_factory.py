@@ -122,7 +122,7 @@ class TestFactory():
         Create persisted operation.
         
         :param algorithm: When not None, introspect TVB and TVB_TEST for adapters.
-        :returns: Operation entity after persistence.
+        :return: Operation entity after persistence. 
         """
         if algorithm is None:
             algo_group = dao.find_group('tvb_test.adapters.ndimensionarrayadapter', 'NDimensionArrayAdapter')
@@ -232,7 +232,7 @@ class TestFactory():
         """
         This method is used for importing a CFF data-set (load CFF_Importer, launch it).
         :param cff_path: absolute path where CFF file exists. When None, a default CFF will be used.
-        :param test_user: optional persisted User instance, to use as Operation->launcher
+        :param test_user: optional persisted User instance, to use as Oeration->launcher
         :param test_project: optional persisted Project instance, to use for launching Operation in it. 
         """
         ### Prepare Data
