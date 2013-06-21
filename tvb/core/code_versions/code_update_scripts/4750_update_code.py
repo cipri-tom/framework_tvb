@@ -45,7 +45,7 @@ EVENT_FILE_IDENTIFIER = "CodeVersionsManager.update.4750"
 def update():
     """
     Update TVB code to SVN revision version 4770.
-    This update was done for release 1.1
+    This update was done for release 1.0.5
     """
     projects_count = dao.get_all_projects(is_count=True)
     
