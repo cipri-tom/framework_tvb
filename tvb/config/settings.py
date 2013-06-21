@@ -160,18 +160,17 @@ class BaseProfile():
     @staticmethod
     def SVN_VERSION():
         """Current SVN version in the package running now."""
-        result = '1'
         try:
             with open(os.path.join(FrameworkSettings.BIN_FOLDER, 'tvb.version'), 'r') as version_file:
-                result = version_file.read()
+                return BaseProfile.parse_svn_version(version_file.read())
         except Exception:
             pass
         try:
             _proc = Popen(["svnversion", "."], stdout=PIPE)
-            result = _proc.communicate()[0]
+            return BaseProfile.parse_svn_version(_proc.communicate()[0])
         except Exception:
             pass
-        return BaseProfile.parse_svn_version(result)
+        return BaseProfile.parse_svn_version('1')
 
 
     @ClassProperty
