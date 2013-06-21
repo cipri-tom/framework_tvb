@@ -30,8 +30,10 @@
 """
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
-
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 import os
 import cherrypy
 import shutil
