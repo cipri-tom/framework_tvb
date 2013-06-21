@@ -40,7 +40,7 @@ import os
 import shutil
 import setuptools
 
-VERSION = "1.1"
+VERSION = "1.0.5"
 
 TVB_TEAM = "Lia Domide, Ionel Ortelecan, Bogdan Neacsa, Calin Pavel, "
 TVB_TEAM += "Stuart Knock, Marmaduke Woodman, Paula Sansz Leon, "
