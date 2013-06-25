@@ -232,7 +232,7 @@ class TestFactory():
         """
         This method is used for importing a CFF data-set (load CFF_Importer, launch it).
         :param cff_path: absolute path where CFF file exists. When None, a default CFF will be used.
-        :param test_user: optional persisted User instance, to use as Oeration->launcher
+        :param test_user: optional persisted User instance, to use as Operation->launcher
         :param test_project: optional persisted Project instance, to use for launching Operation in it. 
         """
         ### Prepare Data
