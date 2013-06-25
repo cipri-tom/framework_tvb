@@ -28,9 +28,9 @@
 #
 #
 
-'''
+"""
 .. moduleauthor:: Calin Pavel
-'''
+"""
 import os
 import numpy
 import shutil
