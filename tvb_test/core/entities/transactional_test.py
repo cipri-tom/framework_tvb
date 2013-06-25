@@ -51,10 +51,16 @@ class TransactionalTests(BaseTestCase):
     session = SessionMaker()
     
     def setUp(self):
+        """
+        Set-up the environment for testing; clean the database and save events
+        """
         self.clean_database()
         self.old_events = EVENTS_FOLDER
         
     def tearDown(self):
+        """
+        Clean-up after testing; clean the database and restore events
+        """
         self.clean_database(True)
         EVENTS_FOLDER = self.old_events
     

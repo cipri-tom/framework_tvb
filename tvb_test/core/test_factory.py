@@ -62,7 +62,9 @@ class TestFactory():
     @staticmethod
     def get_entity(project, expected_data, filters = None):
         """
-        Return the first entity with class given by :param expected_data
+        Return the first entity with class given by `expected_data`
+
+        :param expected_data: specifies the class whose entity is returned
         """
         data_types = FlowService().get_available_datatypes(project.id,
                                 expected_data.module + "." + expected_data.type, filters)
@@ -72,7 +74,9 @@ class TestFactory():
     @staticmethod
     def get_entity_count(project, datatype):
         """
-        Return the count of stored datatypes with class given by :param datatype
+        Return the count of stored datatypes with class given by `datatype`
+
+        :param datatype: the class whose entities are counted
         """
         data_types = FlowService().get_available_datatypes(project.id, datatype.module + "." + datatype.type)
         return len(data_types)
@@ -103,6 +107,9 @@ class TestFactory():
     @staticmethod
     def create_figure(operation_id, user_id, project_id, session_name=None, 
                       name=None, path=None, file_format=None):
+        """
+        :returns: the `model.ResultFigure` for a result with the given specifications
+        """
         figure = model.ResultFigure(operation_id, user_id, project_id, 
                                     session_name, name, path, file_format)
         return dao.store_entity(figure)
@@ -225,7 +232,7 @@ class TestFactory():
         """
         This method is used for importing a CFF data-set (load CFF_Importer, launch it).
         :param cff_path: absolute path where CFF file exists. When None, a default CFF will be used.
-        :param test_user: optional persisted User instance, to use as Oeration->launcher
+        :param test_user: optional persisted User instance, to use as Operation->launcher
         :param test_project: optional persisted Project instance, to use for launching Operation in it. 
         """
         ### Prepare Data
@@ -303,9 +310,9 @@ class ExtremeTestFactory():
     def generate_users(nr_users, nr_projects):
         """
         The generate_users method will create a clean state db with
-        :param nr_users = number of users to be generated (with random roles between 
+        :param nr_users: number of users to be generated (with random roles between
                                 CLINICIAN and RESEARCHER and random validated state)
-        :param nr_projects =maximum number of projects to be generated for each user
+        :param nr_projects: maximum number of projects to be generated for each user
         """
         EVENTS_FOLDER = ''
         users = []

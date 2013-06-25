@@ -78,10 +78,10 @@ class PortletConfigurer():
         return self.portlet_entity.name
     
     def get_configurable_interface(self):
-        '''
+        """
         Given an algorithm identifier, go trough the adapter chain, and merge
         their input tree with the declared overwrites 
-        '''
+        """
         chain_adapters = self.reader.get_adapters_chain(self.algo_identifier)
         result = []
         for adapter_declaration in chain_adapters:
@@ -130,7 +130,7 @@ class PortletConfigurer():
             return None, None
     
     def _prepare_input_tree(self, input_list, default_values, prefix=''):
-        '''
+        """
         Replace the default values from the portlet interface in the adapters 
         interfaces.
         :param input_list: the adapter input tree
@@ -138,7 +138,7 @@ class PortletConfigurer():
             portlet xml
         :param prefix: in case of a group adapter, the prefix to be added to 
             each name for the selected subalgorithm
-        '''
+        """
         for param in input_list:
             for one_value in default_values:
                 if one_value[ABCAdapter.KEY_NAME] == prefix + param[ABCAdapter.KEY_NAME]:
@@ -219,11 +219,11 @@ class PortletConfigurer():
             self._prepend_prefix(adapter_config.interface, specific_prefix)
             
     def _prepend_prefix(self, input_list, prefix):
-        '''
+        """
         Prepend a prefix to the name of each entry form the given input tree.
         :param input_list: the adapter input tree
         :param prefix: the prefix to be added to each name
-        '''
+        """
         for param in input_list:
             param[ABCAdapter.KEY_NAME] = prefix + param[ABCAdapter.KEY_NAME]
             if (param.has_key(ABCAdapter.KEY_OPTIONS) and param[ABCAdapter.KEY_OPTIONS] is not None):

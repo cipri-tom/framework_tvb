@@ -82,6 +82,13 @@ class BurstServiceTest(BaseTestCase):
 
 
     def setUp(self):
+        """
+        Sets up the environment for running the tests;
+        cleans the database before testing and saves config file;
+        creates a test user, a test project;
+        creates burst, flow, operation and workflow services
+
+        """
         self.clean_database()
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
@@ -441,7 +448,7 @@ class BurstServiceTest(BaseTestCase):
         Then check that only operation created is for the first adapter from the portlet. The
         second should be viewed as a visualizer.
         After that load the burst and check that the visualizer and analyzer are loaded in the
-        corresponging tab and that all the parameters are still the same. Finally check that burst
+        corresponding tab and that all the parameters are still the same. Finally check that burst
         status updates corresponding to final operation status.
         """
         loaded_burst, workflow_step_list = self._prepare_and_launch_sync_burst()
