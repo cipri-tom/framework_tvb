@@ -53,6 +53,10 @@ class FlowContollerTest(BaseControllersTest):
     """ Unit tests for flowcontoller """
     
     def setUp(self):
+        """
+        Sets up the environment for testing;
+        creates a `FlowController`
+        """
         BaseControllersTest.init(self)
         self.flow_c =  FlowController()
         self.burst_c = BurstController()
@@ -60,6 +64,7 @@ class FlowContollerTest(BaseControllersTest):
     
     
     def tearDown(self):
+        """ Cleans up the testing environment """
         BaseControllersTest.cleanup(self)
         self.reset_database()
             
