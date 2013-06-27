@@ -210,7 +210,7 @@ class PortletConfigurer():
         """
         Prepend separate prefix to the name of each entry of the adapter interfaces.
         :param adapter_config_list: a list of AdapterConfiguration entities.
-        :return: same list with the difference that a separate prefix is prepended to 
+        :returns: same list with the difference that a separate prefix is prepended to
         the name of each parameter from the adapter interface, specific to the step it 
         is in the adapter chain.
         """
