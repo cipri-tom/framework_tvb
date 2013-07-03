@@ -1,0 +1,52 @@
+<div id = "myDiv" xmlns:py="http://genshi.edgewall.org/">
+    <script src="https://rawgithub.com/mrdoob/three.js/master/build/three.min.js"></script>
+    <script src="https://rawgithub.com/mrdoob/stats.js/master/build/stats.min.js"></script>
+    <script src="/static_view/test/scripts/TrackballControls.js"></script>
+
+
+    <script id="shader-vs" type="x-shader/x-vertex">
+        #ifdef GL_ES
+		precision highp float;
+		#endif
+
+        attribute float displacement;
+        varying vec3 vNormal;
+
+        void main() {
+            vNormal = normal;
+
+            vec3 newPosition = position + normal * vec3(displacement);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4 (position, 1.0);
+        }
+
+
+    </script>
+
+    <script id="shader-fs" type="x-shader/x-fragment">
+        #ifdef GL_ES
+		precision highp float;
+		#endif
+
+        varying vec3 vNormal;
+
+        void main() {
+            vec3 light = vec3(0.5, 0.2, 1.0);
+            light = normalize(light);
+            float dProd = max (0.0, dot(vNormal, light));
+            gl_FragColor = vec4(5, dProd, dProd, 1.0);
+        }
+    </script>
+
+    <script type="text/javascript" src="/static_view/test/scripts/gl_framework.js"></script>
+    <!--<script type="text/javascript" src="/static_view/test/scripts/three_geometry.js"></script>-->
+
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            console.log('${urlVertices}');
+            init_data('${urlVertices}', '${urlTriangles}', '${urlNormals}', '${base_activity_url}', '${minActivity}', '${maxActivity}');
+            animate();
+        });
+
+    </script>
+</div>
