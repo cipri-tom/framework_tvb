@@ -942,14 +942,14 @@ tv.plot = {
                     f.gp_ax_fcs_x.call(f.ax_fcs_x)
                     // TODO: This seems to cause problems with negative values and comenting it out does not seem to
                     // cause any additional problems. This could do with some double checking.
-                    // f.gp_lines.attr("transform", "translate(" + sc(0) + ", 0) scale(" + x_scaling + ", 1)")
+                    f.gp_lines.attr("transform", "translate(" + sc(0) + ", 0) scale(" + x_scaling + ", 1)")
 
                 }
 
             // vertical context brush
                 , br_ctx_y_fn = function () {
                     var dom = f.br_ctx_y.empty() ? f.sc_ctx_y.domain() : f.br_ctx_y.extent()
-                        , yscl = f.sz_fcs.y / (dom[1] - dom[0]) / 30
+                        , yscl = f.sz_fcs.y / (dom[1] - dom[0]) / 5
                     f.sc_fcs_y.domain(dom)
                     f.gp_ax_fcs_y.call(f.ax_fcs_y)
                     f.gp_lines.selectAll("g").attr("transform", function (d, i) {
