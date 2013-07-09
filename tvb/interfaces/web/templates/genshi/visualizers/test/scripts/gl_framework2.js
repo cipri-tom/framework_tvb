@@ -6,10 +6,9 @@ stats.begin();
 /////// PERFORMANCE MONITORING END
 
 
-var gui, camera, scene, renderer, brain, controls, timeSteps = 0, currentTimeStep = 0,
-    minActivity, maxActivity, activityData, vertexMapping, fr = 0.0, speed = 20;
+var camera, scene, renderer, brain, controls, timeSteps = 0, currentTimeStep = 0,
+    minActivity, maxActivity, activityData, vertexMapping, fr = 0.0, faceRegions = [];
 
-var myInt = -1;
 
 function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAct, maxAct) {
     var verticesData = readFloatData($.parseJSON(urlVertices), true);
@@ -26,7 +25,7 @@ function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAc
     console.log("overall min activity: " + minActivity);
     console.log("overall max activity: " + maxActivity);
 
-    activityData = HLPR_readJSONfromFile("http://localhost:8080/flow/read_datatype_attribute/34192c94-e3c0-11e2-983b-1803739fd931/read_data_page?from_idx=0&to_idx=500");
+    activityData = HLPR_readJSONfromFile("http://localhost:8080/flow/read_datatype_attribute/34192c94-e3c0-11e2-983b-1803739fd931/read_data_page/False?from_idx=0&to_idx=500");
     timeSteps = activityData.length;
     minActivity = minAct;
     maxActivity = maxAct;
@@ -36,6 +35,17 @@ function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAc
     vertexMapping = HLPR_readJSONfromFile("http://localhost:8080/flow/read_datatype_attribute/f68e21c8-e3be-11e2-bea8-1803739fd931/array_data");
     console.log("vertexMapping.size: " + vertexMapping.length);
 
+    var materials = [], activityLevel, r, g, b;
+    for (var time = 0; time < timeSteps; ++time)
+        for (var region = 0; region < activityData[time].length; ++region) {
+            activityLevel = activityData[time][region];
+            r = region / 74.0 * 256;
+            g = region / 74.0 * 256;
+            b = (activityLevel - minAct) / (maxAct - minAct) * 256;
+            materials.push(new THREE.MeshBasicMaterial({color : r * g * b}));
+        }
+
+
     var brainGeometry = new THREE.Geometry();
     var normals = [];
     for (var i = 0; i * 3 < verticesData.length; ++i) {
@@ -43,23 +53,26 @@ function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAc
         normals.push(new THREE.Vector3(normalsData[3 * i], normalsData[3 * i + 1], normalsData[3 * i + 2]));
     }
 
-    var face, index1, index2, index3;
+    var face, index1, index2, index3, region;
     for (var i = 0; i * 3 < trianglesData.length; ++i) {
         index1 = trianglesData[3 * i];
         index2 = trianglesData[3 * i + 1];
         index3 = trianglesData[3 * i + 2];
+        if (vertexMapping[index1] == vertexMapping[index2] || vertexMapping[index2] == vertexMapping[index3])
+            faceRegions[i] = vertexMapping[index2];
+        else
+            faceRegions[i] = vertexMapping[index3];
         face = new THREE.Face3(index1, index2, index3);
         face.vertexNormals = [normals[index1], normals[index2], normals[index3]];
-        face.color = new THREE.Color(0x777777);
+        face.materialIndex = 0;
         brainGeometry.faces.push(face);
     }
 
-    var material = new THREE.MeshLambertMaterial({
-//                            side : THREE.DoubleSide,
-                            vertexColors: true,
-                            color: 0xFEBEBE
-                        });
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
+    var material = new THREE.MeshFaceMaterial( materials );
     brain = new THREE.Mesh(brainGeometry, material);
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
@@ -77,43 +90,21 @@ function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAc
     directionalLight.position = camera.position;
     scene.add(directionalLight);
 
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth * 3 / 4, window.innerHeight * 3 / 4);
-    document.getElementById("myDiv").appendChild(renderer.domElement);
-
     // controls, for moving and zooming
-    controls = new THREE.TrackballControls(camera, renderer.domElement);
+    controls = new THREE.TrackballControls(camera);
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 1.2;
     controls.panSpeed = 0.8;
     controls.noZoom = false;
     controls.noPan = true;
 
-
-
-    var params = function () { this.speed = 20; };
-    var p = new params();
-    gui = new dat.GUI();
-    gui.add(p, "speed", 2, 30).name("Speed (fps)").onChange(function (value) {
-        speed = value;
-        clearInterval(myInt);
-        myInt = setInterval( function () {
-                requestAnimationFrame( animate );
-                }, 1000 / speed );
-    });
-
-    document.getElementById("myDiv").appendChild(gui.domElement);
-//    window.addEventListener( 'resize', onWindowResize, false );
-
-    myInt = setInterval( function () {
-                requestAnimationFrame( animate );
-                }, 1000 / speed );
+    window.addEventListener( 'resize', onWindowResize, false );
 }
 
 function animate() {
-//    requestAnimationFrame(animate);
+    requestAnimationFrame(animate);
 
-//    fr++;
+    fr++;
 //    if (fr % 100 == 0.0)
         updateVertexColors();
     renderer.render(scene, camera);
@@ -125,20 +116,18 @@ function animate() {
 function updateVertexColors() {
     if (currentTimeStep >= timeSteps)
         currentTimeStep = 0;
-//    console.log("updating...");
-    var face, levelA, n;
-//  var levelB, levelC, colour = new THREE.Color(0x000000);
-    for (var i = 0, iMax = brain.geometry.faces.length; i < iMax; ++i) {
+    console.log("updating...");
+    var face;
+    for (var i = 0, iMax = brain.geometry.faces.length; i < iMax; ++i){
         face = brain.geometry.faces[i];
-        levelA = activityData[currentTimeStep][vertexMapping[face.a]];
-//        levelB = activityData[currentTimeStep][vertexMapping[face.b]];
-//        levelC = activityData[currentTimeStep][vertexMapping[face.c]];
-        n = (levelA - minActivity) / (maxActivity - minActivity);
-        brain.geometry.faces[i].color.r = (n - 1) * 0.6 + 1;
+        face.materialIndex = currentTimeStep * 74 + faceRegions[i];
+
     }
 
     currentTimeStep++;
     brain.geometry.colorsNeedUpdate = true;
+    brain.geometry.elementsNeedUpdate = true;
+    brain.geometry.buffersNeedUpdate = true;
 }
 
 function onWindowResize() {

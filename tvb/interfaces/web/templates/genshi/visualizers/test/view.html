@@ -1,7 +1,8 @@
 <div id = "myDiv" xmlns:py="http://genshi.edgewall.org/">
-    <script src="https://rawgithub.com/mrdoob/three.js/master/build/three.min.js"></script>
-    <script src="https://rawgithub.com/mrdoob/stats.js/master/build/stats.min.js"></script>
-    <script src="/static_view/test/scripts/TrackballControls.js"></script>
+    <script type="text/javascript" src="https://rawgithub.com/mrdoob/three.js/master/build/three.min.js"></script>
+    <script type="text/javascript" src="https://rawgithub.com/mrdoob/stats.js/master/build/stats.min.js"></script>
+    <script type="text/javascript" src="/static_view/test/scripts/TrackballControls.js"></script>
+    <script type="text/javascript" src="/static_view/test/scripts/dat.gui.min.js"></script>
 
 
     <script id="shader-vs" type="x-shader/x-vertex">
@@ -38,14 +39,17 @@
     </script>
 
     <script type="text/javascript" src="/static_view/test/scripts/gl_framework.js"></script>
+    <!--<script type="text/javascript" src="/static_view/test/scripts/gl_framework2.js"></script>-->
     <!--<script type="text/javascript" src="/static_view/test/scripts/three_geometry.js"></script>-->
+    <!--<script type="text/javascript" src="/static_view/test/scripts/faceMaterials.js"></script>-->
 
     <script type="text/javascript">
 
         $(document).ready(function () {
             console.log('${urlVertices}');
             init_data('${urlVertices}', '${urlTriangles}', '${urlNormals}', '${base_activity_url}', '${minActivity}', '${maxActivity}');
-            animate();
+//            init_data();
+//            animate();
         });
 
     </script>
