@@ -12,9 +12,9 @@ var gui, camera, scene, renderer, brain, controls,
     activityData, minActivity, maxActivity, vertexMapping, colors = []
     fr = 0.0, speed = 20;
 
-function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAct, maxAct) {
+function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, regionMappingGid, minAct, maxAct, isOneToOneMapping) {
     var verticesData = readFloatData($.parseJSON(urlVertices), true);
-    console.log("slices: " + verticesData.length);
+    console.log("vertex slices: " + verticesData.length);
     console.log("points: " + verticesData[0].length + " vertices: " + verticesData[0].length / 3);
     verticesData = verticesData[0];
 
@@ -23,18 +23,31 @@ function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAc
 
     var normalsData   = HLPR_readJSONfromFile($.parseJSON(urlNormals));
 
-    console.log("base datatype url: " + baseDatatypeUrl);
-    console.log("overall min activity: " + minActivity);
-    console.log("overall max activity: " + maxActivity);
-
-    activityData = HLPR_readJSONfromFile("http://localhost:8080/flow/read_datatype_attribute/34192c94-e3c0-11e2-983b-1803739fd931/read_data_page?from_idx=0&to_idx=500");
+    console.log("time series: " + time_series);
+    console.log("overall min activity: " + minAct);
+    console.log("overall max activity: " + maxAct);
     minActivity = minAct;
     maxActivity = maxAct;
+
+    var urlPrefix = "http://localhost:8080/flow/read_datatype_attribute/";
+    var url = urlPrefix + timeSeriesGid + "/read_data_page?from_idx=0&to_idx=500";
+
+    activityData = HLPR_readJSONfromFile(url);
     console.log("activity slices: " + activityData.length);
     console.log("activity slice length: " + activityData[0].length);
 
-    vertexMapping = HLPR_readJSONfromFile("http://localhost:8080/flow/read_datatype_attribute/f68e21c8-e3be-11e2-bea8-1803739fd931/array_data");
-    console.log("vertexMapping.size: " + vertexMapping.length);
+    if (isOneToOneMapping == "False") {
+        isOneToOneMapping = false;
+        console.log("Is region mapping...");
+
+        url = urlPrefix + regionMappingGid + "/array_data";
+        vertexMapping = HLPR_readJSONfromFile(url);
+        console.log("vertexMapping.size: " + vertexMapping.length);
+    }
+    else {
+        isOneToOneMapping = true;
+        console.log("Is one to one mapping...")
+    }
 
     var brainGeometry = new THREE.Geometry();
     var normals = [];
@@ -68,12 +81,14 @@ function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAc
             }
     };
 
-    var currentColors, c = new THREE.Color(0x777777);
+    var currentColors, c = new THREE.Color(0x777777), j;
     for (var time = 0; time < activityData.length; ++time) {
         currentColors = [];
+        j = 0;
         for (var vertexI = 0; vertexI < brainGeometry.vertices.length; ++vertexI) {
             c = new THREE.Color(0x777777);
-            c.setRGB(0.5 + (activityData[time][vertexMapping[vertexI]] - minAct) / (maxAct - minAct) * 0.5, 0.5, 0.5)
+            j = isOneToOneMapping ? vertexI : vertexMapping[vertexI];
+            c.setRGB(0.5 + (activityData[time][j] - minAct) / (maxAct - minAct) * 0.5, 0.5, 0.5)
             currentColors.push(c);1
         }
         colors.push(currentColors);

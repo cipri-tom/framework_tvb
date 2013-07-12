@@ -26,16 +26,15 @@ class TestVisualiser(ABCDisplayer):
 
     def launch(self, time_series):
         one_to_one_map, url_vertices, url_normals, url_triangles, \
-            alphas, alphas_indices = self._prepare_surface_urls(time_series)
+            alphas, alphas_indices, region_map = self._prepare_surface_urls(time_series)
 
         min_val, max_val = time_series.get_min_max_values()
 
         params = dict(title="WebGL Framework visualiser", isOneToOneMapping=one_to_one_map,
                     urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
-                    urlNormals=json.dumps(url_normals),
+                    urlNormals=json.dumps(url_normals), regionMappingGid=region_map.gid,
                     # alphas=json.dumps(alphas), alphas_indices=json.dumps(alphas_indices), # not needed for now
-                    time_series = time_series, minActivity=min_val, maxActivity=max_val,
-                    base_activity_url=ABCDisplayer.VISUALIZERS_URL_PREFIX + time_series.gid)
+                    timeSeriesGid=time_series.gid, minActivity=min_val, maxActivity=max_val)
         return self.build_display_result("test/view", params)
 
     def _prepare_surface_urls(self, time_series):
@@ -58,4 +57,4 @@ class TestVisualiser(ABCDisplayer):
 
         url_vertices, url_normals, url_triangles, alphas, alphas_indices = surface.get_urls_for_rendering(True,
                                                                                                           region_map)
-        return one_to_one_map, url_vertices, url_normals, url_triangles, alphas, alphas_indices
+        return one_to_one_map, url_vertices, url_normals, url_triangles, alphas, alphas_indices, region_map
