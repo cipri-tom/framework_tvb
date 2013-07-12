@@ -1,14 +1,16 @@
 /////// PERFORMANCE MONITORING
 var stats = new Stats();            // performance monitor
 stats.setMode(0);                   // 0 - FPS, 1 - milliseconds / frame
-document.getElementById("myDiv").appendChild(stats.domElement);
+var myDiv = document.getElementById("myDiv");
+myDiv.appendChild(stats.domElement);
 stats.begin();
 /////// PERFORMANCE MONITORING END
 
 
-var camera, scene, renderer, brain, controls, timeSteps = 0, currentTimeStep = 0,
-    minActivity, maxActivity, activityData, vertexMapping, fr = 0.0, faceRegions = [];
-
+var gui, camera, scene, renderer, brain, controls,
+    currentTimeStep = 0,
+    activityData, minActivity, maxActivity, vertexMapping, colors = []
+    fr = 0.0, speed = 20;
 
 function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAct, maxAct) {
     var verticesData = readFloatData($.parseJSON(urlVertices), true);
@@ -25,8 +27,7 @@ function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAc
     console.log("overall min activity: " + minActivity);
     console.log("overall max activity: " + maxActivity);
 
-    activityData = HLPR_readJSONfromFile("http://localhost:8080/flow/read_datatype_attribute/34192c94-e3c0-11e2-983b-1803739fd931/read_data_page/False?from_idx=0&to_idx=500");
-    timeSteps = activityData.length;
+    activityData = HLPR_readJSONfromFile("http://localhost:8080/flow/read_datatype_attribute/34192c94-e3c0-11e2-983b-1803739fd931/read_data_page?from_idx=0&to_idx=500");
     minActivity = minAct;
     maxActivity = maxAct;
     console.log("activity slices: " + activityData.length);
@@ -35,17 +36,6 @@ function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAc
     vertexMapping = HLPR_readJSONfromFile("http://localhost:8080/flow/read_datatype_attribute/f68e21c8-e3be-11e2-bea8-1803739fd931/array_data");
     console.log("vertexMapping.size: " + vertexMapping.length);
 
-    var materials = [], activityLevel, r, g, b;
-    for (var time = 0; time < timeSteps; ++time)
-        for (var region = 0; region < activityData[time].length; ++region) {
-            activityLevel = activityData[time][region];
-            r = region / 74.0 * 256;
-            g = region / 74.0 * 256;
-            b = (activityLevel - minAct) / (maxAct - minAct) * 256;
-            materials.push(new THREE.MeshBasicMaterial({color : r * g * b}));
-        }
-
-
     var brainGeometry = new THREE.Geometry();
     var normals = [];
     for (var i = 0; i * 3 < verticesData.length; ++i) {
@@ -53,45 +43,66 @@ function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAc
         normals.push(new THREE.Vector3(normalsData[3 * i], normalsData[3 * i + 1], normalsData[3 * i + 2]));
     }
 
-    var face, index1, index2, index3, region;
+    var face, index1, index2, index3;
     for (var i = 0; i * 3 < trianglesData.length; ++i) {
         index1 = trianglesData[3 * i];
         index2 = trianglesData[3 * i + 1];
         index3 = trianglesData[3 * i + 2];
-        if (vertexMapping[index1] == vertexMapping[index2] || vertexMapping[index2] == vertexMapping[index3])
-            faceRegions[i] = vertexMapping[index2];
-        else
-            faceRegions[i] = vertexMapping[index3];
         face = new THREE.Face3(index1, index2, index3);
         face.vertexNormals = [normals[index1], normals[index2], normals[index3]];
-        face.materialIndex = 0;
+        face.color = new THREE.Color(0x777777);
         brainGeometry.faces.push(face);
     }
 
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    // set the faces normals for intersections to work
+    brainGeometry.computeFaceNormals();
 
-    var material = new THREE.MeshFaceMaterial( materials );
-    brain = new THREE.Mesh(brainGeometry, material);
+    // get the shaders
+    var vertexSh = $("#shader-vs");
+    var fragmentsSh = $("#shader-fs");
 
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-    camera.position.z = 200;
+    var attributes = {
+            customColor: {
+                type: 'c',
+                value: []
+            }
+    };
+
+    var currentColors, c = new THREE.Color(0x777777);
+    for (var time = 0; time < activityData.length; ++time) {
+        currentColors = [];
+        for (var vertexI = 0; vertexI < brainGeometry.vertices.length; ++vertexI) {
+            c = new THREE.Color(0x777777);
+            c.setRGB(0.5 + (activityData[time][vertexMapping[vertexI]] - minAct) / (maxAct - minAct) * 0.5, 0.5, 0.5)
+            currentColors.push(c);1
+        }
+        colors.push(currentColors);
+    }
+
+    var shaderMaterial = new THREE.ShaderMaterial({
+                                attributes: attributes,
+                                vertexShader: vertexSh.text(),
+                                fragmentShader: fragmentsSh.text()
+                             });
+
+    brain = new THREE.Mesh(brainGeometry, shaderMaterial);
+
+    updateColor();
     scene = new THREE.Scene();
     scene.add(brain);
 
-    // add subtle ambient lighting
-    var ambientLight = new THREE.AmbientLight(0x222222);
-    scene.add(ambientLight);
+    camera = new THREE.PerspectiveCamera(45, myDiv.clientWidth / myDiv.clientHeight, 0.1, 2000);
+    camera.position.set(0, 150, 400);
+    camera.lookAt(scene.position);
 
-    // directional lighting
-    var directionalLight = new THREE.DirectionalLight(0xffffff);
-    // link it to camera position so that object is always illuminated, regardless of orientation
-    directionalLight.position = camera.position;
-    scene.add(directionalLight);
+
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize(myDiv.clientWidth, myDiv.clientHeight);
+    renderer.domElement.addEventListener("dblclick", onDocumentClick, false);
+    myDiv.appendChild(renderer.domElement);
 
     // controls, for moving and zooming
-    controls = new THREE.TrackballControls(camera);
+    controls = new THREE.TrackballControls(camera, renderer.domElement);
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 1.2;
     controls.panSpeed = 0.8;
@@ -99,42 +110,68 @@ function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAc
     controls.noPan = true;
 
     window.addEventListener( 'resize', onWindowResize, false );
+
 }
 
 function animate() {
     requestAnimationFrame(animate);
 
+//    if (fr % 100 == 0)
+        updateColor();
     fr++;
-//    if (fr % 100 == 0.0)
-        updateVertexColors();
+
     renderer.render(scene, camera);
     controls.update();
     stats.update();
 }
 
+function updateColor() {
 
-function updateVertexColors() {
-    if (currentTimeStep >= timeSteps)
+    if (currentTimeStep >= activityData.length)
         currentTimeStep = 0;
-    console.log("updating...");
-    var face;
-    for (var i = 0, iMax = brain.geometry.faces.length; i < iMax; ++i){
-        face = brain.geometry.faces[i];
-        face.materialIndex = currentTimeStep * 74 + faceRegions[i];
-
+    var value = brain.material.attributes.customColor.value;
+    for (var i = 0; i < colors[currentTimeStep].length; i++) {
+        value[i] = colors[currentTimeStep][i];
     }
 
     currentTimeStep++;
-    brain.geometry.colorsNeedUpdate = true;
-    brain.geometry.elementsNeedUpdate = true;
-    brain.geometry.buffersNeedUpdate = true;
+    brain.material.attributes.customColor.needsUpdate = true;
+
+}
+
+function onDocumentClick(event) {
+    event.preventDefault();
+    var mouseX = myDiv.getBoundingClientRect().left;
+    var mouseY = myDiv.getBoundingClientRect().top;
+    mouseX = event.clientX - mouseX - renderer.domElement.offsetLeft;
+    mouseY = event.clientY - mouseY - renderer.domElement.offsetTop;
+    console.log("x: " + mouseX + "; y: " + mouseY);
+
+    // http://stackoverflow.com/questions/11036106/three-js-projector-and-ray-objects?rq=1#comment14437076_11038479
+    var vector = new THREE.Vector3( (mouseX / renderer.domElement.clientWidth) * 2 - 1,
+                                  - (mouseY / renderer.domElement.clientHeight) * 2 + 1, 1);        // magic z = 0.5
+
+    var projector = new THREE.Projector();
+    projector.unprojectVector(vector, camera);
+
+    var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+
+    var intersects = raycaster.intersectObject(brain);
+    console.log(intersects);
+
+    if (intersects.length > 0) {
+        var selectedColor = new THREE.Color(0x0000FF);
+        for (var time = 0; time < activityData.length; time++)
+            colors[time][intersects[0].face.a] = colors[time][intersects[0].face.b]
+                                               = colors[time][intersects[0].face.c] = selectedColor;
+    }
 }
 
 function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.aspect = myDiv.clientWidth / myDiv.clientHeight;
     camera.updateProjectionMatrix();
 
-    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.setSize( myDiv.clientWidth, myDiv.clientHeight );
 
     controls.handleResize();
 }

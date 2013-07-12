@@ -56,11 +56,12 @@ function init_data(urlVertices, urlTriangles, urlNormals, baseDatatypeUrl, minAc
 
     var material = new THREE.MeshLambertMaterial({
 //                            side : THREE.DoubleSide,
-                            vertexColors: true,
+                            vertexColors: THREE.FaceColors,
                             color: 0xFEBEBE
                         });
 
     brain = new THREE.Mesh(brainGeometry, material);
+
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
     camera.position.z = 200;

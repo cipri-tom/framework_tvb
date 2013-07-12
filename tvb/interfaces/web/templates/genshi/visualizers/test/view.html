@@ -1,8 +1,11 @@
-<div id = "myDiv" xmlns:py="http://genshi.edgewall.org/">
-    <script type="text/javascript" src="https://rawgithub.com/mrdoob/three.js/master/build/three.min.js"></script>
+<div id = "myDiv" style="width:800px; height:600px" xmlns:py="http://genshi.edgewall.org/">
+    <script type="text/javascript" src="https://rawgithub.com/mrdoob/three.js/master/build/three.js"></script>
     <script type="text/javascript" src="https://rawgithub.com/mrdoob/stats.js/master/build/stats.min.js"></script>
     <script type="text/javascript" src="/static_view/test/scripts/TrackballControls.js"></script>
     <script type="text/javascript" src="/static_view/test/scripts/dat.gui.min.js"></script>
+    <script type="text/javascript" src="http://get.goxtk.com/xtk.js"></script>
+    <script type="text/javascript" src="http://benvanik.github.io/WebGL-Inspector/core/lib/gli.all.js"></script>
+    <!--<link rel="stylesheet" href="http://benvanik.github.io/WebGL-Inspector/core/lib/gli.all.css">-->
 
 
     <script id="shader-vs" type="x-shader/x-vertex">
@@ -10,13 +13,15 @@
 		precision highp float;
 		#endif
 
-        attribute float displacement;
-        varying vec3 vNormal;
+        attribute vec3 customColor;
+        varying vec3 vColor;
 
         void main() {
-            vNormal = normal;
+            vec3 light = normalize(cameraPosition);
+            float dProd = max (0.0, dot(normal, light));
+            vColor = customColor * dProd;
 
-            vec3 newPosition = position + normal * vec3(displacement);
+            // vec3 newPosition = position + normal;
             gl_Position = projectionMatrix * modelViewMatrix * vec4 (position, 1.0);
         }
 
@@ -28,18 +33,16 @@
 		precision highp float;
 		#endif
 
-        varying vec3 vNormal;
+        varying vec3 vColor;
 
         void main() {
-            vec3 light = vec3(0.5, 0.2, 1.0);
-            light = normalize(light);
-            float dProd = max (0.0, dot(vNormal, light));
-            gl_FragColor = vec4(5, dProd, dProd, 1.0);
+            gl_FragColor = vec4(vColor, 1.0);
         }
     </script>
 
-    <script type="text/javascript" src="/static_view/test/scripts/gl_framework.js"></script>
-    <!--<script type="text/javascript" src="/static_view/test/scripts/gl_framework2.js"></script>-->
+    <!--<script type="text/javascript" src="/static_view/test/scripts/gl_framework.js"></script>-->
+    <!--<script type="text/javascript" src="/static_view/test/scripts/xtkExp.js"></script>-->
+    <script type="text/javascript" src="/static_view/test/scripts/gl_framework2.js"></script>
     <!--<script type="text/javascript" src="/static_view/test/scripts/three_geometry.js"></script>-->
     <!--<script type="text/javascript" src="/static_view/test/scripts/faceMaterials.js"></script>-->
 
@@ -48,8 +51,7 @@
         $(document).ready(function () {
             console.log('${urlVertices}');
             init_data('${urlVertices}', '${urlTriangles}', '${urlNormals}', '${base_activity_url}', '${minActivity}', '${maxActivity}');
-//            init_data();
-//            animate();
+            animate();
         });
 
     </script>
