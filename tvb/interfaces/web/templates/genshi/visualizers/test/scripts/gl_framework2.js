@@ -27,7 +27,7 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
     else {
         console.log("Is region mapping...");
 
-        url = urlPrefix + regionMappingGid + "/array_data";
+        url = urlPrefix + regionMappingGid + "/array_data/True";
         vertexMapping = HLPR_readJSONfromFile(url);
         console.log("vertexMapping.size: " + vertexMapping.length);
     }
@@ -46,31 +46,23 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
     }
     console.log("points: " + pointsNo + " vertices: " + pointsNo / 3);
 
-    var face, index1, index2, index3, facesNo = 0, offset = 0, minVertex = 99999, maxVertex = -1;
+    var face, index1, index2, index3, facesNo = 0, offset = 0;
     for (var slice = 0; slice < trianglesData.length; slice++) {
-        for (var i = 0; i < trianglesData[slice].length; ++i) {
-            if (trianglesData[slice][i] < minVertex)
-                minVertex = trianglesData[slice][i];
-            if (trianglesData[slice][i] + offset > maxVertex)
-                maxVertex = trianglesData[slice][i] + offset;
-        }
         for (var i = 0; i * 3 < trianglesData[slice].length; ++i) {
             index1 = trianglesData[slice][3 * i] + offset;
             index2 = trianglesData[slice][3 * i + 1] + offset;
             index3 = trianglesData[slice][3 * i + 2] + offset;
             face = new THREE.Face3(index1, index2, index3);
             face.vertexNormals = [normals[index1], normals[index2], normals[index3]];
-//            face.color = new THREE.Color(0x777777);
             brainGeometry.faces.push(face);
         }
         offset += verticesData[slice].length / 3;
-        facesNo += trianglesData[slice].length;
+        facesNo += trianglesData[slice].length / 3;
     }
     console.log("faces: " + facesNo);
-    console.log("minVertex: " + minVertex + " maxVertex: " + maxVertex);
 
     // set the faces normals for intersections to work
-//    brainGeometry.computeFaceNormals();
+    brainGeometry.computeFaceNormals();
 
     console.log("time series gid: " + timeSeriesGid);
     console.log("overall min activity: " + minAct);

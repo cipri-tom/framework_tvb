@@ -35,7 +35,7 @@ class TestVisualiser(ABCDisplayer):
                     urlNormals=json.dumps(url_normals),
                     # alphas=json.dumps(alphas), alphas_indices=json.dumps(alphas_indices), # not needed for now
                     timeSeriesGid=time_series.gid, minActivity=min_val, maxActivity=max_val)
-        if one_to_one_map:
+        if not one_to_one_map:
             params["regionMappingGid"] = region_map.gid
         return self.build_display_result("test/view", params)
 
