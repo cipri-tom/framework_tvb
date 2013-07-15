@@ -2,12 +2,48 @@
     <script type="text/javascript" src="https://rawgithub.com/mrdoob/three.js/master/build/three.js"></script>
     <script type="text/javascript" src="https://rawgithub.com/mrdoob/stats.js/master/build/stats.min.js"></script>
     <script type="text/javascript" src="/static_view/test/scripts/TrackballControls.js"></script>
+    <script type="text/javascript" src="/static/js/sylvester.js"></script>
+    <script type="text/javascript" src="/static/js/glUtils.js"></script>
+    <script type="text/javascript" src="/static/js/webGL_ShaderAndMatrixes.js?4266"></script>
     <!--<script type="text/javascript" src="/static_view/test/scripts/dat.gui.min.js"></script>-->
     <!--<script type="text/javascript" src="http://get.goxtk.com/xtk.js"></script>-->
-    <script type="text/javascript" src="http://benvanik.github.io/WebGL-Inspector/core/lib/gli.all.js"></script>
+    <!--<script type="text/javascript" src="http://benvanik.github.io/WebGL-Inspector/core/lib/gli.all.js"></script>-->
     <!--<link rel="stylesheet" href="http://benvanik.github.io/WebGL-Inspector/core/lib/gli.all.css">-->
 
 
+    <!--benchmarking shaders-->
+    <script id="benchVS" type="x-shader/x-vertex">
+        attribute vec3 aVertexPosition;
+        attribute vec3 aVertexNormal;
+        attribute vec3 aVertexColor;
+
+        //varying vec4 vColor;
+
+        uniform mat4 uPMatrix;
+		uniform mat4 uMVMatrix;
+		uniform mat4 uNMatrix;
+
+        void main()
+        {
+            vec4 mvPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+			gl_Position = uPMatrix * mvPosition;
+        }
+
+
+    </script>
+
+    <script id="benchFS" type="x-shader/x-fragment">
+        //varying vec4 vColor;
+
+        void main()
+        {
+            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.0);
+        }
+
+    </script>
+
+
+    <!--framework shaders-->
     <script id="shader-vs" type="x-shader/x-vertex">
         #ifdef GL_ES
 		precision highp float;
@@ -42,9 +78,10 @@
 
     <!--<script type="text/javascript" src="/static_view/test/scripts/gl_framework.js"></script>-->
     <!--<script type="text/javascript" src="/static_view/test/scripts/xtkExp.js"></script>-->
-    <script type="text/javascript" src="/static_view/test/scripts/gl_framework2.js"></script>
     <!--<script type="text/javascript" src="/static_view/test/scripts/three_geometry.js"></script>-->
     <!--<script type="text/javascript" src="/static_view/test/scripts/faceMaterials.js"></script>-->
+    <!--<script type="text/javascript" src="/static_view/test/scripts/gl_framework2.js"></script>-->
+    <script type="text/javascript" src="/static_view/test/scripts/gl_benchmark.js"></script>
 
     <script type="text/javascript">
 
