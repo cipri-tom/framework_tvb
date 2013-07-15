@@ -2,8 +2,8 @@
     <script type="text/javascript" src="https://rawgithub.com/mrdoob/three.js/master/build/three.js"></script>
     <script type="text/javascript" src="https://rawgithub.com/mrdoob/stats.js/master/build/stats.min.js"></script>
     <script type="text/javascript" src="/static_view/test/scripts/TrackballControls.js"></script>
-    <script type="text/javascript" src="/static_view/test/scripts/dat.gui.min.js"></script>
-    <script type="text/javascript" src="http://get.goxtk.com/xtk.js"></script>
+    <!--<script type="text/javascript" src="/static_view/test/scripts/dat.gui.min.js"></script>-->
+    <!--<script type="text/javascript" src="http://get.goxtk.com/xtk.js"></script>-->
     <script type="text/javascript" src="http://benvanik.github.io/WebGL-Inspector/core/lib/gli.all.js"></script>
     <!--<link rel="stylesheet" href="http://benvanik.github.io/WebGL-Inspector/core/lib/gli.all.css">-->
 
@@ -49,8 +49,9 @@
     <script type="text/javascript">
 
         $(document).ready(function () {
-            init_data('${urlVertices}', '${urlTriangles}', '${urlNormals}', '${timeSeriesGid}', '${regionMappingGid}',
-                    '${minActivity}', '${maxActivity}', '${isOneToOneMapping}');
+            init_data('${urlVertices}', '${urlTriangles}', '${urlNormals}', '${timeSeriesGid}',
+                    '${minActivity}', '${maxActivity}', ${'true' if isOneToOneMapping else 'false'},
+                    '${null if isOneToOneMapping else regionMappingGid}');
             animate();
         });
 

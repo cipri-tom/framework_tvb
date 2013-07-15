@@ -7,79 +7,82 @@ stats.begin();
 /////// PERFORMANCE MONITORING END
 
 
-var gui, camera, scene, renderer, brain, controls,
+var gui, camera, scene, renderer, brain, controls, companionCube,
     currentTimeStep = 0,
     activityData, minActivity, maxActivity, vertexMapping, colors = []
     fr = 0.0, speed = 20;
 
-function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, regionMappingGid, minAct, maxAct, isOneToOneMapping) {
+function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct, maxAct, isOneToOneMapping, regionMappingGid) {
     var verticesData = readFloatData($.parseJSON(urlVertices), true);
     console.log("vertex slices: " + verticesData.length);
-    console.log("points: " + verticesData[0].length + " vertices: " + verticesData[0].length / 3);
-    verticesData = verticesData[0];
 
-    var trianglesData = HLPR_readJSONfromFile($.parseJSON(urlTriangles));
-    console.log("triangles: " + trianglesData.length / 3);
+    var trianglesData =readFloatData($.parseJSON(urlTriangles), true);
 
-    var normalsData   = HLPR_readJSONfromFile($.parseJSON(urlNormals));
-
-    console.log("time series: " + time_series);
-    console.log("overall min activity: " + minAct);
-    console.log("overall max activity: " + maxAct);
-    minActivity = minAct;
-    maxActivity = maxAct;
+    var normalsData   = readFloatData($.parseJSON(urlNormals), true);
 
     var urlPrefix = "http://localhost:8080/flow/read_datatype_attribute/";
-    var url = urlPrefix + timeSeriesGid + "/read_data_page?from_idx=0&to_idx=500";
 
-    activityData = HLPR_readJSONfromFile(url);
-    console.log("activity slices: " + activityData.length);
-    console.log("activity slice length: " + activityData[0].length);
-
-    if (isOneToOneMapping == "False") {
-        isOneToOneMapping = false;
+    if (isOneToOneMapping)
+        console.log("Is one to one mapping...")
+    else {
         console.log("Is region mapping...");
 
         url = urlPrefix + regionMappingGid + "/array_data";
         vertexMapping = HLPR_readJSONfromFile(url);
         console.log("vertexMapping.size: " + vertexMapping.length);
     }
-    else {
-        isOneToOneMapping = true;
-        console.log("Is one to one mapping...")
-    }
+
 
     var brainGeometry = new THREE.Geometry();
-    var normals = [];
-    for (var i = 0; i * 3 < verticesData.length; ++i) {
-        brainGeometry.vertices.push(new THREE.Vector3(verticesData[3 * i], verticesData[3 * i + 1], verticesData[3 * i + 2]));
-        normals.push(new THREE.Vector3(normalsData[3 * i], normalsData[3 * i + 1], normalsData[3 * i + 2]));
-    }
 
-    var face, index1, index2, index3;
-    for (var i = 0; i * 3 < trianglesData.length; ++i) {
-        index1 = trianglesData[3 * i];
-        index2 = trianglesData[3 * i + 1];
-        index3 = trianglesData[3 * i + 2];
-        face = new THREE.Face3(index1, index2, index3);
-        face.vertexNormals = [normals[index1], normals[index2], normals[index3]];
-        face.color = new THREE.Color(0x777777);
-        brainGeometry.faces.push(face);
+    var normals = [], pointsNo = 0;
+    for (var slice = 0; slice < verticesData.length; slice++) {
+        for (var i = 0; i * 3 < verticesData[slice].length; ++i) {
+            brainGeometry.vertices.push(new THREE.Vector3(verticesData[slice][3 * i], verticesData[slice][3 * i + 1],
+                                                          verticesData[slice][3 * i + 2]));
+            normals.push(new THREE.Vector3(normalsData[slice][3 * i], normalsData[slice][3 * i + 1], normalsData[slice][3 * i + 2]));
+        }
+        pointsNo += verticesData[slice].length;
     }
+    console.log("points: " + pointsNo + " vertices: " + pointsNo / 3);
+
+    var face, index1, index2, index3, facesNo = 0, offset = 0, minVertex = 99999, maxVertex = -1;
+    for (var slice = 0; slice < trianglesData.length; slice++) {
+        for (var i = 0; i < trianglesData[slice].length; ++i) {
+            if (trianglesData[slice][i] < minVertex)
+                minVertex = trianglesData[slice][i];
+            if (trianglesData[slice][i] + offset > maxVertex)
+                maxVertex = trianglesData[slice][i] + offset;
+        }
+        for (var i = 0; i * 3 < trianglesData[slice].length; ++i) {
+            index1 = trianglesData[slice][3 * i] + offset;
+            index2 = trianglesData[slice][3 * i + 1] + offset;
+            index3 = trianglesData[slice][3 * i + 2] + offset;
+            face = new THREE.Face3(index1, index2, index3);
+            face.vertexNormals = [normals[index1], normals[index2], normals[index3]];
+//            face.color = new THREE.Color(0x777777);
+            brainGeometry.faces.push(face);
+        }
+        offset += verticesData[slice].length / 3;
+        facesNo += trianglesData[slice].length;
+    }
+    console.log("faces: " + facesNo);
+    console.log("minVertex: " + minVertex + " maxVertex: " + maxVertex);
 
     // set the faces normals for intersections to work
-    brainGeometry.computeFaceNormals();
+//    brainGeometry.computeFaceNormals();
 
-    // get the shaders
-    var vertexSh = $("#shader-vs");
-    var fragmentsSh = $("#shader-fs");
+    console.log("time series gid: " + timeSeriesGid);
+    console.log("overall min activity: " + minAct);
+    console.log("overall max activity: " + maxAct);
+    minActivity = minAct;
+    maxActivity = maxAct;
 
-    var attributes = {
-            customColor: {
-                type: 'c',
-                value: []
-            }
-    };
+    var url = urlPrefix + timeSeriesGid + "/read_data_page?from_idx=0&to_idx=500";
+
+    activityData = HLPR_readJSONfromFile(url);
+    console.log("activity slices: " + activityData.length);
+    console.log("activity slice length: " + activityData[0].length);
 
     var currentColors, c = new THREE.Color(0x777777), j;
     for (var time = 0; time < activityData.length; ++time) {
@@ -93,6 +96,17 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, regionM
         }
         colors.push(currentColors);
     }
+
+    // get the shaders
+    var vertexSh = $("#shader-vs");
+    var fragmentsSh = $("#shader-fs");
+
+    var attributes = {
+            customColor: {
+                type: 'c',
+                value: []
+            }
+    };
 
     var shaderMaterial = new THREE.ShaderMaterial({
                                 attributes: attributes,
