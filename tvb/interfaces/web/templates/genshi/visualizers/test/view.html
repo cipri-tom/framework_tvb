@@ -17,7 +17,7 @@
 
         attribute vec3 aVertexPosition;
         attribute vec3 aVertexNormal;
-        attribute float aVertexColor;
+        attribute vec3 aVertexColor;
 
         varying vec3 vColor;
         varying vec3 vLighting;
@@ -37,8 +37,7 @@
 
             float dProd = max(0.0, dot(transformedNormal.xyz, directionalLight));
 
-            vec3 customColor = vec3(aVertexColor, 0.5, 0.5);
-            vColor = customColor * dProd;
+            vColor = aVertexColor * dProd;
         }
 
 

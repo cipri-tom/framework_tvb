@@ -66,9 +66,14 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
     // compute colors
     var level = 0, currentColors;
     for (var time = 0; time < activityData.length; time++) {
-        currentColors = new Float32Array(vertexMapping.length);
+        currentColors = new Float32Array(vertexMapping.length * 3);
         for (var vertex = 0; vertex < vertexMapping.length; vertex++)
-            currentColors[vertex] = (activityData[time][vertexMapping[vertex]] - minAct) / (maxAct - minAct);
+            currentColors[vertex * 3] = 0.3 + 0.7 * (activityData[time][vertexMapping[vertex]] - minAct)
+                                                     / (maxAct - minAct);
+
+        for (var vertex = 0; vertex < vertexMapping.length; vertex++)
+            currentColors[vertex * 3 + 1] = currentColors[vertex * 3 + 2] = 0.3;
+
         colorBufs[time] = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBufs[time]);
         gl.bufferData(gl.ARRAY_BUFFER, currentColors, gl.STATIC_DRAW);
@@ -105,7 +110,7 @@ function render() {
 
     // set the colors
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBufs[currentTimeStep]);
-    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 1, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuf);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
