@@ -117,6 +117,7 @@ function render() {
     setMatrixUniforms();
     gl.drawElements(gl.TRIANGLES, trianglesBuf.numItems, gl.UNSIGNED_SHORT, 0);
 //    gl.drawArrays(gl.TRIANGLES, 0, );
+    currentTimeStep++;
 }
 
 function myBasicInitShaders(fsShader, vsShader) {
