@@ -9,10 +9,21 @@ stats.begin();
 var vertexBuf, normalsBuf, trianglesBuf, colorBufs = [], currentTimeStep, totalTimeSteps;
 
 function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct, maxAct, isOneToOneMapping, regionMappingGid) {
+
+    // ========= LOAD DATA =============
     var verticesData = readFloatData($.parseJSON(urlVertices), true);
     console.log("vertex slices: " + verticesData.length);
 
     var trianglesData = readFloatData($.parseJSON(urlTriangles), true);
+    var minVertex = 99999, maxVertex = -1;
+    for (var slice = 0; slice < trianglesData.length; ++slice)
+        for (var v = 0; v < trianglesData[slice].length; ++v) {
+            if (v > maxVertex)
+                maxVertex = v;
+            if (v < minVertex)
+                minVertex = v;
+        }
+    console.log("maxVertex: " + maxVertex + " minVertex: " + minVertex);
 
     var normalsData   = readFloatData($.parseJSON(urlNormals), true);
 
@@ -34,6 +45,7 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
         console.log("vertexMapping.size: " + vertexMapping.length);
     }
 
+    // ========= INITIALISE GL =============
     var canvas = document.createElement("canvas");
     canvas.webGlCanvas = true;
     canvas.width = 800;
@@ -43,27 +55,42 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
     initGL(canvas);
 
     myBasicInitShaders("benchFS", "benchVS");
-
     shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
     gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 
+    // ========== PREPARE BUFFERS ===========
+
+    var currentBuf;
     // fill the vertices buffer
-    vertexBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verticesData[0]), gl.STATIC_DRAW);
+    vertexBuf = [];
+    for (var slice = 0; slice < verticesData.length; slice++) {
+        currentBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, currentBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verticesData[slice]), gl.STATIC_DRAW);
+        vertexBuf.push(currentBuf);
+    }
 
     // fill the normals buffer
-    normalsBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normalsData[0]), gl.STATIC_DRAW);
+    normalsBuf = [];
+    for (var slice = 0; slice < normalsData.length; slice++) {
+        currentBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, currentBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normalsData[slice]), gl.STATIC_DRAW);
+        normalsBuf.push(currentBuf);
+    }
 
     // fill the triangles buffer
-    trianglesBuf = gl.createBuffer();
-    trianglesBuf.numItems = trianglesData[0].length;
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, trianglesBuf);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(trianglesData[0]), gl.STATIC_DRAW);
+    trianglesBuf = [];
+    for (var slice = 0; slice < trianglesData.length; slice++) {
+        currentBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, currentBuf);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(trianglesData[slice]), gl.STATIC_DRAW);
+        currentBuf.numItems = trianglesData[slice].length;
+        trianglesBuf.push(currentBuf);
+    }
 
     // compute colors
+    /* leave colors aside for now, see if it works without
     var level = 0, currentColors;
     for (var time = 0; time < activityData.length; time++) {
         currentColors = new Float32Array(vertexMapping.length * 3);
@@ -78,7 +105,7 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBufs[time]);
         gl.bufferData(gl.ARRAY_BUFFER, currentColors, gl.STATIC_DRAW);
     }
-
+*/
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
@@ -109,19 +136,22 @@ function render() {
         currentTimeStep = 0;
 
     // set the colors
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBufs[currentTimeStep]);
-    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 3, gl.FLOAT, false, 0, 0);
+//    gl.bindBuffer(gl.ARRAY_BUFFER, colorBufs[currentTimeStep]);
+//    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 3, gl.FLOAT, false, 0, 0);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuf);
-    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+    for (var slice = 0; slice < vertexBuf.length; slice++) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuf[slice]);
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuf);
-    gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuf[slice]);
+        gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, trianglesBuf);
-    setMatrixUniforms();
-    gl.drawElements(gl.TRIANGLES, trianglesBuf.numItems, gl.UNSIGNED_SHORT, 0);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, trianglesBuf[slice]);
+        setMatrixUniforms();
+        gl.drawElements(gl.TRIANGLES, trianglesBuf[slice].numItems, gl.UNSIGNED_SHORT, 0);
+    }
 //    gl.drawArrays(gl.TRIANGLES, 0, );
+
     currentTimeStep++;
 }
 
@@ -134,7 +164,7 @@ function myBasicInitShaders(fsShader, vsShader) {
     gl.attachShader(shaderProgram, fragmentShader);
     gl.linkProgram(shaderProgram);
 
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {       // this will fail here in case of error, so the error from shader is displayed
         displayMessage("MY Could not initialise shaders" +  gl.getShaderInfoLog(shader), "errorMessage");
     }
     gl.useProgram(shaderProgram);

@@ -37,7 +37,8 @@
 
             float dProd = max(0.0, dot(transformedNormal.xyz, directionalLight));
 
-            vColor = aVertexColor * dProd;
+            // vColor = aVertexColor * dProd;
+            vColor = normalize(transformedNormal.xyz);
         }
 
 
