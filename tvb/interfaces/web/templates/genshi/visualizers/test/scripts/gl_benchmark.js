@@ -6,17 +6,23 @@ myDiv.appendChild(stats.domElement);
 stats.begin();
 /////// PERFORMANCE MONITORING END
 
-var vertexBuf, normalsBuf, trianglesBuf;
+var vertexBuf, normalsBuf, trianglesBuf, colorBufs = [], currentTimeStep, totalTimeSteps;
 
 function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct, maxAct, isOneToOneMapping, regionMappingGid) {
     var verticesData = readFloatData($.parseJSON(urlVertices), true);
     console.log("vertex slices: " + verticesData.length);
 
-    var trianglesData =readFloatData($.parseJSON(urlTriangles), true);
+    var trianglesData = readFloatData($.parseJSON(urlTriangles), true);
 
     var normalsData   = readFloatData($.parseJSON(urlNormals), true);
 
     var urlPrefix = "http://localhost:8080/flow/read_datatype_attribute/";
+
+    var url = urlPrefix + timeSeriesGid + "/read_data_page?from_idx=0&to_idx=500";
+
+    var activityData = HLPR_readJSONfromFile(url);
+    totalTimeSteps = activityData.length;
+    currentTimeStep = 0;
 
     if (isOneToOneMapping)
         console.log("Is one to one mapping...")
@@ -36,12 +42,10 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
 
     initGL(canvas);
 
-    basicInitShaders("benchFS", "benchVS");
+    myBasicInitShaders("benchFS", "benchVS");
 
-    gl.useProgram(shaderProgram);
-
-//    shaderProgram.vertexColor = gl.getAttribLocation(shaderProgram, "aVertexColor");
-//    gl.enableVertexAttribArray(shaderProgram.vertexColor);
+    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
+    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 
     // fill the vertices buffer
     vertexBuf = gl.createBuffer();
@@ -55,9 +59,20 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
 
     // fill the triangles buffer
     trianglesBuf = gl.createBuffer();
-    trianglesBuf.numItems = trianglesData[0].length / 3;
+    trianglesBuf.numItems = trianglesData[0].length;
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, trianglesBuf);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(trianglesData[0]), gl.STATIC_DRAW);
+
+    // compute colors
+    var level = 0, currentColors;
+    for (var time = 0; time < activityData.length; time++) {
+        currentColors = new Float32Array(vertexMapping.length);
+        for (var vertex = 0; vertex < vertexMapping.length; vertex++)
+            currentColors[vertex] = (activityData[time][vertexMapping[vertex]] - minAct) / (maxAct - minAct);
+        colorBufs[time] = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBufs[time]);
+        gl.bufferData(gl.ARRAY_BUFFER, currentColors, gl.STATIC_DRAW);
+    }
 
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -81,9 +96,16 @@ function render() {
     loadIdentity();
     perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 800.0);
 
+    // pull out the camera from the scene center
     mvTranslate([0.0, 0.0, -300.0]);
     mvRotate(180, [0, 0, 1]);
 
+    if (currentTimeStep >= totalTimeSteps)
+        currentTimeStep = 0;
+
+    // set the colors
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBufs[currentTimeStep]);
+    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 1, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuf);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
@@ -94,38 +116,31 @@ function render() {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, trianglesBuf);
     setMatrixUniforms();
     gl.drawElements(gl.TRIANGLES, trianglesBuf.numItems, gl.UNSIGNED_SHORT, 0);
+//    gl.drawArrays(gl.TRIANGLES, 0, );
 }
 
+function myBasicInitShaders(fsShader, vsShader) {
+    var fragmentShader = getShader(gl, fsShader);
+    var vertexShader = getShader(gl, vsShader);
 
-function getShader(gl, id) {
-    var shaderScript = document.getElementById(id);
-    if (!shaderScript) {
-        return null;
-    }
-    var str = "";
-    var k = shaderScript.firstChild;
-    while (k) {
-        if (k.nodeType == 3) {
-            str += k.textContent;
-        }
-        k = k.nextSibling;
-    }
-    var shader;
-    if (shaderScript.type == "x-shader/x-fragment") {
-        shader = gl.createShader(gl.FRAGMENT_SHADER);
-    } else if (shaderScript.type == "x-shader/x-vertex") {
-        shader = gl.createShader(gl.VERTEX_SHADER);
-    } else {
-        return null;
-    }
+    shaderProgram = gl.createProgram();
+    gl.attachShader(shaderProgram, vertexShader);
+    gl.attachShader(shaderProgram, fragmentShader);
+    gl.linkProgram(shaderProgram);
 
-    gl.shaderSource(shader, str);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        displayMessage(gl.getShaderInfoLog(shader), "warningMessage");
-        return null;
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        displayMessage("MY Could not initialise shaders" +  gl.getShaderInfoLog(shader), "errorMessage");
     }
-    return shader;
+    gl.useProgram(shaderProgram);
+
+    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+    shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
+	gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
+
+    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+    shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
 }
 
 
