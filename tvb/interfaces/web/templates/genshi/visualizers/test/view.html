@@ -13,13 +13,14 @@
 
     <!--benchmarking shaders-->
     <script id="benchVS" type="x-shader/x-vertex">
-        precision mediump float;
+        precision highp float;
 
         attribute vec3 aVertexPosition;
         attribute vec3 aVertexNormal;
         attribute float aVertexColor;
 
         varying vec3 vColor;
+        varying vec3 vLighting;
 
         uniform mat4 uPMatrix;
 		uniform mat4 uMVMatrix;
@@ -30,16 +31,23 @@
             vec4 mvPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
 			gl_Position = uPMatrix * mvPosition;
 
-            vec3 color = vec3(aVertexColor, 0.5, 0.5);
-            vColor = normalize(color * aVertexNormal);
+            vec3 directionalLight = vec3(0.85, 0.8, 0.75);
+
+            vec4 transformedNormal = uNMatrix * vec4(aVertexNormal, 1.0);
+
+            float dProd = max(0.0, dot(transformedNormal.xyz, directionalLight));
+
+            vec3 customColor = vec3(aVertexColor, 0.5, 0.5);
+            vColor = customColor * dProd;
         }
 
 
     </script>
 
     <script id="benchFS" type="x-shader/x-fragment">
-        precision mediump float;
+        precision highp float;
         varying vec3 vColor;
+        varying vec3 vLighting;
 
         void main()
         {
