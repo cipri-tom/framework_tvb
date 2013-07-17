@@ -50,13 +50,16 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
     canvas.webGlCanvas = true;
     canvas.width = 800;
     canvas.height = 600;
+    canvas.tabIndex = "1";      // so that it can get focus for keyboard interaction
+    canvas.onkeydown = GL_handleKeyDown;
+    canvas.onkeyup = GL_handleKeyUp;
     myDiv.appendChild(canvas);
 
     initGL(canvas);
 
     myBasicInitShaders("benchFS", "benchVS");
-    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+//    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
+//    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 
     // ========== PREPARE BUFFERS ===========
 
@@ -107,6 +110,7 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
     }
 */
 
+
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.enable(gl.DEPTH_TEST);
@@ -131,6 +135,7 @@ function render() {
     // pull out the camera from the scene center
     mvTranslate([0.0, 0.0, -300.0]);
     mvRotate(180, [0, 0, 1]);
+    multMatrix(GL_currentRotationMatrix);
 
     if (currentTimeStep >= totalTimeSteps)
         currentTimeStep = 0;
