@@ -18,16 +18,16 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
     var minVertex = 99999, maxVertex = -1;
     for (var slice = 0; slice < trianglesData.length; ++slice)
         for (var v = 0; v < trianglesData[slice].length; ++v) {
-            if (v > maxVertex)
-                maxVertex = v;
-            if (v < minVertex)
-                minVertex = v;
+            if (trianglesData[v] > maxVertex)
+                maxVertex = trianglesData[v];
+            if (trianglesData[v] < minVertex)
+                minVertex = trianglesData[v];
         }
     console.log("maxVertex: " + maxVertex + " minVertex: " + minVertex);
 
     var normalsData   = readFloatData($.parseJSON(urlNormals), true);
 
-    var urlPrefix = "http://localhost:8080/flow/read_datatype_attribute/";
+    var urlPrefix = "http://192.168.123.68:8080/flow/read_datatype_attribute/";
 
     var url = urlPrefix + timeSeriesGid + "/read_data_page?from_idx=0&to_idx=500";
 
@@ -58,8 +58,8 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
     initGL(canvas);
 
     myBasicInitShaders("benchFS", "benchVS");
-//    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-//    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
+    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 
     // ========== PREPARE BUFFERS ===========
 
@@ -93,22 +93,23 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
     }
 
     // compute colors
-    /* leave colors aside for now, see if it works without
     var level = 0, currentColors;
     for (var time = 0; time < activityData.length; time++) {
-        currentColors = new Float32Array(vertexMapping.length * 3);
-        for (var vertex = 0; vertex < vertexMapping.length; vertex++)
-            currentColors[vertex * 3] = 0.3 + 0.7 * (activityData[time][vertexMapping[vertex]] - minAct)
-                                                     / (maxAct - minAct);
+        colorBufs.push([]);
+        for (var slice = 0; slice < verticesData.length; ++slice) {
+            currentColors = new Float32Array(verticesData[slice].length * 3);
+            for (var vertex = 0; vertex < verticesData[slice].length; vertex++)
+                currentColors[vertex * 3] = 0.3 + 0.7 * (activityData[time][vertexMapping[vertex]] - minAct)
+                                                         / (maxAct - minAct);
 
-        for (var vertex = 0; vertex < vertexMapping.length; vertex++)
-            currentColors[vertex * 3 + 1] = currentColors[vertex * 3 + 2] = 0.3;
+            for (var vertex = 0; vertex < vertexMapping.length; vertex++)
+                currentColors[vertex * 3 + 1] = currentColors[vertex * 3 + 2] = 0.3;
 
-        colorBufs[time] = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBufs[time]);
-        gl.bufferData(gl.ARRAY_BUFFER, currentColors, gl.STATIC_DRAW);
+            colorBufs[time].push(gl.createBuffer());
+            gl.bindBuffer(gl.ARRAY_BUFFER, colorBufs[time][slice]);
+            gl.bufferData(gl.ARRAY_BUFFER, currentColors, gl.STATIC_DRAW);
+        }
     }
-*/
 
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -145,6 +146,9 @@ function render() {
 //    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 3, gl.FLOAT, false, 0, 0);
 
     for (var slice = 0; slice < vertexBuf.length; slice++) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBufs[currentTimeStep][slice]);
+        gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 3, gl.FLOAT, false, 0, 0);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuf[slice]);
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
 

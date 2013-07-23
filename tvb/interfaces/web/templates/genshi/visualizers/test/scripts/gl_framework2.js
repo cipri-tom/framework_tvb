@@ -20,7 +20,7 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
 
     var normalsData   = readFloatData($.parseJSON(urlNormals), true);
 
-    var urlPrefix = "http://localhost:8080/flow/read_datatype_attribute/";
+    var urlPrefix = "http://192.168.123.68:8080/flow/read_datatype_attribute/";
 
     if (isOneToOneMapping)
         console.log("Is one to one mapping...")
@@ -45,6 +45,8 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
         pointsNo += verticesData[slice].length;
     }
     console.log("points: " + pointsNo + " vertices: " + pointsNo / 3);
+
+//    brainGeometry.mergeVertices();
 
     var face, index1, index2, index3, facesNo = 0, offset = 0;
     for (var slice = 0; slice < trianglesData.length; slice++) {
@@ -83,8 +85,10 @@ function init_data(urlVertices, urlTriangles, urlNormals, timeSeriesGid, minAct,
         for (var vertexI = 0; vertexI < brainGeometry.vertices.length; ++vertexI) {
             c = new THREE.Color(0x777777);
             j = isOneToOneMapping ? vertexI : vertexMapping[vertexI];
-            c.setRGB(0.5 + (activityData[time][j] - minAct) / (maxAct - minAct) * 0.5, 0.5, 0.5)
-            currentColors.push(c);1
+//            if (!activityData[time][j])
+//                console.log(time + " " + activityData[time].length + " " + j);
+            c.setRGB(0.5 + (activityData[time][j] - minAct) / (maxAct - minAct) * 0.5, 0.0, 1);
+            currentColors.push(c);
         }
         colors.push(currentColors);
     }
