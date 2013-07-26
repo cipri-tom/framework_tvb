@@ -120,7 +120,7 @@ class ABCDisplayer(ABCSynchronous):
         parameters[self.KEY_CONTENT] = template
         parameters[self.KEY_IS_ADAPTER] = True
         if self.EXPORTABLE_FIGURE not in parameters:
-            parameters[self.EXPORTABLE_FIGURE] = False
+            parameters[self.EXPORTABLE_FIGURE] = True
         return parameters
 
 
