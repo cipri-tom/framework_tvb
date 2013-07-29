@@ -147,12 +147,39 @@ function __storeSVG(svgElement, exportType, operationId) {
  * @param exportType this parameter may be "JPEG" or "PNG"
  */
 function __exportCanvas(canvasId, exportType) {
-    var oCanvas = document.getElementById(canvasId);
+    var canvas = document.getElementById(canvasId);
     var mimeType = "image/png";
     if (exportType == "JPEG") {
         mimeType = "image/jpeg";
     }
-    return oCanvas.toDataURL(mimeType);
+
+    var oldWidth = canvas.width;
+    var oldHeight = canvas.height;
+
+    var scale = 1080 / oldHeight;
+    var width = oldWidth * scale;
+    var height = oldHeight * scale;
+
+    canvas.width = width;
+    canvas.height = height;
+    gl.viewportWidth = width;
+    gl.viewportHeight = height;
+    gl.newCanvasWidth = width;
+    gl.newCanvasHeight = height;
+
+    drawScene();
+
+    var data = canvas.toDataURL(mimeType);
+
+    canvas.width = oldWidth;
+    canvas.height = oldHeight;
+    gl.viewportWidth = oldWidth;
+    gl.viewportHeight = oldHeight;
+    gl.newCanvasWidth = oldWidth;
+    gl.newCanvasHeight = oldHeight;
+
+    return data;
+
 }
 
 
