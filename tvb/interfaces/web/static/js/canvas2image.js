@@ -17,11 +17,6 @@
  *
  **/
 
-//global variables needed for save/preview canvas operation
-var C2I_shouldPreviewCanvas = false;
-var C2I_shouldSaveCanvas = false;
-var C2I_exportType, C2I_operationId;
-
 
 /**
  * If you want ot preview a webGl canvas you have to set
@@ -50,45 +45,15 @@ function exportCanvases(exportType, operationId) {
         return;
     }
     $("canvas").each(function () {
-        var canvasId = this.id;
-        if (canvasId) {
-            var isWebGlCanvas = this.webGlCanvas;
-            if (isWebGlCanvas != undefined && isWebGlCanvas) {
-                //we should treat in a different way the webGl canvases because of the webGl double buffering
-                //by default, webGl will not save the depth and color buffers after each draw call.
-                //Trying to call 'toDataURL' or 'readPixels' in this state will result in an array of zero’ed out data.
-                C2I_shouldSaveCanvas = true;
-                C2I_exportType = exportType;
-                C2I_operationId = operationId;
-            } else {
-                __storeCanvas(canvasId, exportType, operationId)
-            }
-        }
+        if (this.id)
+            __storeCanvas(canvasId, exportType, operationId)
     });
+
     $("svg").attr({ version: '1.1' , xmlns:"http://www.w3.org/2000/svg"});
     $("svg").each(function () {
         __storeSVG(this, exportType, operationId)
     });
 }
-
-
-/**
- * This method should be called in all visualizers which has a webGl
- * canvas and offer the export or preview functionality for that canvas.
- *
- * @param canvasId the id of the canvas
- */
-function checkSavePreviewWebGlCanvas(canvasId) {
-    if (C2I_shouldSaveCanvas) {
-        __storeCanvas(canvasId, C2I_exportType, C2I_operationId);
-        C2I_shouldSaveCanvas = false;
-    } else if (C2I_shouldPreviewCanvas) {
-        C2I_shouldPreviewCanvas = false;
-        var strData = __exportCanvas(canvasId, C2I_exportType);
-        window.open(strData, "_blank", "location=no,menubar=no,status=no,scrollbars=no,titlebar=no,toolbar=no");
-    }
-}
-
 
 // sends the generated file to the client
 function startDownload(strData, mimeType) {

@@ -646,9 +646,6 @@ function tick() {
     if (isDoubleView && !AG_isStopped && !sliderSel) {
     	drawGraph(true, TIME_STEP);
     }
-    if (!isPreview) {
-    	checkSavePreviewWebGlCanvas(BRAIN_CANVAS_ID);
-    }
 }
 
 /**
