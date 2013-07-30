@@ -192,6 +192,36 @@ function C2D_displaySelectedPoints() {
 	}
 	
     drawConnectivity(GVAR_hemisphere_jsons[C2D_selectedView], C2D_canvasDiv, C2D_shouldRefreshNodes);
+    var canvas = $('#' + C2D_canvasDiv + "-canvas")[0];         // on each draw the canvas is replaced
+    canvas.drawForImageExport = __resizeCanvasBeforeExport;     // so set the functions required for export
+    canvas.afterImageExport   = __restoreCanvasAfterExport;
+}
+
+/**
+ * The 2D canvas is drawn by JIT; therefore there is no access to its size, so its parent needs resizing before export
+ * @private
+ */
+function __resizeCanvasBeforeExport() {
+    var parent = $('#' + C2D_canvasDiv)
+    var oldWidth  = parent.width(),
+        oldHeight = parent.height();
+
+    var scale = 1080 / oldHeight;
+    // resize the container
+    parent.width(oldWidth * scale);
+    parent.height(oldHeight * scale);
+
+
+    C2D_displaySelectedPoints();        // fill the resized container
+}
+
+/**
+ * After canvas export, set its parent dimension back to normal
+ * @private
+ */
+function __restoreCanvasAfterExport() {
+    $('#' + C2D_canvasDiv).width("").height("");
+    C2D_displaySelectedPoints();        // fill the resized container
 }
 
 /**

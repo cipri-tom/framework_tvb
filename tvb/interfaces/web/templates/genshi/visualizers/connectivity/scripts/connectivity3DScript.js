@@ -219,8 +219,6 @@ function saveRequiredInputs_3D(filePositions, rays, colors, conn_nose_correction
 
 function conectivity3D_initCanvas() {
 	var canvas = document.getElementById(CONNECTIVITY_3D_CANVAS_ID);
-    //needed for the export/save canvas operation
-    canvas.webGlCanvas = true;
     initGL(canvas);
     
     // Enable keyboard and mouse interaction

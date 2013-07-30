@@ -755,6 +755,7 @@ function connectivity_initCanvas() {
 	 * other GL based visualizers to re-initiate the canvas.
 	 */
 	var canvas = document.getElementById(CONNECTIVITY_CANVAS_ID);
+    canvas.drawForImageExport = drawScene;      // interface-like function used in HiRes image exporting
     initGL(canvas);
     initShaders();
     // Enable keyboard and mouse interaction
