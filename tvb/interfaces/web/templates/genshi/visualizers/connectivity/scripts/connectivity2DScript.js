@@ -31,65 +31,68 @@ var shouldDisplayCustomView = false;
 
 var C2D_selectedView = 'both';
 var C2D_shouldRefreshNodes = true;
-var C2D_canvasDiv = '';
+var C2D_canvasDiv = 'hemispheresDisplay';
+
+var rgraph;         // keep the rgraph global so that it can be accessed when exporting images from canvas
+var exportScale;    // used for resizing the plot on exporting from canvas
+
 /**
  * Used for drawing a chart from the given json
  *
  * @param json a string which contains all the data needed for drawing a chart
- * @param containerDivId the id of the container in which will be drawn the view
  * @param shouldRefreshNodes <code>true</code> if the drawn chart contains data related to both hemisphere
  */
-function drawConnectivity(json, containerDivId, shouldRefreshNodes) {
-    //init RGraph
-    var rgraph = new $jit.RGraph({
-        'injectInto': containerDivId,
-        Node: {
-            'overridable': true,
-//            'color': '#cc0000',
-            'alpha': 0.7
-        },
-        Edge: {
-            'overridable': true,
-            'color': '#cccc00'
-        },
-        //Set polar interpolation. Default's linear.
-        interpolation: 'polar',
-        //This method is called right before plotting an edge. This method is useful to change edge styles individually.
-        onBeforePlotLine: function(adj) {
-            if (!adj.data.$lineWidth)
-                adj.data.$lineWidth = adj.data.weight * scaleFactor;
-        },
-        //Add node click handler and some styles. This method is called only once for each node/label crated.
-        onCreateLabel: function(domElement, node) {
-            domElement.innerHTML = node.name;
-//            domElement.onclick = function () {
-//                rgraph.onClick(node.id, { hideLabels: false });
-//            };
-            var style = domElement.style;
-            style.cursor = 'default';
-            style.fontSize = "0.8em";
-            style.color = "#fff";
-        },
-        //This method is called when rendering/moving a label.
-        //This is method is useful to make some last minute changes to node labels like adding some position offset.
-        onPlaceLabel: function(domElement, node) {
-            var style = domElement.style;
-            var left = parseInt(style.left);
-            var w = domElement.offsetWidth;
-            style.left = (left - w / 2) + 'px';
-        },
-        onBeforePlotNode: function(node) {
-            if (shouldDisplayCustomView) {
-                node.data.$dim = node.data.customShapeDimension;
-                node.data.$color = node.data.customShapeColor;
+function drawConnectivity(json, shouldRefreshNodes) {
+    if (!rgraph) {      // make the initialisations
+        rgraph = new $jit.RGraph({
+            'injectInto': C2D_canvasDiv,
+            Node: {
+                'overridable': true,
+                'alpha': 0.7
+            },
+            Edge: {
+                'overridable': true,
+                'color': '#cccc00'
+            },
+            //Set polar interpolation. Default's linear.
+            interpolation: 'polar',
+            //This method is called right before plotting an edge. This method is useful to change edge styles individually.
+            onBeforePlotLine: function(adj) {
+                if (!adj.data.$lineWidth)
+                    adj.data.$lineWidth = adj.data.weight * scaleFactor;
+            },
+            //Add node click handler and some styles. This method is called only once for each node/label crated.
+            onCreateLabel: function(domElement, node) {
+                domElement.innerHTML = node.name;
+                var style = domElement.style;
+                style.cursor = 'default';
+                style.fontSize = "0.8em";
+                style.color = "#fff";
+            },
+            //This method is called when rendering/moving a label.
+            //This is method is useful to make some last minute changes to node labels like adding some position offset.
+            onPlaceLabel: function(domElement, node) {
+                var style = domElement.style;
+                var left = parseInt(style.left);
+                var w = domElement.offsetWidth;
+                style.left = (left - w / 2) + 'px';
+            },
+            onBeforePlotNode: function(node) {
+                if (shouldDisplayCustomView) {
+                    node.data.$dim = node.data.customShapeDimension;
+                    node.data.$color = node.data.customShapeColor;
+                }
+            },
+
+            onAfterCompute: function() {
             }
-        },
 
-        onAfterCompute: function() {
-        }
+        });
+        // interface-like methods needed for exporting HiRes images
+        rgraph.canvas.canvases[0].canvas.drawForImageExport = __resizeCanvasBeforeExport;
+        rgraph.canvas.canvases[0].canvas.afterImageExport   = __restoreCanvasAfterExport;
 
-    });
-    
+    }
     var selection_empty = true;
     var first_json_node = hasNodesInJson(json);
     if (first_json_node >= 0) {
@@ -104,7 +107,6 @@ function drawConnectivity(json, containerDivId, shouldRefreshNodes) {
     }
 
     // remove all the nodes that were not selected by the user
-   
     if (selection_empty == false) {
 	    rgraph.graph.eachNode(function(node) {
 	        if (shouldRefreshNodes && selectedPoints.length > 0 && !isNodeSelected(node.id)) {
@@ -112,12 +114,11 @@ function drawConnectivity(json, containerDivId, shouldRefreshNodes) {
 	        }
 	    });    	
     }
-
     //compute positions and plot
     rgraph.refresh();
+    rgraph.plot();
     rgraph.controller.onBeforeCompute(rgraph.graph.getNode(rgraph.root));
     rgraph.controller.onAfterCompute();
-
 }
 
 /**
@@ -134,7 +135,7 @@ function drawSliderForWeightsScale() {
         change: function(event, ui) {
             scaleFactor = $('#weightsScaleFactor').slider("option", "value");
             $("#display-weights-scale").html(" " + scaleFactor);
-        	drawConnectivity(GVAR_hemisphere_jsons[C2D_selectedView], C2D_canvasDiv, C2D_shouldRefreshNodes);
+        	drawConnectivity(GVAR_hemisphere_jsons[C2D_selectedView], C2D_shouldRefreshNodes);
         }
     });
 }
@@ -176,14 +177,12 @@ function change2DView() {
     }
 	
 	C2D_displaySelectedPoints();
-    //drawConnectivity(GVAR_hemisphere_jsons[C2D_selectedView], C2D_canvasDiv, C2D_shouldRefreshNodes);
 }
 
 /**
  * Each time when the user check/uncheck a check box this method will be called to redraw the main view.
  */
 function C2D_displaySelectedPoints() {
-	document.getElementById(C2D_canvasDiv).innerHTML = '';
     var setRoot = true;
     selectedPoints = [];
     rootNode = parseInt(GVAR_interestAreaNodeIndexes[0]);
@@ -191,37 +190,28 @@ function C2D_displaySelectedPoints() {
 		selectedPoints.push(GVAR_pointsLabels[GVAR_interestAreaNodeIndexes[i]]);
 	}
 	
-    drawConnectivity(GVAR_hemisphere_jsons[C2D_selectedView], C2D_canvasDiv, C2D_shouldRefreshNodes);
-    var canvas = $('#' + C2D_canvasDiv + "-canvas")[0];         // on each draw the canvas is replaced
-    canvas.drawForImageExport = __resizeCanvasBeforeExport;     // so set the functions required for export
-    canvas.afterImageExport   = __restoreCanvasAfterExport;
+    drawConnectivity(GVAR_hemisphere_jsons[C2D_selectedView], C2D_shouldRefreshNodes);
 }
 
 /**
- * The 2D canvas is drawn by JIT; therefore there is no access to its size, so its parent needs resizing before export
+ * Resize the jit-created canvas using its library functions
  * @private
  */
 function __resizeCanvasBeforeExport() {
-    var parent = $('#' + C2D_canvasDiv)
-    var oldWidth  = parent.width(),
-        oldHeight = parent.height();
-
-    var scale = 1080 / oldHeight;
-    // resize the container
-    parent.width(oldWidth * scale);
-    parent.height(oldHeight * scale);
-
-
-    C2D_displaySelectedPoints();        // fill the resized container
+    var size = rgraph.canvas.getSize();
+    exportScale = 1080 / size.height;
+    rgraph.canvas.resize(size.width * exportScale, size.height * exportScale);
+    rgraph.canvas.scale(exportScale, exportScale);
 }
 
 /**
- * After canvas export, set its parent dimension back to normal
+ * After canvas export, bring the canvas back to original size
  * @private
  */
 function __restoreCanvasAfterExport() {
-    $('#' + C2D_canvasDiv).width("").height("");
-    C2D_displaySelectedPoints();        // fill the resized container
+    var size = rgraph.canvas.getSize();
+    exportScale = 1 / exportScale;
+    rgraph.canvas.resize(size.width * exportScale, size.height * exportScale);
 }
 
 /**
@@ -231,7 +221,7 @@ function __restoreCanvasAfterExport() {
 function clearSelectedPoints() {
     selectedPoints = [];
 
-	drawConnectivity(GVAR_hemisphere_jsons[C2D_selectedView], C2D_canvasDiv, C2D_shouldRefreshNodes);
+	drawConnectivity(GVAR_hemisphere_jsons[C2D_selectedView], C2D_shouldRefreshNodes);
 }
 
 function refresh2DTabs(selectedHref) {
@@ -242,7 +232,7 @@ function refresh2DTabs(selectedHref) {
 	selectedHref.style.color='#00FF00';
 }
 
-/*
+/**
  * Check if any of the selected nodes are present in the json.
  */
 function hasNodesInJson(json) {

@@ -392,20 +392,16 @@ function startConnectivity() {
 
 function start2DConnectivity(idx) {
 	$("#monitor-2D-id").show();
-	document.getElementById('hemispheresDisplay').innerHTML = '';
 	C2D_canvasDiv = 'hemispheresDisplay';
 	if (idx == 0) {
-		document.getElementById('hemispheresDisplay').innerHTML = ''; 
 		C2D_selectedView = 'left';
 		C2D_shouldRefreshNodes = true;
 	}
 	if (idx == 1) {
-		document.getElementById('hemispheresDisplay').innerHTML = ''; 
 		C2D_selectedView = 'both';
 		C2D_shouldRefreshNodes = true;
 	} 
 	if (idx == 2) {
-		document.getElementById('hemispheresDisplay').innerHTML = ''; 
 		C2D_selectedView = 'right';
 		C2D_shouldRefreshNodes = true;
 	}
