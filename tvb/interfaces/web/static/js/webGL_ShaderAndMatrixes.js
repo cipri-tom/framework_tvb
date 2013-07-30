@@ -30,6 +30,7 @@ function initGL(canvas) {
         // Used to compute original mouse position in case of canvas resize
         gl.newCanvasWidth = canvasWidth;
         gl.newCanvasHeight = canvasHeight;
+        canvas.webGlCanvas = true;      // Mark gl canvases for viewport resizing on export
     } catch(e) {
     }
     if (!gl) {

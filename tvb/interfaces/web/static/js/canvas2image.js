@@ -46,7 +46,7 @@ function exportCanvases(exportType, operationId) {
     }
     $("canvas").each(function () {
         if (this.id)
-            __storeCanvas(canvasId, exportType, operationId)
+            __storeCanvas(this.id, exportType, operationId)
     });
 
     $("svg").attr({ version: '1.1' , xmlns:"http://www.w3.org/2000/svg"});
@@ -118,30 +118,37 @@ function __exportCanvas(canvasId, exportType) {
         mimeType = "image/jpeg";
     }
 
-    var oldWidth = canvas.width;
+    if (!canvas.drawForImageExport)     // canvases which didn't set this method should not be saved
+        return null;
+
+    var oldWidth = canvas.width;        // keep original dimensions for restoring
     var oldHeight = canvas.height;
 
     var scale = 1080 / oldHeight;
-    var width = oldWidth * scale;
+    var width = oldWidth * scale;       // new canvas dimensions: height - 1080px and scaled width
     var height = oldHeight * scale;
 
-    canvas.width = width;
-    canvas.height = height;
-    gl.viewportWidth = width;
-    gl.viewportHeight = height;
-    gl.newCanvasWidth = width;
-    gl.newCanvasHeight = height;
+    if (canvas.webGlCanvas) {
+        canvas.width = width;
+        canvas.height = height;
+        gl.viewportWidth = width;
+        gl.viewportHeight = height;
+        gl.newCanvasWidth = width;
+    }
 
-    drawScene();
-
+    canvas.drawForImageExport();        // interface-like function that redraws the canvas
     var data = canvas.toDataURL(mimeType);
+    if (canvas.afterImageExport)        // some canvases (EEG visualiser) need to be resized back
+        canvas.afterImageExport();
 
-    canvas.width = oldWidth;
-    canvas.height = oldHeight;
-    gl.viewportWidth = oldWidth;
-    gl.viewportHeight = oldHeight;
-    gl.newCanvasWidth = oldWidth;
-    gl.newCanvasHeight = oldHeight;
+    if (canvas.webGlCanvas) {
+        canvas.width = oldWidth;
+        canvas.height = oldHeight;
+        gl.viewportWidth = oldWidth;
+        gl.viewportHeight = oldHeight;
+        gl.newCanvasWidth = oldWidth;
+        gl.newCanvasHeight = oldHeight;
+    }
 
     return data;
 
@@ -150,13 +157,15 @@ function __exportCanvas(canvasId, exportType) {
 
 function __storeCanvas(canvasId, exportType, operationId) {
     var result = __exportCanvas(canvasId, exportType);
-    $.ajax({  type: "POST", url: '/project/figure/storeresultfigure/jpg/' + operationId,
-                data: {"export_data": result.replace('data:image/png;base64,', '')},
-                success: function(r) {
-                    displayMessage("Figure successfully saved!<br/> See Project section, Image archive sub-section.", "infoMessage")
-                } ,
-                error: function(r) {
-                    displayMessage("Could not store preview image, sorry!", "warningMessage")
-                }
-            });
+    if (result) {       // only save it if there was something drawn on it
+        $.ajax({  type: "POST", url: '/project/figure/storeresultfigure/jpg/' + operationId,
+                    data: {"export_data": result.replace('data:image/png;base64,', '')},
+                    success: function(r) {
+                        displayMessage("Figure successfully saved!<br/> See Project section, Image archive sub-section.", "infoMessage")
+                    } ,
+                    error: function(r) {
+                        displayMessage("Could not store preview image, sorry!", "warningMessage")
+                    }
+                });
+    }
 }
