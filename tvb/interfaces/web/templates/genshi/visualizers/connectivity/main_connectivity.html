@@ -201,8 +201,11 @@
                 GVAR_baseSelection = '${base_selection}';
                 initConnectivitySelectionComponent();
                 showWeightsTable();
+
+                // 3D connectivity was loaded but it should not be exported until its tab was selected
+                document.getElementById('GLcanvas_3D').drawForImageExport = null;
             });
-            
+
             //Set the mouse listeners for the 3d visualizers
             $('#canvasDiv').mousewheel(function(event, delta) {
                 GL_handleMouseWeel(delta);

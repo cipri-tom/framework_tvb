@@ -380,6 +380,10 @@ function hideLeftSideTabs(selectedHref) {
 	selectedHref.parentElement.className = 'active';
 	$(".monitor-container").each(function (divMonitor) {
 		$(this).hide();
+        $(this).find('canvas').each(function () {
+            if (this.drawForImageExport)            // remove redrawing method such that only current view is exported
+                this.drawForImageExport = null;
+        });
 	});
 }
 
@@ -391,7 +395,11 @@ function startConnectivity() {
 }
 
 function start2DConnectivity(idx) {
-	$("#monitor-2D-id").show();
+	$("#monitor-2D-id").show().find('canvas').each(function() {
+        // interface-like methods needed for exporting HiRes images
+        this.drawForImageExport = __resizeCanvasBeforeExport;
+        this.afterImageExport   = __restoreCanvasAfterExport;
+    });
 	C2D_canvasDiv = 'hemispheresDisplay';
 	if (idx == 0) {
 		C2D_selectedView = 'left';

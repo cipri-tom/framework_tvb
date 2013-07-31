@@ -219,6 +219,7 @@ function saveRequiredInputs_3D(filePositions, rays, colors, conn_nose_correction
 
 function conectivity3D_initCanvas() {
 	var canvas = document.getElementById(CONNECTIVITY_3D_CANVAS_ID);
+    canvas.drawForImageExport = drawScene_3D;      // interface-like function used in HiRes image exporting
     initGL(canvas);
     
     // Enable keyboard and mouse interaction
@@ -233,7 +234,6 @@ function connectivity3D_startGL() {
 	//Do the required initializations for the connectivity 3D visualizer
     initShaders_3D();
 
-    //connectivity_nose_correction = $.parseJSON(conn_nose_correction);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.enable(gl.DEPTH_TEST);
