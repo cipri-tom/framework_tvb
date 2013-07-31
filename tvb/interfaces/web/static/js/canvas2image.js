@@ -39,34 +39,26 @@ function previewCanvas(canvasId, exportType) {
  * If you want ot export webGl canvases you have to set
  * the flag 'webGlCanvas' to true for that canvases.
  */
-function exportCanvases(exportType, operationId) {
+function exportCanvases(operationId) {
     if ($("canvas, svg").length == 0) {
         displayMessage("Invalid action. Please report to your TVB technical contact.", "errorMessage");
         return;
     }
     $("canvas").each(function () {
         if (this.id)
-            __storeCanvas(this.id, exportType, operationId)
+            __storeCanvas(this.id, operationId)
     });
 
     $("svg").attr({ version: '1.1' , xmlns:"http://www.w3.org/2000/svg"});
     $("svg").each(function () {
-        __storeSVG(this, exportType, operationId)
+        __storeSVG(this, operationId)
     });
 }
-
-// sends the generated file to the client
-function startDownload(strData, mimeType) {
-    // Fake file type, to force the browser to start the download.
-    var downloadMimeType = "image/octet-stream";
-    document.location.href = strData.replace(mimeType, downloadMimeType);
-}
-
 
 /**
  *This method save the svg html. Before this it also adds the required css styles.
  */
-function __storeSVG(svgElement, exportType, operationId) {
+function __storeSVG(svgElement, operationId) {
 	// Wrap the svg element as to get the actual html and use that as the src for the image
 
 	var wrap = document.createElement('div');
@@ -106,20 +98,72 @@ function __storeSVG(svgElement, exportType, operationId) {
 }
 
 /**
- * This method should NOT be called from outside of this file in specially for webGl canvases.
+ * This function sends canvas' snapshot to server, after it has been prepared by <code>__storeCanvas()</code>
  *
- * @param canvasId the id of the canvas
- * @param exportType this parameter may be "JPEG" or "PNG"
+ * NOTE: Some canvases (MPLH5) set <code>canvas.notReadyForExport</code> flag to indicate that their resize is not done
+ * yet; if such flag exists, exporting continues only when it is set to <code>false</code> or after
+ * <code>remainingTrials</code> trials
+ *
+ * @param canvas The **RESIZED** canvas whose snapshot is to be stored
+ * @param operationId Current operation id, associated with this storage
+ * @param originalWidth Width of <code>canvas</code> before resizing
+ * @param originalHeight Height of <code>canvas</code> before resizing
+ * @param remainingTrials The number of times to poll for <code>canvas.notReadyForExport</code> flag
+ * @private
  */
-function __exportCanvas(canvasId, exportType) {
-    var canvas = document.getElementById(canvasId);
-    var mimeType = "image/png";
-    if (exportType == "JPEG") {
-        mimeType = "image/jpeg";
+function __tryExport(canvas, operationId, originalWidth, originalHeight, remainingTrials) {
+    if (canvas.notReadyForExport && remainingTrials > 0)
+        // the mplh5 canvases will set this flag to TRUE after they finish resizing, so they can be exported at Hi Res
+        // undefined or FALSE means it CAN BE exported
+        setTimeout(function() { __tryExport(canvas, operationId, originalWidth, originalHeight,
+                                            remainingTrials - 1) }, 200)
+
+    else {              // canvas is ready for export
+        var data = canvas.toDataURL("image/png");
+
+        if (data)       // don't store empty images
+            $.ajax({  type: "POST", url: '/project/figure/storeresultfigure/jpg/' + operationId,
+                        data: {"export_data": data.replace('data:image/png;base64,', '')},
+                        success: function(r) {
+                            displayMessage("Figure successfully saved!<br/> See Project section, " +
+                                           "Image archive sub-section.", "infoMessage")
+                        } ,
+                        error: function(r) {
+                            displayMessage("Could not store preview image, sorry!", "warningMessage")
+                        }
+                    });
+        else            // there was no image data
+            displayMessage("Canvas contains no image data. Try again or report to your TVB technical contact",
+                           "warningMessage")
+
+        // restore original canvas size; non-webGL canvases (EEG, mplh5, JIT) have custom resizing methods
+        if (canvas.afterImageExport)
+            canvas.afterImageExport();
+
+        if (canvas.webGlCanvas) {
+            canvas.width = originalWidth;
+            canvas.height = originalHeight;
+            gl.viewportWidth = originalWidth;
+            gl.viewportHeight = originalHeight;
+            gl.newCanvasWidth = originalWidth;
+            gl.newCanvasHeight = originalHeight;
+        }
     }
 
+    }
+
+/**
+ * This function deals with canvas storage. First it prepares it by calling its resize method
+ * (<code>canvas.drawForImageExport</code>), then tries to save it
+ * @param canvasId The canvas whose image is to be stored
+ * @param operationId Current operation id, associated with this storage
+ * @private
+ */
+function __storeCanvas(canvasId, operationId) {
+    var canvas = document.getElementById(canvasId);
+
     if (!canvas.drawForImageExport)     // canvases which didn't set this method should not be saved
-        return null;
+        return;
 
     var oldWidth = canvas.width;        // keep original dimensions for restoring
     var oldHeight = canvas.height;
@@ -136,36 +180,7 @@ function __exportCanvas(canvasId, exportType) {
         gl.newCanvasWidth = width;
     }
 
-    canvas.drawForImageExport();        // interface-like function that redraws the canvas
-    var data = canvas.toDataURL(mimeType);
-    if (canvas.afterImageExport)        // some canvases (EEG visualiser) need to be resized back
-        canvas.afterImageExport();
+    canvas.drawForImageExport();        // interface-like function that redraws the canvas at bigger dimension
 
-    if (canvas.webGlCanvas) {
-        canvas.width = oldWidth;
-        canvas.height = oldHeight;
-        gl.viewportWidth = oldWidth;
-        gl.viewportHeight = oldHeight;
-        gl.newCanvasWidth = oldWidth;
-        gl.newCanvasHeight = oldHeight;
-    }
-
-    return data;
-
-}
-
-
-function __storeCanvas(canvasId, exportType, operationId) {
-    var result = __exportCanvas(canvasId, exportType);
-    if (result) {       // only save it if there was something drawn on it
-        $.ajax({  type: "POST", url: '/project/figure/storeresultfigure/jpg/' + operationId,
-                    data: {"export_data": result.replace('data:image/png;base64,', '')},
-                    success: function(r) {
-                        displayMessage("Figure successfully saved!<br/> See Project section, Image archive sub-section.", "infoMessage")
-                    } ,
-                    error: function(r) {
-                        displayMessage("Could not store preview image, sorry!", "warningMessage")
-                    }
-                });
-    }
+    __tryExport(canvas, operationId, oldWidth, oldHeight, 5);
 }

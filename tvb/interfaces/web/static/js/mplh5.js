@@ -424,4 +424,40 @@ document.addEventListener("mousemove", slideSize, false);
 document.addEventListener("mouseup", outSize, false);
  
 
+// ================================ EXPORTING CANVAS METHODS start ================================
+/**
+ * This function polls for status of resizing and updates <code>canvas.notReadyForExport</code> flag;
+ * resizing is done when the overlay has disappeared
+ *
+ * @param figureId The mplh5 figure whose canvas' flag will be set
+ * @private
+ */
+function __checkMPLH5FinishedResizing(figureId) {
+    if (BLOCKER_OVERLAY_COUNTER)                                                    // mplh5 hasn't resized yet
+        setTimeout(function() {__checkMPLH5FinishedResizing(figureId)}, 100)        // check again in 100 ms
+    else
+        $("#canvas_" + figureId)[0].notReadyForExport = false     // resizing is done, continue with exporting
+}
 
+/**
+ * This function sets the functions on canvas required for image exporting
+ * @param figureId The mplh5 figure whose canvas will be initialised
+ */
+function initMPLH5Canvas(figureId) {
+    $('#canvas_' + figureId).each(function () {
+        var scale = 1080 / this.height
+        this.notReadyForExport = true           // set this flag to indicate that resizing is not done yet
+
+        this.drawForImageExport = function() {
+            do_resize(figureId, this.width * scale, this.height * scale)
+            __checkMPLH5FinishedResizing(figureId)
+        }
+
+        this.afterImageExport = function() {    // scale back to original size and set flag to indicate that
+            do_resize(figureId, this.width / scale, this.height / scale)
+            this.notReadyForExport = true
+        }
+    });
+}
+
+// ================================ EXPORTING CANVAS METHODS  end  ================================

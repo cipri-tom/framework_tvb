@@ -426,10 +426,9 @@ function start3DConnectivity() {
 	SELECTED_TAB = CONNECTIVITY_3D_TAB;
 }
 
-
 function startMPLH5ConnectivityView() {
-	//do_resize(mplh5_figureNo, '600', '400');
 	$("#monitor-mplh5").show();
+    initMPLH5Canvas(mplh5_figureNo)
 }
 
 
