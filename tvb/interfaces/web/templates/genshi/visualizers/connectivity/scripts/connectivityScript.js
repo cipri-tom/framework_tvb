@@ -472,7 +472,7 @@ function displayColors() {
     select.val(selectedOption);
 }
 
-/*
+/**
  * Method that handles the drawing/hiding of both coming in and coming out lines.
  * 
  * @param selectedNodeIdx the currently selected node
@@ -744,7 +744,6 @@ function connectivity_startGL(isSingleMode) {
     if (!isSingleMode) {
         selectHemisphere(0);
     }
-    //drawInterestAreaMatrix(pointsLabels, weights);
     GL_initColorPickFrameBuffer();
     drawScene();
 }
@@ -755,7 +754,6 @@ function connectivity_initCanvas() {
 	 * other GL based visualizers to re-initiate the canvas.
 	 */
 	var canvas = document.getElementById(CONNECTIVITY_CANVAS_ID);
-    canvas.drawForImageExport = drawScene;      // interface-like function used in HiRes image exporting
     initGL(canvas);
     initShaders();
     // Enable keyboard and mouse interaction
@@ -810,7 +808,6 @@ function prepareConnectivity(fileWeights, fileTracts, filePositions, urlVertices
 	connectivity_initCanvas();
 	saveRequiredInputs_con(fileWeights, fileTracts, filePositions, urlVerticesList , urlTrianglesList,
                     	   urlNormalsList, conn_nose_correction, alpha_value);
-	connectivity_startGL(isSingleMode);
     if (!isSingleMode) {
         GFUNC_addAllMatrixToInterestArea();
     }

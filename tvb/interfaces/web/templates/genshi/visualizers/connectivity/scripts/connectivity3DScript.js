@@ -219,7 +219,6 @@ function saveRequiredInputs_3D(filePositions, rays, colors, conn_nose_correction
 
 function conectivity3D_initCanvas() {
 	var canvas = document.getElementById(CONNECTIVITY_3D_CANVAS_ID);
-    canvas.drawForImageExport = drawScene_3D;      // interface-like function used in HiRes image exporting
     initGL(canvas);
     
     // Enable keyboard and mouse interaction
@@ -245,12 +244,6 @@ function connectivity3D_startGL() {
 function prepareConnectivity3D(filePositions, rays, colors, conn_nose_correction) {			
 	conectivity3D_initCanvas();
 	saveRequiredInputs_3D(filePositions, rays, colors, conn_nose_correction);
-}
-
-function start_connectivity_3D(filePositions, rays, colors, conn_nose_correction) {
-	conectivity3D_initCanvas();
-    saveRequiredInputs_3D(filePositions, rays, colors, conn_nose_correction);
-    connectivity3D_startGL();
 }
 
 

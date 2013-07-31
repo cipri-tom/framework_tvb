@@ -186,7 +186,6 @@
 
     <script type="text/javascript">    	
         $(document).ready(function() {
-            $(function() {
 				//prepare all the required parameters for all of the available connectivity visualizers
 				prepareConnectivity3D('$urlPositions', '${raysArray}', '${colorsArray}', '${connectivity_nose_correction}');
 				prepareConnectivity2D(${leftHemisphereJson}, ${bothHemisphereJson}, ${rightHemisphereJson});	
@@ -202,9 +201,7 @@
                 initConnectivitySelectionComponent();
                 showWeightsTable();
 
-                // 3D connectivity was loaded but it should not be exported until its tab was selected
-                document.getElementById('GLcanvas_3D').drawForImageExport = null;
-            });
+            startConnectivity();        // set-up first tab for export
 
             //Set the mouse listeners for the 3d visualizers
             $('#canvasDiv').mousewheel(function(event, delta) {

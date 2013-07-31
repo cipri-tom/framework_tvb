@@ -215,24 +215,6 @@ function __restoreCanvasAfterExport() {
 }
 
 /**
- * Removes from the cache (<code>selectedPoints</code> list) all the points that were selected by the user.
- * It also clears all the check boxes.
- */
-function clearSelectedPoints() {
-    selectedPoints = [];
-
-	drawConnectivity(GVAR_hemisphere_jsons[C2D_selectedView], C2D_shouldRefreshNodes);
-}
-
-function refresh2DTabs(selectedHref) {
-	var allTabHeads = $(".tconn2DTabHead");
-	for (var i = 0; i < allTabHeads.length; i++) {
-		allTabHeads[i].style.color='#104120';
-	}
-	selectedHref.style.color='#00FF00';
-}
-
-/**
  * Check if any of the selected nodes are present in the json.
  */
 function hasNodesInJson(json) {
