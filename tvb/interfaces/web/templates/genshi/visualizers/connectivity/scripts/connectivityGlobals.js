@@ -389,7 +389,7 @@ function hideLeftSideTabs(selectedHref) {
 
 function startConnectivity() {
 	$("#monitor-3Dedges-id").show()
-        .find('#GLcanvas')[0].drawForImageExport = drawScene; // interface-like function used in HiRes image exporting;
+        .find('#GLcanvas')[0].redrawFunctionRef = drawScene;         // interface-like function used in HiRes image exporting
 	connectivity_initCanvas();
 	connectivity_startGL(false);
 	SELECTED_TAB = CONNECTIVITY_TAB;
@@ -420,7 +420,7 @@ function start2DConnectivity(idx) {
 
 function start3DConnectivity() {
 	$("#monitor-3D-id").show()
-        .find('#GLcanvas_3D')[0].drawForImageExport = drawScene_3D; // interface-like function used in HiRes image exporting;
+        .find('#GLcanvas_3D')[0].redrawFunctionRef = drawScene_3D;   // interface-like function used in HiRes image exporting
 	conectivity3D_initCanvas();
 	connectivity3D_startGL();
 	SELECTED_TAB = CONNECTIVITY_3D_TAB;

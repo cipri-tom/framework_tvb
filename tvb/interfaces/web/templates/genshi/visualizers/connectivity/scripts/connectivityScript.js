@@ -358,7 +358,7 @@ function drawScene() {
 		}
 }
 
-/*
+/**
  * Given a list of indexes will create the buffer of elements needed to draw
  * line between the points that correspond to those indexes.
  */
@@ -446,30 +446,6 @@ function getElementArrayBuffer(indices) {
     vertexIndices.numItems = indices.length;
 
     return vertexIndices;
-}
-
-var selectedColorValue = 0;
-/**
- * Display the selector which allows the user to select the color that should be used for drawing the lines for the selected node
- */
-function displayColors() {
-    var newOptions = {
-        '0' : 'White',
-        '1' : 'Red',
-        '2' : 'Blue',
-        '3' : 'Yellow',
-        '4' : 'Green'
-    };
-    var selectedOption = '0';
-
-    var select = $('#colors');
-    var options = select.attr('options');
-    $('option', select).remove();
-
-    $.each(newOptions, function(val, text) {
-        options[options.length] = new Option(text, val);
-    });
-    select.val(selectedOption);
 }
 
 /**

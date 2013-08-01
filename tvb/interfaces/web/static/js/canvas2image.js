@@ -111,12 +111,11 @@ function __storeSVG(svgElement, operationId) {
  * @param remainingTrials The number of times to poll for <code>canvas.notReadyForExport</code> flag
  * @private
  */
-function __tryExport(canvas, operationId, originalWidth, originalHeight, remainingTrials) {
+function __tryExport(canvas, operationId, remainingTrials) {
     if (canvas.notReadyForExport && remainingTrials > 0)
         // the mplh5 canvases will set this flag to TRUE after they finish resizing, so they can be exported at Hi Res
         // undefined or FALSE means it CAN BE exported
-        setTimeout(function() { __tryExport(canvas, operationId, originalWidth, originalHeight,
-                                            remainingTrials - 1) }, 200)
+        setTimeout(function() { __tryExport(canvas, operationId, remainingTrials - 1) }, 200)
 
     else {              // canvas is ready for export
         var data = canvas.toDataURL("image/png");
@@ -139,15 +138,6 @@ function __tryExport(canvas, operationId, originalWidth, originalHeight, remaini
         // restore original canvas size; non-webGL canvases (EEG, mplh5, JIT) have custom resizing methods
         if (canvas.afterImageExport)
             canvas.afterImageExport();
-
-        if (canvas.webGlCanvas) {
-            canvas.width = originalWidth;
-            canvas.height = originalHeight;
-            gl.viewportWidth = originalWidth;
-            gl.viewportHeight = originalHeight;
-            gl.newCanvasWidth = originalWidth;
-            gl.newCanvasHeight = originalHeight;
-        }
     }
 
     }
@@ -165,22 +155,7 @@ function __storeCanvas(canvasId, operationId) {
     if (!canvas.drawForImageExport)     // canvases which didn't set this method should not be saved
         return;
 
-    var oldWidth = canvas.width;        // keep original dimensions for restoring
-    var oldHeight = canvas.height;
-
-    var scale = 1080 / oldHeight;
-    var width = oldWidth * scale;       // new canvas dimensions: height - 1080px and scaled width
-    var height = oldHeight * scale;
-
-    if (canvas.webGlCanvas) {
-        canvas.width = width;
-        canvas.height = height;
-        gl.viewportWidth = width;
-        gl.viewportHeight = height;
-        gl.newCanvasWidth = width;
-    }
-
     canvas.drawForImageExport();        // interface-like function that redraws the canvas at bigger dimension
 
-    __tryExport(canvas, operationId, oldWidth, oldHeight, 5);
+    __tryExport(canvas, operationId, 5);
 }

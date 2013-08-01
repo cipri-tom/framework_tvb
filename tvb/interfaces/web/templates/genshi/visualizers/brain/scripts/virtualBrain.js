@@ -234,7 +234,7 @@ function customInitGL(canvas) {
 		updateGLCanvasSize(BRAIN_CANVAS_ID);
 	};
 	initGL(canvas);
-    canvas.drawForImageExport = drawScene;      // interface-like function used in HiRes image exporting
+    canvas.redrawFunctionRef = drawScene;            // interface-like function used in HiRes image exporting
     drawingMode = gl.TRIANGLES;
     gl.newCanvasWidth = canvas.clientWidth;
     gl.newCanvasHeight = canvas.clientHeight;
