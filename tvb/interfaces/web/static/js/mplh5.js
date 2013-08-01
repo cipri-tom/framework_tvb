@@ -430,13 +430,17 @@ document.addEventListener("mouseup", outSize, false);
  * resizing is done when the overlay has disappeared
  *
  * @param figureId The mplh5 figure whose canvas' flag will be set
+ * @param visible Indicates visibility of the div containing the current canvas
  * @private
  */
-function __checkMPLH5FinishedResizing(figureId) {
-    if (BLOCKER_OVERLAY_COUNTER)                                                    // mplh5 hasn't resized yet
-        setTimeout(function() {__checkMPLH5FinishedResizing(figureId)}, 100)        // check again in 100 ms
-    else
-        $("#canvas_" + figureId)[0].notReadyForExport = false     // resizing is done, continue with exporting
+function __checkMPLH5FinishedResizing(canvas, visible) {
+    if (BLOCKER_OVERLAY_COUNTER)                                                            // mplh5 hasn't resized yet
+        setTimeout(function() {__checkMPLH5FinishedResizing(canvas, visible)}, 100)         // check again in 100 ms
+    else {
+        canvas.notReadyForExport = false                                // resizing is done, continue with exporting
+        if (visible)
+            canvas.parentElement.parentElement.style.display = ""       // exporting is done, show the container
+    }
 }
 
 /**
@@ -446,16 +450,18 @@ function __checkMPLH5FinishedResizing(figureId) {
 function initMPLH5Canvas(figureId) {
     $('#canvas_' + figureId).each(function () {
         var scale = 1080 / this.height
-        this.notReadyForExport = true           // set this flag to indicate that resizing is not done yet
 
         this.drawForImageExport = function() {
+            this.notReadyForExport = true               // set this flag to indicate that resizing is taking place
+            // don't display the div containing this canvas during export, so the user doesn't notice resizing
+            this.parentElement.parentElement.style.display = "none"
             do_resize(figureId, this.width * scale, this.height * scale)
-            __checkMPLH5FinishedResizing(figureId)
+            __checkMPLH5FinishedResizing(this, false)
         }
 
         this.afterImageExport = function() {    // scale back to original size and set flag to indicate that
             do_resize(figureId, this.width / scale, this.height / scale)
-            this.notReadyForExport = true
+            __checkMPLH5FinishedResizing(this, true)
         }
     });
 }
